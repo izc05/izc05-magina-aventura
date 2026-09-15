@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(24);
 
 insert into public.municipalities (id, slug, name, active)
 values (
@@ -59,23 +59,27 @@ insert into public.route_geometries (
 );
 
 insert into public.route_map_assets (
+  id,
   route_id,
   geometry_version,
   asset_kind,
   object_key,
   public_url,
   byte_size,
+  md5,
   min_zoom,
   max_zoom,
   bounds,
   style_template_url
 ) values (
+  '10000000-0000-4000-8000-000000000030',
   '10000000-0000-4000-8000-000000000002',
   1,
   'pmtiles',
   'routes/published-map-test/v1/map.pmtiles',
   'https://cdn.example.test/routes/published-map-test/v1/map.pmtiles',
   1024,
+  '0123456789abcdef0123456789abcdef',
   10,
   16,
   extensions.st_geomfromtext(
@@ -147,6 +151,8 @@ insert into public.discoveries (
   false
 );
 
+set local role anon;
+
 select has_function(
   'public',
   'get_published_route_map_payload',
@@ -158,6 +164,12 @@ select isnt(
   public.get_published_route_map_payload('published-map-test'),
   null::jsonb,
   'published route returns a payload'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->>'routeId',
+  '10000000-0000-4000-8000-000000000002',
+  'payload exposes root route id'
 );
 
 select is(
@@ -185,27 +197,91 @@ select is(
 );
 
 select is(
+  public.get_published_route_map_payload('published-map-test')->'checkpoints'->0->'position',
+  '[-3.495, 37.705]'::jsonb,
+  'checkpoint position uses longitude latitude tuple'
+);
+
+select is(
   jsonb_array_length(public.get_published_route_map_payload('published-map-test')->'discoveryHints'),
   1,
   'payload includes active discovery hints only'
 );
 
-select is(
-  public.get_published_route_map_payload('published-map-test')->'start'->>'type',
-  'Point',
-  'payload exposes GeoJSON start point'
+select ok(
+  not (public.get_published_route_map_payload('published-map-test')->'discoveryHints'->0 ? 'position'),
+  'public discovery hint does not expose exact position'
+);
+
+select ok(
+  not (public.get_published_route_map_payload('published-map-test')->'discoveryHints'->0 ? 'triggerRadiusM'),
+  'public discovery hint does not expose trigger radius'
 );
 
 select is(
-  jsonb_array_length(public.get_published_route_map_payload('published-map-test')->'bounds'),
-  4,
-  'payload exposes four-value camera bounds'
+  public.get_published_route_map_payload('published-map-test')->'start',
+  '[-3.5, 37.7]'::jsonb,
+  'payload start uses longitude latitude tuple'
 );
 
 select is(
-  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'publicUrl',
+  public.get_published_route_map_payload('published-map-test')->'bounds',
+  '[-3.5, 37.7, -3.49, 37.71]'::jsonb,
+  'payload exposes route camera bounds'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'id',
+  '10000000-0000-4000-8000-000000000030',
+  'payload exposes current map asset id'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'objectKey',
+  'routes/published-map-test/v1/map.pmtiles',
+  'payload exposes immutable object key'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'remoteUrl',
   'https://cdn.example.test/routes/published-map-test/v1/map.pmtiles',
-  'payload exposes current PMTiles asset'
+  'payload exposes PMTiles remote URL'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'styleTemplateUrl',
+  'https://cdn.example.test/styles/magina-v1.json',
+  'payload exposes style template URL'
+);
+
+select is(
+  (public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'byteSize')::bigint,
+  1024::bigint,
+  'payload exposes PMTiles byte size'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'md5',
+  '0123456789abcdef0123456789abcdef',
+  'payload exposes PMTiles checksum'
+);
+
+select is(
+  (public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'minZoom')::integer,
+  10,
+  'payload exposes minimum zoom'
+);
+
+select is(
+  (public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'maxZoom')::integer,
+  16,
+  'payload exposes maximum zoom'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->'bounds',
+  '[-3.5, 37.7, -3.49, 37.71]'::jsonb,
+  'payload exposes map asset bounds'
 );
 
 select is(
@@ -220,5 +296,6 @@ select is(
   'missing route returns null'
 );
 
+reset role;
 select * from finish();
 rollback;

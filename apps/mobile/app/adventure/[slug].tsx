@@ -35,7 +35,7 @@ export default function ActiveAdventureScreen() {
         <View style={styles.topHudHeader}>
           <View>
             <Text style={styles.routeName}>{route.title}</Text>
-            <Text style={styles.routePlace}>{route.municipality}</Text>
+            <Text style={styles.routePlace}>{route.municipalityName}</Text>
           </View>
           <View style={styles.progressBadge}><Text style={styles.progressText}>0 %</Text></View>
         </View>

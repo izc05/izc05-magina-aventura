@@ -32,7 +32,7 @@ export default function PrepareAdventureScreen() {
 
         <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
         <Text style={styles.title}>Prepara tu aventura</Text>
-        <Text style={styles.routeName}>{route.title} · {route.municipality}</Text>
+        <Text style={styles.routeName}>{route.title} · {route.municipalityName}</Text>
 
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Modo de desarrollo</Text>
@@ -56,7 +56,9 @@ export default function PrepareAdventureScreen() {
 
         <View style={styles.offlineCard}>
           <Text style={styles.offlineEyebrow}>PAQUETE DE RUTA</Text>
-          <Text style={styles.offlineTitle}>Preparado para funcionar sin cobertura</Text>
+          <Text style={styles.offlineTitle}>
+            {route.offlineAvailable ? 'Disponible para descargar' : 'Preparado para la siguiente fase offline'}
+          </Text>
           <Text style={styles.offlineBody}>
             La versión final descargará geometría oficial, checkpoints, descubrimientos necesarios, seguridad y cartografía del corredor.
           </Text>

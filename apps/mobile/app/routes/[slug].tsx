@@ -8,13 +8,16 @@ import {
   durationLabel,
   getDevelopmentRouteBySlug,
 } from '../../src/features/routes/route-utils';
-import { DevelopmentMap } from '../../src/map/DevelopmentMap';
+import { RouteMap } from '../../src/map/RouteMap';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
 
 export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+
+  const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
+  const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
 
   if (!route) {
     return (
@@ -70,15 +73,20 @@ export default function RouteDetailScreen() {
           </View>
         </View>
 
-        <DevelopmentMap
-          start={{
-            latitude: route.startLatitude,
-            longitude: route.startLongitude,
-          }}
-          routeId={route.id}
-          geometryVersion={route.geometryVersion}
-          developmentMode={route.developmentFixture}
-        />
+        {baseMapStyle ? (
+          <RouteMap
+            payload={null}
+            mapStyle={baseMapStyle}
+            developmentMode={route.developmentFixture}
+          />
+        ) : (
+          <View style={styles.mapUnavailable}>
+            <Text style={styles.mapUnavailableTitle}>Mapa no configurado</Text>
+            <Text style={styles.mapUnavailableBody}>
+              Configura EXPO_PUBLIC_MAP_STYLE_URL para habilitar el mapa en producción.
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
         <Text style={styles.body}>{route.description}</Text>
@@ -152,6 +160,9 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
+  mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
+  mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

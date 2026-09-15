@@ -25,6 +25,21 @@ begin
 end;
 $$;
 
+-- Execute UPDATE ... RETURNING as a top-level dynamic statement so row-count
+-- assertions work without invalid nested data-modifying CTEs.
+create function public._test_community_exec_count(statement text)
+returns bigint
+language plpgsql
+as $$
+declare
+  result bigint;
+begin
+  execute format('with changed as (%s) select count(*) from changed', statement)
+    into result;
+  return result;
+end;
+$$;
+
 -- RLS must protect every community table.
 select ok((select relrowsecurity from pg_class where oid = 'public.community_staff_members'::regclass), 'RLS enabled on staff members');
 select ok((select relrowsecurity from pg_class where oid = 'public.community_photos'::regclass), 'RLS enabled on community photos');
@@ -98,43 +113,34 @@ select ok(
 );
 
 select is(
-  (
-    with changed as (
-      update public.route_comments
-      set body = 'Intento de modificar contenido ajeno'
-      where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'
-      returning id
-    )
-    select count(*) from changed
-  ),
+  public._test_community_exec_count($sql$
+    update public.route_comments
+    set body = 'Intento de modificar contenido ajeno'
+    where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'
+    returning id
+  $sql$),
   0::bigint,
   'user A cannot update user B content'
 );
 
 select is(
-  (
-    with changed as (
-      update public.route_comments
-      set body = 'Comentario propio actualizado'
-      where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'
-      returning id
-    )
-    select count(*) from changed
-  ),
+  public._test_community_exec_count($sql$
+    update public.route_comments
+    set body = 'Comentario propio actualizado'
+    where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'
+    returning id
+  $sql$),
   1::bigint,
   'user can update own comment'
 );
 
 select is(
-  (
-    with changed as (
-      update public.route_comments
-      set deleted_at = now()
-      where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'
-      returning id
-    )
-    select count(*) from changed
-  ),
+  public._test_community_exec_count($sql$
+    update public.route_comments
+    set deleted_at = now()
+    where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'
+    returning id
+  $sql$),
   1::bigint,
   'user can soft-delete own comment'
 );

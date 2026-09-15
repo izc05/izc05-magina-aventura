@@ -3,6 +3,28 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(19);
 
+-- Test-only dynamic wrapper: a missing production helper becomes a failed
+-- assertion instead of aborting the whole RED run.
+create function public._test_has_community_staff_role(required_roles text[], expected boolean)
+returns boolean
+language plpgsql
+as $$
+declare
+  actual boolean;
+begin
+  begin
+    execute 'select public.has_community_staff_role($1::public.community_staff_role[])'
+      into actual
+      using required_roles;
+  exception
+    when undefined_function then
+      return false;
+  end;
+
+  return actual is not distinct from expected;
+end;
+$$;
+
 -- RLS must protect every community table.
 select ok((select relrowsecurity from pg_class where oid = 'public.community_staff_members'::regclass), 'RLS enabled on staff members');
 select ok((select relrowsecurity from pg_class where oid = 'public.community_photos'::regclass), 'RLS enabled on community photos');
@@ -68,7 +90,10 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
 
 select ok(
-  not public.has_community_staff_role(array['owner','admin','moderator']::public.community_staff_role[]),
+  public._test_has_community_staff_role(
+    array['owner','admin','moderator']::text[],
+    false
+  ),
   'ordinary user has no community staff role'
 );
 
@@ -160,13 +185,13 @@ select throws_ok(
 
 select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
 select ok(
-  public.has_community_staff_role(array['moderator']::public.community_staff_role[]),
+  public._test_has_community_staff_role(array['moderator']::text[], true),
   'moderator role is recognized'
 );
 
 select set_config('request.jwt.claim.sub', '44444444-4444-4444-8444-444444444444', true);
 select ok(
-  public.has_community_staff_role(array['owner']::public.community_staff_role[]),
+  public._test_has_community_staff_role(array['owner']::text[], true),
   'owner role is recognized'
 );
 

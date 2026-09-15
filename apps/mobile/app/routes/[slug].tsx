@@ -1,20 +1,157 @@
+import type {
+  OfflineRoutePackageManifest,
+  RouteMapPayload,
+} from '@magina-aventura/contracts';
+import {
+  evaluateOfflinePackage,
+  resolvePmtilesUri,
+  type OfflinePackageState,
+} from '@magina-aventura/offline-sync';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
 import {
   difficultyLabel,
   durationLabel,
   getDevelopmentRouteBySlug,
 } from '../../src/features/routes/route-utils';
-import { DevelopmentMap } from '../../src/map/DevelopmentMap';
+import { RouteMap } from '../../src/map/RouteMap';
+import { materializeMapStyle } from '../../src/map/map-style';
+import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
+import { downloadRoutePackage } from '../../src/offline/route-package-store';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
+
+type RouteOfflineUiState =
+  | OfflinePackageState
+  | 'unavailable'
+  | 'downloading'
+  | 'error';
+
+const offlineStatusCopy: Record<RouteOfflineUiState, string> = {
+  'not-downloaded': 'No descargado',
+  ready: 'Listo sin conexión',
+  stale: 'Actualización disponible',
+  unavailable: 'No disponible',
+  downloading: 'Descargando',
+  error: 'Error de descarga',
+};
+
+async function materializeRouteMapStyle(
+  manifest: OfflineRoutePackageManifest,
+  localUri?: string,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(manifest.map.styleTemplateUrl);
+
+  if (!response.ok) {
+    throw new Error(`Unable to load route map style (${response.status})`);
+  }
+
+  const styleJson = await response.text();
+  return materializeMapStyle(
+    styleJson,
+    resolvePmtilesUri(manifest, localUri),
+  );
+}
 
 export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const routeSlug = route?.slug ?? '';
+
+  const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
+  const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
+
+  const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
+  const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);
+  const [offlineState, setOfflineState] = useState<RouteOfflineUiState>('unavailable');
+  const [mapStyle, setMapStyle] = useState<string | Record<string, unknown> | null>(baseMapStyle);
+
+  useEffect(() => {
+    if (!routeSlug) return;
+
+    let active = true;
+
+    async function loadRouteMapState() {
+      try {
+        const [payload, manifest] = await Promise.all([
+          developmentRouteMapRepository.getMapPayload(routeSlug),
+          developmentRouteMapRepository.getOfflineManifest(routeSlug),
+        ]);
+
+        if (!active) return;
+
+        setMapPayload(payload);
+        setOfflineManifest(manifest);
+
+        if (!manifest) {
+          setOfflineState('unavailable');
+          setMapStyle(baseMapStyle);
+          return;
+        }
+
+        const installed = await expoRoutePackagePort.readMetadata(manifest.routeId);
+        const packageState = evaluateOfflinePackage(installed, manifest);
+
+        if (!active) return;
+
+        setOfflineState(packageState);
+
+        try {
+          const materializedStyle = await materializeRouteMapStyle(
+            manifest,
+            packageState === 'ready' ? installed?.localUri : undefined,
+          );
+
+          if (active) setMapStyle(materializedStyle);
+        } catch {
+          if (active) setMapStyle(baseMapStyle);
+        }
+      } catch {
+        if (!active) return;
+        setMapPayload(null);
+        setOfflineManifest(null);
+        setOfflineState('unavailable');
+        setMapStyle(baseMapStyle);
+      }
+    }
+
+    void loadRouteMapState();
+
+    return () => {
+      active = false;
+    };
+  }, [baseMapStyle, routeSlug]);
+
+  async function handleOfflineDownload() {
+    if (!offlineManifest) return;
+
+    setOfflineState('downloading');
+
+    try {
+      await downloadRoutePackage(expoRoutePackagePort, offlineManifest);
+      const installed = await expoRoutePackagePort.readMetadata(offlineManifest.routeId);
+      const packageState = evaluateOfflinePackage(installed, offlineManifest);
+      setOfflineState(packageState);
+
+      if (packageState === 'ready' && installed) {
+        try {
+          setMapStyle(
+            await materializeRouteMapStyle(offlineManifest, installed.localUri),
+          );
+        } catch {
+          // The verified package remains installed even if the style template
+          // cannot be refreshed at this moment. Keep the current map style.
+        }
+      }
+    } catch {
+      setOfflineState('error');
+    }
+  }
 
   if (!route) {
     return (
@@ -29,6 +166,11 @@ export default function RouteDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  const canDownloadOffline =
+    offlineManifest !== null &&
+    offlineState !== 'ready' &&
+    offlineState !== 'downloading';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -70,15 +212,20 @@ export default function RouteDetailScreen() {
           </View>
         </View>
 
-        <DevelopmentMap
-          start={{
-            latitude: route.startLatitude,
-            longitude: route.startLongitude,
-          }}
-          routeId={route.id}
-          geometryVersion={route.geometryVersion}
-          developmentMode={route.developmentFixture}
-        />
+        {mapStyle ? (
+          <RouteMap
+            payload={mapPayload}
+            mapStyle={mapStyle}
+            developmentMode={route.developmentFixture}
+          />
+        ) : (
+          <View style={styles.mapUnavailable}>
+            <Text style={styles.mapUnavailableTitle}>Mapa no configurado</Text>
+            <Text style={styles.mapUnavailableBody}>
+              La cartografía verificada aún no está disponible para esta ruta.
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
         <Text style={styles.body}>{route.description}</Text>
@@ -101,19 +248,50 @@ export default function RouteDetailScreen() {
         </View>
 
         <View style={styles.infoGrid}>
-          {[
-            ['◫', 'Track oficial', 'GPX versionado'],
-            ['◇', 'Offline', route.offlineAvailable ? 'Disponible' : 'No disponible'],
-            ['◎', 'Checkpoints', 'Validación por proximidad'],
-            ['!', 'Seguridad', 'Revisar antes de salir'],
-          ].map(([icon, heading, copy]) => (
-            <View key={heading} style={styles.infoCard}>
-              <Text style={styles.infoIcon}>{icon}</Text>
-              <Text style={styles.infoTitle}>{heading}</Text>
-              <Text style={styles.infoCopy}>{copy}</Text>
-            </View>
-          ))}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>◫</Text>
+            <Text style={styles.infoTitle}>Track oficial</Text>
+            <Text style={styles.infoCopy}>
+              {mapPayload ? `Geometría v${mapPayload.geometryVersion}` : 'Pendiente de verificar'}
+            </Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>◇</Text>
+            <Text style={styles.infoTitle}>Offline</Text>
+            <Text style={styles.infoCopy}>{offlineStatusCopy[offlineState]}</Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>◎</Text>
+            <Text style={styles.infoTitle}>Checkpoints</Text>
+            <Text style={styles.infoCopy}>
+              {mapPayload ? `${mapPayload.checkpoints.length} verificados` : 'Sin datos verificados'}
+            </Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>!</Text>
+            <Text style={styles.infoTitle}>Seguridad</Text>
+            <Text style={styles.infoCopy}>Revisar antes de salir</Text>
+          </View>
         </View>
+
+        {offlineManifest ? (
+          <View style={styles.offlineActionCard}>
+            <View style={styles.offlineActionCopy}>
+              <Text style={styles.offlineActionEyebrow}>PAQUETE OFFLINE</Text>
+              <Text style={styles.offlineActionTitle}>{offlineStatusCopy[offlineState]}</Text>
+              <Text style={styles.offlineActionBody}>
+                Cartografía PMTiles versionada para esta geometría de ruta.
+              </Text>
+            </View>
+            {canDownloadOffline ? (
+              <Pressable style={styles.offlineButton} onPress={() => void handleOfflineDownload()}>
+                <Text style={styles.offlineButtonText}>
+                  {offlineState === 'stale' ? 'Actualizar' : offlineState === 'error' ? 'Reintentar' : 'Descargar'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
         <Pressable
           style={styles.primaryButton}
@@ -152,6 +330,9 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
+  mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
+  mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },
@@ -166,6 +347,13 @@ const styles = StyleSheet.create({
   infoIcon: { color: colors.olive700, fontSize: 20, fontWeight: '900' },
   infoTitle: { color: colors.ink, fontSize: 14, fontWeight: '900', marginTop: spacing[8] },
   infoCopy: { color: colors.muted, fontSize: 11, marginTop: spacing[4] },
+  offlineActionCard: { marginHorizontal: spacing[20], marginTop: spacing[20], padding: spacing[16], borderRadius: radius.lg, backgroundColor: colors.limestone, flexDirection: 'row', alignItems: 'center', gap: spacing[12] },
+  offlineActionCopy: { flex: 1 },
+  offlineActionEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  offlineActionTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: spacing[4] },
+  offlineActionBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[4] },
+  offlineButton: { borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
+  offlineButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
   primaryButton: { marginHorizontal: spacing[20], marginTop: spacing[24], minHeight: 58, borderRadius: radius.md, paddingHorizontal: spacing[20], backgroundColor: colors.olive900, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   primaryButtonArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },

@@ -1,22 +1,64 @@
+import { evaluateOfflinePackage, type OfflinePackageState } from '@magina-aventura/offline-sync';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
+import { expoRoutePackagePort } from '../../../src/offline/expo-route-package-port';
 import { colors, radius, spacing, typography } from '../../../src/theme/tokens';
 
-const readinessRows = [
-  ['Ubicación', 'Pendiente'],
-  ['GPS en segundo plano', 'Pendiente'],
-  ['Ruta offline', 'No disponible'],
-  ['Seguridad', 'Revisar'],
-] as const;
+type PrepareOfflineState = OfflinePackageState | 'unavailable' | 'error';
+
+const offlineCopy: Record<PrepareOfflineState, string> = {
+  'not-downloaded': 'No descargado',
+  ready: 'Listo sin conexión',
+  stale: 'Actualización disponible',
+  unavailable: 'No disponible',
+  error: 'Error de lectura',
+};
 
 export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const routeSlug = route?.slug ?? '';
+  const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
+
+  useEffect(() => {
+    if (!routeSlug) return;
+
+    let active = true;
+
+    async function loadOfflineState() {
+      try {
+        const manifest = await developmentRouteMapRepository.getOfflineManifest(routeSlug);
+
+        if (!active) return;
+
+        if (!manifest) {
+          setOfflineState('unavailable');
+          return;
+        }
+
+        const installed = await expoRoutePackagePort.readMetadata(manifest.routeId);
+
+        if (active) {
+          setOfflineState(evaluateOfflinePackage(installed, manifest));
+        }
+      } catch {
+        if (active) setOfflineState('error');
+      }
+    }
+
+    void loadOfflineState();
+
+    return () => {
+      active = false;
+    };
+  }, [routeSlug]);
 
   if (!route) {
     return (
@@ -31,6 +73,15 @@ export default function PrepareRouteAdventureScreen() {
       </SafeAreaView>
     );
   }
+
+  const readinessRows = [
+    ['Ubicación', 'Pendiente'],
+    ['GPS en segundo plano', 'Pendiente'],
+    ['Ruta offline', offlineCopy[offlineState]],
+    ['Seguridad', 'Revisar'],
+  ] as const;
+
+  const offlineReady = offlineState === 'ready';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -48,7 +99,7 @@ export default function PrepareRouteAdventureScreen() {
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Comprobaciones previas</Text>
           <Text style={styles.noticeBody}>
-            Este flujo quedará conectado al motor GPS, permisos del sistema y paquete offline en las siguientes fases.
+            Esta pantalla separa el estado del paquete offline de los permisos GPS. Ubicación y seguimiento en segundo plano seguirán pendientes hasta el plan específico del motor de actividad.
           </Text>
         </View>
 
@@ -69,9 +120,15 @@ export default function PrepareRouteAdventureScreen() {
 
         <View style={styles.offlineCard}>
           <Text style={styles.offlineEyebrow}>PAQUETE DE RUTA</Text>
-          <Text style={styles.offlineTitle}>Datos listos para evolucionar a offline real</Text>
+          <Text style={styles.offlineTitle}>
+            {offlineReady ? 'Listo sin conexión' : offlineCopy[offlineState]}
+          </Text>
           <Text style={styles.offlineBody}>
-            La versión final descargará geometría oficial, checkpoints, descubrimientos necesarios, seguridad y cartografía del corredor antes de iniciar la actividad.
+            {offlineReady
+              ? 'La versión instalada coincide con la geometría y el contenido publicados para esta ruta.'
+              : offlineState === 'unavailable'
+                ? 'Esta ruta todavía no tiene un paquete cartográfico verificado asociado.'
+                : 'Vuelve a la ficha de la ruta para descargar o actualizar el paquete antes de salir.'}
           </Text>
         </View>
       </ScrollView>

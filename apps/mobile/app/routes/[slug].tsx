@@ -39,7 +39,7 @@ export default function RouteDetailScreen() {
             <Text style={styles.devBadgeText}>DATOS DE DESARROLLO</Text>
           </View>
           <View style={styles.heroCopy}>
-            <Text style={styles.municipality}>{route.municipality.toUpperCase()}</Text>
+            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
             <Text style={styles.title}>{route.title}</Text>
             <Text style={styles.difficulty}>{difficultyLabel(route.difficulty)}</Text>
           </View>
@@ -64,22 +64,20 @@ export default function RouteDetailScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
-        <Text style={styles.body}>
-          La ficha definitiva mostrará trazado oficial, perfil de elevación, seguridad, puntos de agua verificados, checkpoints y descubrimientos. Esta vista utiliza datos de desarrollo hasta conectar PostGIS y el GPX validado.
-        </Text>
+        <Text style={styles.body}>{route.description}</Text>
 
         <View style={styles.rewardCard}>
           <Text style={styles.rewardEyebrow}>RECOMPENSAS DE ESTA AVENTURA</Text>
-          <Text style={styles.rewardTitle}>Hasta {route.rewardXp} XP · {route.rewardOlives} 🫒</Text>
-          <Text style={styles.rewardBody}>{route.discoveries} descubrimientos disponibles en la ruta.</Text>
+          <Text style={styles.rewardTitle}>Hasta {route.rewardPreview.xp} XP · {route.rewardPreview.olives} 🫒</Text>
+          <Text style={styles.rewardBody}>{route.rewardPreview.discoveries} descubrimientos disponibles en la ruta.</Text>
         </View>
 
         <View style={styles.infoGrid}>
           {[
             ['◫', 'Track oficial', 'GPX versionado'],
-            ['◇', 'Offline', 'Paquete previo'],
+            ['◇', 'Offline', route.offlineAvailable ? 'Disponible' : 'Pendiente'],
             ['◎', 'Checkpoints', 'Validación por proximidad'],
-            ['!', 'Seguridad', 'Información verificada'],
+            ['!', 'Seguridad', route.safetyNotes[0] ?? 'Información por validar'],
           ].map(([icon, heading, copy]) => (
             <View key={heading} style={styles.infoCard}>
               <Text style={styles.infoIcon}>{icon}</Text>

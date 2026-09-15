@@ -3,7 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getDevelopmentRouteBySlug, difficultyLabel, durationLabel } from '../../src/features/routes/route-utils';
+import {
+  difficultyLabel,
+  durationLabel,
+  getDevelopmentRouteBySlug,
+} from '../../src/features/routes/route-utils';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
 
 export default function RouteDetailScreen() {
@@ -15,9 +19,10 @@ export default function RouteDetailScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.notFound}>
-          <Text style={styles.notFoundTitle}>Ruta no encontrada</Text>
-          <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
-            <Text style={styles.secondaryButtonText}>Volver</Text>
+          <Text style={styles.notFoundTitle}>Ruta no disponible</Text>
+          <Text style={styles.notFoundBody}>No encontramos esta versión de la ruta.</Text>
+          <Pressable style={styles.secondaryButton} onPress={() => router.replace('/')}>
+            <Text style={styles.secondaryButtonText}>Volver a rutas</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -35,9 +40,11 @@ export default function RouteDetailScreen() {
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </Pressable>
-          <View style={styles.devBadge}>
-            <Text style={styles.devBadgeText}>DATOS DE DESARROLLO</Text>
-          </View>
+          {route.developmentFixture ? (
+            <View style={styles.devBadge}>
+              <Text style={styles.devBadgeText}>DATOS DE DESARROLLO</Text>
+            </View>
+          ) : null}
           <View style={styles.heroCopy}>
             <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
             <Text style={styles.title}>{route.title}</Text>
@@ -46,11 +53,20 @@ export default function RouteDetailScreen() {
         </View>
 
         <View style={styles.statsCard}>
-          <View style={styles.stat}><Text style={styles.statValue}>{route.distanceKm.toFixed(1)} km</Text><Text style={styles.statLabel}>Distancia</Text></View>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{route.distanceKm.toFixed(1)} km</Text>
+            <Text style={styles.statLabel}>Distancia</Text>
+          </View>
           <View style={styles.divider} />
-          <View style={styles.stat}><Text style={styles.statValue}>+{route.elevationGainM} m</Text><Text style={styles.statLabel}>Desnivel</Text></View>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>+{route.elevationGainM} m</Text>
+            <Text style={styles.statLabel}>Desnivel</Text>
+          </View>
           <View style={styles.divider} />
-          <View style={styles.stat}><Text style={styles.statValue}>{durationLabel(route.durationMinutes)}</Text><Text style={styles.statLabel}>Duración</Text></View>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{durationLabel(route.durationMinutes)}</Text>
+            <Text style={styles.statLabel}>Duración</Text>
+          </View>
         </View>
 
         <View style={styles.mapCard}>
@@ -60,7 +76,9 @@ export default function RouteDetailScreen() {
           <View style={styles.routeLineTwo} />
           <View style={styles.startPoint}><Text style={styles.pointText}>S</Text></View>
           <View style={styles.finishPoint}><Text style={styles.pointText}>F</Text></View>
-          <View style={styles.mapLabel}><Text style={styles.mapLabelText}>MAPA · MAPLIBRE EN SIGUIENTE FASE</Text></View>
+          <View style={styles.mapLabel}>
+            <Text style={styles.mapLabelText}>MAPA · MAPLIBRE EN SIGUIENTE FASE</Text>
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
@@ -68,16 +86,27 @@ export default function RouteDetailScreen() {
 
         <View style={styles.rewardCard}>
           <Text style={styles.rewardEyebrow}>RECOMPENSAS DE ESTA AVENTURA</Text>
-          <Text style={styles.rewardTitle}>Hasta {route.rewardPreview.xp} XP · {route.rewardPreview.olives} 🫒</Text>
-          <Text style={styles.rewardBody}>{route.rewardPreview.discoveries} descubrimientos disponibles en la ruta.</Text>
+          <Text style={styles.rewardTitle}>
+            Hasta {route.rewardPreview.xp} XP · {route.rewardPreview.olives} 🫒
+          </Text>
+          <Text style={styles.rewardBody}>
+            {route.rewardPreview.discoveries} descubrimientos disponibles en la ruta.
+          </Text>
+        </View>
+
+        <View style={styles.safetyCard}>
+          <Text style={styles.safetyTitle}>Seguridad</Text>
+          {route.safetyNotes.map((note) => (
+            <Text key={note} style={styles.safetyNote}>• {note}</Text>
+          ))}
         </View>
 
         <View style={styles.infoGrid}>
           {[
             ['◫', 'Track oficial', 'GPX versionado'],
-            ['◇', 'Offline', route.offlineAvailable ? 'Disponible' : 'Pendiente'],
+            ['◇', 'Offline', route.offlineAvailable ? 'Disponible' : 'No disponible'],
             ['◎', 'Checkpoints', 'Validación por proximidad'],
-            ['!', 'Seguridad', route.safetyNotes[0] ?? 'Información por validar'],
+            ['!', 'Seguridad', 'Revisar antes de salir'],
           ].map(([icon, heading, copy]) => (
             <View key={heading} style={styles.infoCard}>
               <Text style={styles.infoIcon}>{icon}</Text>
@@ -89,7 +118,12 @@ export default function RouteDetailScreen() {
 
         <Pressable
           style={styles.primaryButton}
-          onPress={() => router.push({ pathname: '/prepare/[slug]', params: { slug: route.slug } })}
+          onPress={() =>
+            router.push({
+              pathname: '/routes/[slug]/prepare',
+              params: { slug: route.slug },
+            })
+          }
         >
           <Text style={styles.primaryButtonText}>Preparar aventura</Text>
           <Text style={styles.primaryButtonArrow}>→</Text>
@@ -135,6 +169,9 @@ const styles = StyleSheet.create({
   rewardEyebrow: { color: colors.aoveGold, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   rewardTitle: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: spacing[8] },
   rewardBody: { color: colors.limestone, fontSize: 13, marginTop: spacing[8] },
+  safetyCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  safetyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
+  safetyNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing[16], gap: spacing[8] },
   infoCard: { width: '48%', borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   infoIcon: { color: colors.olive700, fontSize: 20, fontWeight: '900' },
@@ -145,6 +182,7 @@ const styles = StyleSheet.create({
   primaryButtonArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },
   notFound: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },
   notFoundTitle: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },
+  notFoundBody: { color: colors.muted, fontSize: 14, textAlign: 'center', marginTop: spacing[8] },
   secondaryButton: { marginTop: spacing[20], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900, paddingHorizontal: spacing[20], paddingVertical: spacing[12] },
   secondaryButtonText: { color: colors.olive900, fontWeight: '800' },
 });

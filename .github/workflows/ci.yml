@@ -26,11 +26,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Capture generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock-task4
+          path: pnpm-lock.yaml
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Unit tests
         run: pnpm test
+
+      - name: Verify Android Expo prebuild
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --no-install --clean
 
       - name: Verify pure package boundaries
         run: |

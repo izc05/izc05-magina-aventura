@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
   Pressable,
@@ -10,33 +11,27 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRoutes } from '../src/features/routes/fixtures';
-import type { RouteDifficulty } from '../src/features/routes/route-types';
+import { difficultyLabel, durationLabel } from '../src/features/routes/route-utils';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
-
-function difficultyLabel(difficulty: RouteDifficulty) {
-  if (difficulty === 'easy') return 'Fácil';
-  if (difficulty === 'hard') return 'Difícil';
-  return 'Moderada';
-}
-
-function durationLabel(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
-}
+const navItems = [
+  ['⌂', 'Rutas'],
+  ['◇', 'Retos'],
+  ['▦', 'Colecciones'],
+  ['△', 'Ranking'],
+  ['○', 'Perfil'],
+] as const;
 
 export default function RoutesHomeScreen() {
   const route = developmentRoutes[0];
 
-  if (!route) {
-    return null;
-  }
+  if (!route) return null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="dark" />
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -79,19 +74,14 @@ export default function RoutesHomeScreen() {
           contentContainerStyle={styles.filters}
         >
           {filters.map((filter, index) => (
-            <Pressable
+            <View
               key={filter}
               style={[styles.filterChip, index === 0 && styles.filterChipActive]}
             >
-              <Text
-                style={[
-                  styles.filterText,
-                  index === 0 && styles.filterTextActive,
-                ]}
-              >
+              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>
                 {filter}
               </Text>
-            </Pressable>
+            </View>
           ))}
         </ScrollView>
 
@@ -103,45 +93,46 @@ export default function RoutesHomeScreen() {
           <Text style={styles.sectionAction}>Ver todas</Text>
         </View>
 
-        <Pressable style={styles.routeCard}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir ${route.title}`}
+          style={styles.routeCard}
+          onPress={() =>
+            router.push({
+              pathname: '/routes/[slug]',
+              params: { slug: route.slug },
+            })
+          }
+        >
           <View style={styles.routeVisual}>
-            <View style={styles.routeVisualGlow} />
-            <View style={styles.routeMountainOne} />
-            <View style={styles.routeMountainTwo} />
-            <View style={styles.routeTag}>
-              <Text style={styles.routeTagText}>{difficultyLabel(route.difficulty)}</Text>
+            <View style={styles.routeGlow} />
+            <View style={styles.routeMountainBack} />
+            <View style={styles.routeMountainFront} />
+            <View style={styles.difficultyBadge}>
+              <Text style={styles.difficultyText}>{difficultyLabel(route.difficulty)}</Text>
             </View>
-            <View style={styles.devTag}>
-              <Text style={styles.devTagText}>DATOS DE DESARROLLO</Text>
-            </View>
+            {route.developmentFixture ? (
+              <View style={styles.developmentBadge}>
+                <Text style={styles.developmentText}>DATOS DE DESARROLLO</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.routeContent}>
-            <Text style={styles.routeMunicipality}>{route.municipality.toUpperCase()}</Text>
+            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
             <Text style={styles.routeTitle}>{route.title}</Text>
 
             <View style={styles.metricsRow}>
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>{route.distanceKm.toFixed(1)} km</Text>
-                <Text style={styles.metricLabel}>Distancia</Text>
-              </View>
-              <View style={styles.metricDivider} />
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>+{route.elevationGainM} m</Text>
-                <Text style={styles.metricLabel}>Desnivel</Text>
-              </View>
-              <View style={styles.metricDivider} />
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>{durationLabel(route.durationMinutes)}</Text>
-                <Text style={styles.metricLabel}>Duración</Text>
-              </View>
+              <Metric value={`${route.distanceKm.toFixed(1)} km`} label="Distancia" />
+              <Metric value={`+${route.elevationGainM} m`} label="Desnivel" />
+              <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
             </View>
 
             <View style={styles.rewardRow}>
               <View style={styles.rewardCopy}>
                 <Text style={styles.rewardLabel}>RECOMPENSAS DE AVENTURA</Text>
                 <Text style={styles.rewardValue}>
-                  {route.discoveries} descubrimientos · +{route.rewardXp} XP · +{route.rewardOlives} 🫒
+                  {route.rewardPreview.discoveries} descubrimientos · +{route.rewardPreview.xp} XP · +{route.rewardPreview.olives} 🫒
                 </Text>
               </View>
               <View style={styles.arrowButton}>
@@ -166,13 +157,7 @@ export default function RoutesHomeScreen() {
       </ScrollView>
 
       <View style={styles.bottomNav}>
-        {[
-          ['⌂', 'Rutas'],
-          ['◇', 'Retos'],
-          ['▦', 'Colecciones'],
-          ['△', 'Ranking'],
-          ['○', 'Perfil'],
-        ].map(([icon, label], index) => (
+        {navItems.map(([icon, label], index) => (
           <View key={label} style={styles.navItem}>
             <Text style={[styles.navIcon, index === 0 && styles.navActive]}>{icon}</Text>
             <Text style={[styles.navLabel, index === 0 && styles.navActive]}>{label}</Text>
@@ -183,15 +168,18 @@ export default function RoutesHomeScreen() {
   );
 }
 
+function Metric({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.warmBackground,
-  },
-  content: {
-    paddingHorizontal: spacing[20],
-    paddingBottom: 116,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.warmBackground },
+  content: { paddingHorizontal: spacing[20], paddingBottom: 116 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,18 +187,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing[12],
     paddingBottom: spacing[20],
   },
-  eyebrow: {
-    color: colors.olive700,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.6,
-  },
-  brand: {
-    color: colors.ink,
-    fontSize: typography.title,
-    fontWeight: '800',
-    marginTop: 2,
-  },
+  eyebrow: { color: colors.olive700, fontSize: 11, fontWeight: '800', letterSpacing: 1.6 },
+  brand: { color: colors.ink, fontSize: typography.title, fontWeight: '800', marginTop: 2 },
   profileBadge: {
     width: 44,
     height: 44,
@@ -219,11 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileInitial: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '800',
-  },
+  profileInitial: { color: colors.white, fontSize: 18, fontWeight: '800' },
   hero: {
     height: 280,
     overflow: 'hidden',
@@ -263,29 +237,10 @@ const styles = StyleSheet.create({
     bottom: -65,
     borderRadius: 44,
   },
-  heroCopy: {
-    maxWidth: 300,
-  },
-  heroKicker: {
-    color: colors.aoveGold,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.7,
-    marginBottom: spacing[8],
-  },
-  heroTitle: {
-    color: colors.white,
-    fontSize: typography.display,
-    fontWeight: '900',
-    lineHeight: 35,
-  },
-  heroBody: {
-    color: colors.limestone,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: spacing[12],
-    maxWidth: 270,
-  },
+  heroCopy: { maxWidth: 300 },
+  heroKicker: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.7, marginBottom: spacing[8] },
+  heroTitle: { color: colors.white, fontSize: typography.display, fontWeight: '900', lineHeight: 35 },
+  heroBody: { color: colors.limestone, fontSize: 14, lineHeight: 20, marginTop: spacing[12], maxWidth: 270 },
   searchBox: {
     height: 54,
     borderRadius: radius.md,
@@ -297,20 +252,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  searchIcon: {
-    color: colors.olive900,
-    fontSize: 24,
-    marginRight: spacing[8],
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.ink,
-    fontSize: 15,
-  },
-  filters: {
-    gap: spacing[8],
-    paddingVertical: spacing[16],
-  },
+  searchIcon: { color: colors.olive900, fontSize: 24, marginRight: spacing[8] },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 15 },
+  filters: { gap: spacing[8], paddingVertical: spacing[16] },
   filterChip: {
     borderRadius: radius.pill,
     paddingHorizontal: spacing[16],
@@ -319,18 +263,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  filterChipActive: {
-    backgroundColor: colors.olive900,
-    borderColor: colors.olive900,
-  },
-  filterText: {
-    color: colors.ink,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  filterTextActive: {
-    color: colors.white,
-  },
+  filterChipActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
+  filterText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  filterTextActive: { color: colors.white },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -338,33 +273,12 @@ const styles = StyleSheet.create({
     marginTop: spacing[8],
     marginBottom: spacing[12],
   },
-  sectionTitle: {
-    color: colors.ink,
-    fontSize: typography.section,
-    fontWeight: '900',
-  },
-  sectionSubtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 3,
-  },
-  sectionAction: {
-    color: colors.olive700,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  routeCard: {
-    overflow: 'hidden',
-    borderRadius: radius.lg,
-    backgroundColor: colors.white,
-    ...shadow.card,
-  },
-  routeVisual: {
-    height: 188,
-    backgroundColor: colors.sky,
-    overflow: 'hidden',
-  },
-  routeVisualGlow: {
+  sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
+  sectionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
+  sectionAction: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
+  routeCard: { overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.white, ...shadow.card },
+  routeVisual: { height: 188, backgroundColor: colors.sky, overflow: 'hidden' },
+  routeGlow: {
     position: 'absolute',
     width: 100,
     height: 100,
@@ -374,7 +288,7 @@ const styles = StyleSheet.create({
     right: 28,
     top: 26,
   },
-  routeMountainOne: {
+  routeMountainBack: {
     position: 'absolute',
     width: 300,
     height: 150,
@@ -384,7 +298,7 @@ const styles = StyleSheet.create({
     bottom: -90,
     borderRadius: 40,
   },
-  routeMountainTwo: {
+  routeMountainFront: {
     position: 'absolute',
     width: 270,
     height: 140,
@@ -394,7 +308,7 @@ const styles = StyleSheet.create({
     bottom: -85,
     borderRadius: 40,
   },
-  routeTag: {
+  difficultyBadge: {
     position: 'absolute',
     top: spacing[16],
     left: spacing[16],
@@ -403,12 +317,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[12],
     paddingVertical: spacing[8],
   },
-  routeTagText: {
-    color: colors.olive900,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  devTag: {
+  difficultyText: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
+  developmentBadge: {
     position: 'absolute',
     right: spacing[12],
     bottom: spacing[12],
@@ -417,51 +327,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     paddingVertical: spacing[4],
   },
-  devTagText: {
-    color: colors.white,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-  },
-  routeContent: {
-    padding: spacing[20],
-  },
-  routeMunicipality: {
-    color: colors.olive700,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-  },
-  routeTitle: {
-    color: colors.ink,
-    fontSize: 23,
-    fontWeight: '900',
-    marginTop: spacing[4],
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[20],
-  },
-  metric: {
-    flex: 1,
-  },
-  metricDivider: {
-    width: 1,
-    height: 34,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing[8],
-  },
-  metricValue: {
-    color: colors.ink,
-    fontSize: typography.metric,
-    fontWeight: '900',
-  },
-  metricLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    marginTop: 3,
-  },
+  developmentText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  routeContent: { padding: spacing[20] },
+  municipality: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
+  routeTitle: { color: colors.ink, fontSize: 23, fontWeight: '900', marginTop: spacing[4] },
+  metricsRow: { flexDirection: 'row', gap: spacing[12], marginTop: spacing[20] },
+  metric: { flex: 1 },
+  metricValue: { color: colors.ink, fontSize: typography.metric, fontWeight: '900' },
+  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   rewardRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,22 +343,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  rewardCopy: {
-    flex: 1,
-    paddingRight: spacing[12],
-  },
-  rewardLabel: {
-    color: colors.aoveGold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  rewardValue: {
-    color: colors.ink,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: spacing[4],
-  },
+  rewardCopy: { flex: 1, paddingRight: spacing[12] },
+  rewardLabel: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  rewardValue: { color: colors.ink, fontSize: 13, fontWeight: '700', marginTop: spacing[4] },
   arrowButton: {
     width: 42,
     height: 42,
@@ -494,11 +354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  arrow: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: '800',
-  },
+  arrow: { color: colors.white, fontSize: 20, fontWeight: '800' },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,
@@ -515,32 +371,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.aoveGold,
     marginRight: spacing[16],
   },
-  challengeIconText: {
-    color: colors.olive900,
-    fontSize: 24,
-    fontWeight: '900',
-  },
-  challengeCopy: {
-    flex: 1,
-  },
-  challengeEyebrow: {
-    color: colors.earth,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  challengeTitle: {
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  challengeBody: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: spacing[4],
-  },
+  challengeIconText: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
+  challengeCopy: { flex: 1 },
+  challengeEyebrow: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: 2 },
+  challengeBody: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: spacing[4] },
   bottomNav: {
     position: 'absolute',
     left: 0,
@@ -557,22 +392,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 3,
-  },
-  navIcon: {
-    color: colors.muted,
-    fontSize: 19,
-    fontWeight: '800',
-  },
-  navLabel: {
-    color: colors.muted,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  navActive: {
-    color: colors.olive900,
-  },
+  navItem: { flex: 1, alignItems: 'center', gap: 3 },
+  navIcon: { color: colors.muted, fontSize: 19, fontWeight: '800' },
+  navLabel: { color: colors.muted, fontSize: 10, fontWeight: '700' },
+  navActive: { color: colors.olive900 },
 });

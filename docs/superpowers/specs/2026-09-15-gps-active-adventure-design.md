@@ -138,9 +138,11 @@ Una actividad queda fijada a una `geometryVersion` concreta. Si la ruta cambia d
 Se usa un modelo híbrido:
 
 1. puntos GPS almacenados incrementalmente;
-2. snapshot compacto en cambios de estado y cada intervalo razonable;
+2. snapshot compacto en cada cambio de estado y, durante `ACTIVE`, cada 15 segundos o cada 10 muestras aceptadas, lo que ocurra antes;
 3. al reabrir la app se carga el último snapshot;
 4. solo se reprocesan los puntos posteriores a `lastProcessedSequence`.
+
+Los valores de 15 segundos / 10 muestras son defaults V1 configurables, no constantes dispersas por la UI.
 
 La persistencia debe ser atómica a nivel de lote para evitar snapshots que apunten a puntos no guardados.
 
@@ -162,7 +164,7 @@ Se rechazan o marcan como no válidas para métricas cuando exista, por ejemplo:
 
 No se elimina silenciosamente la muestra: se conserva el motivo de rechazo para diagnóstico y futura validación servidor.
 
-Los umbrales concretos serán configurables y cubiertos por tests; no se incrustan como números dispersos por la UI.
+Los umbrales concretos viven en una configuración única del motor, están cubiertos por tests y no se incrustan como números dispersos por la UI.
 
 ## 7. Métricas de actividad
 
@@ -199,28 +201,29 @@ La posición válida se proyecta sobre la `LineString` oficial de la versión fi
 - distancia acumulada de la línea hasta esa proyección;
 - porcentaje de progreso sobre la geometría oficial.
 
-El progreso mostrado al usuario debe evitar retrocesos grandes causados por ruido GPS. Puede conservarse un `maxProgress` visual mientras se mantiene internamente la proyección actual para validación.
+El progreso mostrado al usuario evita retrocesos grandes causados por ruido GPS mediante un `maxProgress` visual, mientras se conserva internamente la proyección actual para validación.
 
 ## 9. Detección off-route
 
 La salida de ruta se basa en distancia perpendicular al trazado oficial y no en una sola lectura.
 
-Regla V1:
+Defaults V1:
 
-- corredor base aproximado de 30–40 m;
-- umbral adaptativo según `accuracyMeters`;
-- varias muestras consecutivas fuera del corredor antes de activar el aviso;
-- varias muestras válidas dentro del corredor para resolverlo;
+- corredor base: `35 m`;
+- umbral efectivo: `max(35 m, accuracyMeters * 1.5)`;
+- transición a `off_route`: 3 muestras válidas consecutivas fuera del umbral;
+- transición a `recovering`: primera muestra válida que vuelve dentro del umbral;
+- transición a `on_route`: 3 muestras válidas consecutivas dentro del umbral;
 - una muestra aislada nunca genera un aviso crítico.
 
-El motor expone estados como:
+Estos valores viven en una configuración testeable y podrán ajustarse tras la prueba física sin cambiar el contrato del motor.
+
+El motor expone estados:
 
 - `on_route`;
 - `uncertain`;
 - `off_route`;
 - `recovering`.
-
-Los valores exactos de distancia y conteo de muestras se configuran en un objeto de reglas testeable.
 
 ## 10. Permisos y ciclo móvil
 
@@ -235,6 +238,8 @@ Antes de crear la sesión se comprueba:
 5. batería/estado del dispositivo como advertencia no bloqueante cuando proceda.
 
 No se solicitan permisos de ubicación durante el onboarding general de la app.
+
+El permiso foreground es obligatorio para iniciar. Si background se deniega, la app puede iniciar únicamente en **modo degradado** tras una confirmación explícita del usuario, mostrando que el registro puede interrumpirse al bloquear la pantalla. La UI nunca debe presentar ese estado como “preparado completamente”.
 
 ### Android
 
@@ -359,6 +364,6 @@ Este bloque se considera terminado cuando:
 - Persistencia: track incremental + snapshots.
 - Offline: actividad completa sin red y sync posterior por lotes.
 - Ruta: actividad fijada a `geometryVersion`.
-- Off-route: corredor adaptativo ~30–40 m + varias muestras consecutivas.
-- Background: requerido para experiencia completa; degradación explícita si falta permiso.
+- Off-route: corredor base 35 m, adaptativo por accuracy, 3 muestras para activar/recuperar.
+- Background: requerido para experiencia completa; modo degradado explícito si falta permiso.
 - Testing: sintético + replay + Android físico.

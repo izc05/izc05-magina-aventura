@@ -61,7 +61,7 @@ export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
-  const routeSlug = route?.slug;
+  const routeSlug = route?.slug ?? '';
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
   const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);

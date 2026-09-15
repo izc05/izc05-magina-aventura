@@ -13,6 +13,9 @@ importers:
       '@magina-aventura/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@magina-aventura/offline-sync':
+        specifier: workspace:*
+        version: link:../../packages/offline-sync
       '@maplibre/maplibre-react-native':
         specifier: ^11.3.10
         version: 11.3.10(@types/geojson@7946.0.16)(@types/react@19.2.18)(expo@57.0.23)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)

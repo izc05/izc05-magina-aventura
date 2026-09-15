@@ -12,12 +12,12 @@ const manifest: OfflineRoutePackageManifest = {
     id: 'asset-1',
     objectKey: 'routes/route-1/geometry/2/basemap.pmtiles',
     remoteUrl: 'https://cdn.example.test/map.pmtiles',
+    styleTemplateUrl: 'https://cdn.example.test/style.json',
     byteSize: 1000,
     md5: 'abc',
     minZoom: 10,
     maxZoom: 16,
     bounds: [-3.5, 37.6, -3.4, 37.8],
-    styleJson: '{"version":8,"sources":{},"layers":[]}',
   },
 };
 

@@ -1,0 +1,18 @@
+{
+  "name": "magina-aventura",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev:mobile": "pnpm --filter @magina-aventura/mobile start",
+    "android": "pnpm --filter @magina-aventura/mobile android",
+    "ios": "pnpm --filter @magina-aventura/mobile ios",
+    "web": "pnpm --filter @magina-aventura/mobile web",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint"
+  }
+}

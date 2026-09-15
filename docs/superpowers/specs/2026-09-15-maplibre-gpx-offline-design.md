@@ -19,7 +19,7 @@ The selected architecture is:
 
 and for map assets:
 
-`Cloudflare R2-compatible HTTPS origin -> PMTiles archive -> remote pmtiles:// source or explicitly downloaded local PMTiles file -> MapLibre Native`
+`Cloudflare R2-compatible HTTPS origin -> PMTiles archive + versioned style template -> remote pmtiles:// source or explicitly downloaded local PMTiles file -> MapLibre Native`
 
 The app uses MapLibre React Native in an Expo custom development build. Expo Go is not a supported runtime for this subsystem because MapLibre includes native code.
 
@@ -28,6 +28,17 @@ The app uses MapLibre React Native in an Expo custom development build. Expo Go 
 PMTiles is treated as an explicit route/map asset. The app downloads the archive itself to application storage and then points MapLibre at a local `pmtiles://file://...` URI. The MapLibre native PMTiles path and MapLibre offline-pack path remain separate on purpose.
 
 This prevents the offline system from assuming that a PMTiles source can be cached by `OfflineManager`, keeps the artifact immutable/versioned, and makes the package compatible with object storage/CDN delivery.
+
+### Why the map style travels with the versioned map asset
+
+A PMTiles archive is data, not a complete visual style. The app must not assume source-layer names or rebuild a provider-specific style in the route screen. Each map asset therefore stores a versioned MapLibre Style Specification template alongside the archive metadata.
+
+The style template contains the token `__ROUTE_PMTILES__` where the PMTiles source URI belongs. At runtime the mobile adapter materializes the same style with either:
+
+- `pmtiles://https://...` while using the remote immutable archive; or
+- `pmtiles://file://...` after the matching archive has been downloaded and verified locally.
+
+This keeps online and offline rendering visually consistent and allows a future publishing/admin pipeline to generate a different style without changing mobile UI code.
 
 ## Runtime Boundaries
 
@@ -50,13 +61,14 @@ Required contract concepts:
 - `RouteLineFeature` as a GeoJSON `Feature<LineString>`;
 - `RouteMapPayload` containing route ID, geometry version, line feature, start point, checkpoints and public discoveries;
 - `OfflineRoutePackageManifest` containing route/content/geometry versions, map archive metadata and bounds;
-- `OfflineMapAsset` containing a stable asset ID, HTTPS URL, byte size, MD5 checksum, minimum/maximum zoom and immutable object key.
+- `OfflineMapAsset` containing a stable asset ID, HTTPS URL, byte size, MD5 checksum, minimum/maximum zoom, immutable object key, bounds and serialized versioned MapLibre style template.
 
 The manifest is versioned independently from UI state.
 
 ### MapLibre adapter owns
 
 - rendering the base map;
+- materializing the versioned style template by replacing `__ROUTE_PMTILES__` with the current remote or local source URI;
 - rendering route line and start/finish/checkpoint markers;
 - fitting camera to route bounds;
 - switching a PMTiles map source between remote HTTPS and local `file://` storage;
@@ -69,7 +81,7 @@ The route detail screen must not construct MapLibre layers directly. It consumes
 - package state (`not-downloaded`, `downloading`, `ready`, `stale`, `error`);
 - destination path generation;
 - downloading the PMTiles archive through `expo-file-system`;
-- storing manifest metadata locally;
+- storing installed-package metadata locally;
 - verifying downloaded byte size and MD5 when supplied;
 - detecting version mismatch;
 - deleting/replacing stale package files;
@@ -87,7 +99,6 @@ The importer accepts GPX XML and produces:
 - optional elevation samples when present;
 - calculated start coordinate;
 - bounding box `[west, south, east, north]`;
-- distance estimate for review;
 - normalized GeoJSON `LineString` feature.
 
 Invalid inputs are rejected when:
@@ -119,6 +130,7 @@ Fields:
 - `min_zoom numeric`;
 - `max_zoom numeric`;
 - `bounds extensions.geometry(Polygon, 4326)`;
+- `style_json jsonb not null` containing MapLibre Style Specification v8 with `__ROUTE_PMTILES__` as the PMTiles source token;
 - `created_at timestamptz`;
 - unique `(route_id, geometry_version, asset_kind)`.
 
@@ -134,7 +146,7 @@ Object keys are immutable and versioned:
 
 `routes/{routeId}/geometry/{geometryVersion}/basemap.pmtiles`
 
-The database stores the resulting public HTTPS URL and metadata. Replacing geometry creates a new object key; it does not overwrite a previous version in place.
+The database stores the resulting public HTTPS URL, immutable archive metadata and the style template required to render that archive. Replacing geometry creates a new object key and corresponding asset record; it does not overwrite a previous version in place.
 
 Required HTTP behavior for the production origin:
 
@@ -148,7 +160,7 @@ No Cloudflare credentials are committed to the repository.
 
 ## Mobile Map Rendering
 
-The real map component receives `RouteMapPayload` plus an optional offline package state.
+The real map component receives `RouteMapPayload` plus a materialized MapLibre style derived from the matching map asset when one exists.
 
 Rendering order:
 
@@ -161,9 +173,11 @@ Rendering order:
 
 The map must be usable without the route-specific PMTiles archive. In development, an explicit development map style may be used. Production style URL is configuration, never hard-coded credentials.
 
+When a route-specific PMTiles asset exists, the same `style_json` template must be used for remote and local rendering. The only runtime substitution is `__ROUTE_PMTILES__` -> the selected PMTiles URI. This prevents the route screen from depending on internal vector source-layer names.
+
 ## Offline Package State
 
-Canonical state:
+Canonical user-visible state flow:
 
 `NOT_DOWNLOADED -> DOWNLOADING -> READY`
 
@@ -174,7 +188,9 @@ Additional transitions:
 - retry from `ERROR` -> `DOWNLOADING`;
 - replacement from `STALE` -> `DOWNLOADING` -> `READY`.
 
-A package is `READY` only when the local file exists and metadata matches route ID, geometry version, manifest version, expected byte size, and checksum when a checksum is supplied.
+The pure persisted evaluator only needs `not-downloaded`, `ready` and `stale`; `downloading` and `error` are transient screen/orchestration states.
+
+A package is `READY` only when the installed metadata matches route ID, content version, geometry version, expected byte size, and checksum when a checksum is supplied. Installed metadata is persisted outside cache storage so app restart does not silently forget a valid package.
 
 ## Scope of V1
 
@@ -182,15 +198,16 @@ This subsystem includes:
 
 - MapLibre native installation/configuration;
 - real map adapter in route detail;
+- versioned style-template materialization for remote/local PMTiles sources;
 - pure GeoJSON/bounds helpers;
 - deterministic GPX parser/import helper;
 - PostGIS map payload function;
-- route map asset metadata/RLS;
-- offline package contracts/state machine;
-- explicit PMTiles download to app storage;
+- route map asset metadata/style/RLS;
+- offline package contracts/state logic;
+- explicit PMTiles download to durable app storage;
 - local-vs-remote PMTiles URI selection;
 - route detail download/preparation status;
-- CI verification of TypeScript, unit tests and Supabase migrations.
+- CI verification of TypeScript, unit tests, Expo native config, Supabase migrations and pgTAP database tests.
 
 This subsystem does not include:
 
@@ -214,11 +231,12 @@ The subsystem is acceptable when all of the following are true:
 2. Route detail renders through the real MapLibre adapter rather than `DevelopmentMap`.
 3. A route line can be supplied as versioned GeoJSON and camera bounds are computed deterministically.
 4. GPX parsing has red/green tests for valid tracks and invalid coordinates/empty tracks.
-5. Supabase `db reset` creates route map assets, RLS and the published-route map payload function without SQL errors.
-6. Public RLS does not expose map assets for draft routes.
-7. Offline state/version logic has unit tests.
-8. PMTiles downloads use explicit application storage, not MapLibre `OfflineManager`.
+5. Supabase `db reset` creates route map assets, style metadata, RLS and the published-route map payload function without SQL errors.
+6. Public RLS does not expose map assets or map payloads for draft routes.
+7. Offline state/version/integrity logic has unit tests.
+8. PMTiles downloads use explicit durable application storage, not MapLibre `OfflineManager`.
 9. A ready offline package yields a local `pmtiles://file://...` source URI; otherwise the map can use the configured remote source.
-10. No verified Bedmar/Cuadros geometry is invented.
-11. `pnpm typecheck`, `pnpm test`, pure-package boundary checks and Supabase reset are green in CI.
-12. `main` is not modified during implementation.
+10. Style-template materialization is tested and uses the same versioned style for remote and local PMTiles rendering.
+11. No verified Bedmar/Cuadros geometry is invented.
+12. `pnpm typecheck`, `pnpm test`, pure-package boundary checks, Expo native prebuild, Supabase reset and pgTAP database tests are green in CI.
+13. `main` is not modified during implementation.

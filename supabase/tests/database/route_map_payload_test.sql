@@ -267,13 +267,13 @@ select is(
 );
 
 select is(
-  (public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'minZoom')::integer,
+  ((public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'minZoom')::numeric)::integer,
   10,
   'payload exposes minimum zoom'
 );
 
 select is(
-  (public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'maxZoom')::integer,
+  ((public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'maxZoom')::numeric)::integer,
   16,
   'payload exposes maximum zoom'
 );

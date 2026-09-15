@@ -10,11 +10,11 @@ export function validateRouteLineFeature(
   }
 
   for (const [longitude, latitude] of coordinates) {
-    if (longitude < -180 || longitude > 180) {
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
       throw new Error('Invalid longitude');
     }
 
-    if (latitude < -90 || latitude > 90) {
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
       throw new Error('Invalid latitude');
     }
   }

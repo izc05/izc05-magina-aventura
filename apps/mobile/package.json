@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@magina-aventura/contracts": "workspace:*",
+    "@magina-aventura/offline-sync": "workspace:*",
     "@maplibre/maplibre-react-native": "^11.3.10",
     "expo": "~57.0.10",
     "expo-constants": "~57.0.9",

@@ -8,6 +8,7 @@ import {
   durationLabel,
   getDevelopmentRouteBySlug,
 } from '../../src/features/routes/route-utils';
+import { DevelopmentMap } from '../../src/map/DevelopmentMap';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
 
 export default function RouteDetailScreen() {
@@ -69,17 +70,15 @@ export default function RouteDetailScreen() {
           </View>
         </View>
 
-        <View style={styles.mapCard}>
-          <View style={styles.mapGridHorizontal} />
-          <View style={styles.mapGridVertical} />
-          <View style={styles.routeLineOne} />
-          <View style={styles.routeLineTwo} />
-          <View style={styles.startPoint}><Text style={styles.pointText}>S</Text></View>
-          <View style={styles.finishPoint}><Text style={styles.pointText}>F</Text></View>
-          <View style={styles.mapLabel}>
-            <Text style={styles.mapLabelText}>MAPA · MAPLIBRE EN SIGUIENTE FASE</Text>
-          </View>
-        </View>
+        <DevelopmentMap
+          start={{
+            latitude: route.startLatitude,
+            longitude: route.startLongitude,
+          }}
+          routeId={route.id}
+          geometryVersion={route.geometryVersion}
+          developmentMode={route.developmentFixture}
+        />
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
         <Text style={styles.body}>{route.description}</Text>
@@ -153,16 +152,6 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
-  mapCard: { height: 230, margin: spacing[20], borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.limestone },
-  mapGridHorizontal: { position: 'absolute', left: 0, right: 0, top: 110, height: 1, backgroundColor: colors.border },
-  mapGridVertical: { position: 'absolute', top: 0, bottom: 0, left: '52%', width: 1, backgroundColor: colors.border },
-  routeLineOne: { position: 'absolute', width: 180, height: 7, borderRadius: radius.pill, backgroundColor: colors.olive700, left: 45, top: 125, transform: [{ rotate: '-18deg' }] },
-  routeLineTwo: { position: 'absolute', width: 135, height: 7, borderRadius: radius.pill, backgroundColor: colors.olive700, left: 175, top: 92, transform: [{ rotate: '20deg' }] },
-  startPoint: { position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: colors.olive900, left: 35, top: 142, alignItems: 'center', justifyContent: 'center' },
-  finishPoint: { position: 'absolute', width: 32, height: 32, borderRadius: 16, backgroundColor: colors.aoveGold, right: 40, top: 106, alignItems: 'center', justifyContent: 'center' },
-  pointText: { color: colors.white, fontWeight: '900' },
-  mapLabel: { position: 'absolute', left: spacing[12], bottom: spacing[12], borderRadius: radius.pill, backgroundColor: colors.white, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
-  mapLabelText: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

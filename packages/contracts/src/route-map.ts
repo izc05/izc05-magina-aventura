@@ -36,19 +36,6 @@ export interface RouteMapDiscoveryHint {
     | 'olive'
     | 'tradition'
     | 'landscape';
-  position: GeoJsonPosition;
-  triggerRadiusM: number;
-}
-
-export interface RouteMapPayload {
-  routeId: string;
-  slug: string;
-  geometryVersion: number;
-  line: RouteLineFeature;
-  start: GeoJsonPosition;
-  bounds: RouteBounds;
-  checkpoints: RouteMapCheckpoint[];
-  discoveryHints: RouteMapDiscoveryHint[];
 }
 
 export interface OfflineMapAsset {
@@ -61,6 +48,18 @@ export interface OfflineMapAsset {
   minZoom: number;
   maxZoom: number;
   bounds: RouteBounds;
+}
+
+export interface RouteMapPayload {
+  routeId: string;
+  slug: string;
+  geometryVersion: number;
+  line: RouteLineFeature;
+  start: GeoJsonPosition;
+  bounds: RouteBounds;
+  checkpoints: RouteMapCheckpoint[];
+  discoveryHints: RouteMapDiscoveryHint[];
+  mapAsset: OfflineMapAsset | null;
 }
 
 export interface OfflineRoutePackageManifest {

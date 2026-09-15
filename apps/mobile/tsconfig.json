@@ -3,8 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "types": ["expo-router/types"]
+    "exactOptionalPropertyTypes": true
   },
   "include": [
     "**/*.ts",

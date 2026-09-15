@@ -63,6 +63,22 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@26.5.1)(lightningcss@1.33.0)(terser@5.51.2)(yaml@2.9.1)
 
+  packages/activity-engine:
+    dependencies:
+      '@magina-aventura/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@magina-aventura/geo':
+        specifier: workspace:*
+        version: link:../geo
+    devDependencies:
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@26.5.1)(lightningcss@1.33.0)(terser@5.51.2)(yaml@2.9.1)
+
   packages/contracts:
     devDependencies:
       typescript:

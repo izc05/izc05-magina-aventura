@@ -1,0 +1,21 @@
+{
+  "name": "@magina-aventura/activity-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@magina-aventura/contracts": "workspace:*",
+    "@magina-aventura/geo": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.4"
+  }
+}

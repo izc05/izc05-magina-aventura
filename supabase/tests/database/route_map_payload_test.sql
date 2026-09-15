@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(12);
 
 insert into public.municipalities (id, slug, name, active)
 values (
@@ -56,6 +56,33 @@ insert into public.route_geometries (
   1,
   extensions.st_geomfromtext('LINESTRING(-3.6000 37.6000,-3.5900 37.6100)', 4326),
   extensions.st_geomfromtext('POINT(-3.6000 37.6000)', 4326)
+);
+
+insert into public.route_map_assets (
+  route_id,
+  geometry_version,
+  asset_kind,
+  object_key,
+  public_url,
+  byte_size,
+  min_zoom,
+  max_zoom,
+  bounds,
+  style_template_url
+) values (
+  '10000000-0000-4000-8000-000000000002',
+  1,
+  'pmtiles',
+  'routes/published-map-test/v1/map.pmtiles',
+  'https://cdn.example.test/routes/published-map-test/v1/map.pmtiles',
+  1024,
+  10,
+  16,
+  extensions.st_geomfromtext(
+    'POLYGON((-3.5000 37.7000,-3.4900 37.7000,-3.4900 37.7100,-3.5000 37.7100,-3.5000 37.7000))',
+    4326
+  ),
+  'https://cdn.example.test/styles/magina-v1.json'
 );
 
 insert into public.checkpoints (
@@ -161,6 +188,24 @@ select is(
   jsonb_array_length(public.get_published_route_map_payload('published-map-test')->'discoveryHints'),
   1,
   'payload includes active discovery hints only'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'start'->>'type',
+  'Point',
+  'payload exposes GeoJSON start point'
+);
+
+select is(
+  jsonb_array_length(public.get_published_route_map_payload('published-map-test')->'bounds'),
+  4,
+  'payload exposes four-value camera bounds'
+);
+
+select is(
+  public.get_published_route_map_payload('published-map-test')->'mapAsset'->>'publicUrl',
+  'https://cdn.example.test/routes/published-map-test/v1/map.pmtiles',
+  'payload exposes current PMTiles asset'
 );
 
 select is(

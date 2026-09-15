@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Mágina Aventura",
+    "slug": "magina-aventura",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "maginaaventura",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "@maplibre/maplibre-react-native"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.isivolt.maginaaventura"
+    },
+    "android": {
+      "package": "com.isivolt.maginaaventura"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

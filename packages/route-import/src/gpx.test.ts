@@ -40,4 +40,9 @@ describe('parseGpx', () => {
     const invalid = '<gpx><trk><trkseg><trkpt lat="91" lon="0"/><trkpt lat="0" lon="1"/></trkseg></trk></gpx>';
     expect(() => parseGpx(invalid, 'route-test', 1)).toThrow('Invalid latitude');
   });
+
+  it('rejects track points with missing longitude', () => {
+    const invalid = '<gpx><trk><trkseg><trkpt lat="37.7"/><trkpt lat="37.71" lon="-3.4"/></trkseg></trk></gpx>';
+    expect(() => parseGpx(invalid, 'route-test', 1)).toThrow('Invalid longitude');
+  });
 });

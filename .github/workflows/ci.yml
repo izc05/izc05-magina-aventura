@@ -31,3 +31,25 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      - name: Verify pure package boundaries
+        run: |
+          if grep -R -n -E "from ['\"]expo|@supabase|maplibre|react-native" packages/domain packages/geo packages/contracts packages/offline-sync; then
+            echo "Infrastructure import detected in pure packages"
+            exit 1
+          fi
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase database
+        run: supabase db start
+
+      - name: Reset local Supabase database
+        run: supabase db reset
+
+      - name: Stop local Supabase database
+        if: always()
+        run: supabase stop --no-backup

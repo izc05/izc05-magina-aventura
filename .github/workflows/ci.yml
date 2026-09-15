@@ -51,7 +51,9 @@ jobs:
         run: supabase db reset
 
       - name: Database contract tests
-        run: supabase test db supabase/tests/database/route_map_assets_test.sql
+        run: |
+          supabase test db supabase/tests/database/route_map_assets_test.sql
+          supabase test db supabase/tests/database/route_map_payload_test.sql
 
       - name: Stop local Supabase database
         if: always()

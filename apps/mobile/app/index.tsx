@@ -1,23 +1,35 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '../src/components/branding/AppHeader';
-import { BottomNav } from '../src/components/navigation/BottomNav';
+import { PrimaryTabBar } from '../src/components/navigation/PrimaryTabBar';
 import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
+import { presentHome, type HomeQuickAction } from '../src/features/home/home-presenter';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
 import { developmentRoutes } from '../src/features/routes/fixtures';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
-const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
+const quickActionGlyph: Record<HomeQuickAction, string> = {
+  Rutas: '△',
+  Mapa: '▱',
+  'Cerca de ti': '⌖',
+  Favoritos: '♡',
+};
 
-export default function RoutesHomeScreen() {
-  const route = developmentRoutes[0];
+function destinationForQuickAction(action: HomeQuickAction) {
+  if (action === 'Rutas') return '/explore';
+  if (action === 'Mapa' || action === 'Cerca de ti') return '/map';
+  return '/profile';
+}
+
+export default function HomeScreen() {
   const [ready, setReady] = useState(false);
+  const presentation = useMemo(() => presentHome(developmentRoutes), []);
 
   useEffect(() => {
     let mounted = true;
@@ -42,166 +54,102 @@ export default function RoutesHomeScreen() {
   }, []);
 
   if (!ready) return <LaunchScreen />;
-  if (!route) return null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="dark" />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <AppHeader />
 
         <View style={styles.hero}>
-          <View style={styles.heroSkyGlow} />
-          <View style={styles.heroSun} />
-          <View style={styles.heroMountainBack} />
-          <View style={styles.heroMountainMid} />
-          <View style={styles.heroMountainFront} />
-          <View style={styles.heroPath} />
+          <View style={styles.heroGlow} />
+          <View style={styles.sun} />
+          <View style={styles.mountainBack} />
+          <View style={styles.mountainMid} />
+          <View style={styles.mountainFront} />
+          <View style={styles.path} />
+
           <View style={styles.heroCopy}>
-            <Text style={styles.heroKicker}>SIERRA MÁGINA TE ESPERA</Text>
-            <Text style={styles.heroTitle}>Camina. Descubre.{`\n`}Conquista Mágina.</Text>
-            <Text style={styles.heroBody}>
-              Rutas reales, patrimonio y naturaleza convertidos en una aventura que progresa contigo.
-            </Text>
+            <Text style={styles.greeting}>Buenos días,</Text>
+            <Text style={styles.heroTitle}>{presentation.headline}</Text>
+            <Text style={styles.heroSubtitle}>Explora Sierra Mágina con rutas, seguridad y territorio en un mismo lugar.</Text>
+          </View>
+
+          <View style={styles.searchBox}>
+            <Text style={styles.searchGlyph}>⌕</Text>
+            <TextInput
+              placeholder={presentation.searchPlaceholder}
+              placeholderTextColor={colors.muted}
+              style={styles.searchInput}
+              returnKeyType="search"
+              onSubmitEditing={() => router.push('/explore' as never)}
+            />
           </View>
         </View>
 
-        <View style={styles.valueStrip}>
-          <ValueItem kind="route" title="Rutas reales" />
-          <ValueItem kind="heritage" title="Patrimonio vivo" />
-          <ValueItem kind="nature" title="Naturaleza única" />
-        </View>
-
-        <View style={styles.searchBox}>
-          <SearchGlyph />
-          <TextInput
-            placeholder="Buscar rutas, municipios, lugares…"
-            placeholderTextColor={colors.muted}
-            style={styles.searchInput}
-          />
-          <View style={styles.filterButton}>
-            <View style={styles.filterLineWide} />
-            <View style={styles.filterLineNarrow} />
-          </View>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {filters.map((filter, index) => (
-            <View
-              key={filter}
-              style={[styles.filterChip, index === 0 && styles.filterChipActive]}
+        <View style={styles.quickGrid}>
+          {presentation.quickActions.map((action) => (
+            <Pressable
+              key={action}
+              accessibilityRole="button"
+              onPress={() => router.push(destinationForQuickAction(action) as never)}
+              style={({ pressed }) => [styles.quickAction, pressed && styles.pressed]}
             >
-              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>{filter}</Text>
-            </View>
+              <View style={styles.quickIcon}>
+                <Text style={styles.quickGlyph}>{quickActionGlyph[action]}</Text>
+              </View>
+              <Text style={styles.quickLabel}>{action}</Text>
+            </Pressable>
           ))}
-        </ScrollView>
+        </View>
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Ruta destacada</Text>
-            <Text style={styles.sectionSubtitle}>Empieza a descubrir Sierra Mágina</Text>
+            <Text style={styles.sectionTitle}>Rutas destacadas</Text>
+            <Text style={styles.sectionSubtitle}>Una primera puerta de entrada a Mágina</Text>
           </View>
-          <Text style={styles.sectionAction}>Ver todas  →</Text>
+          <Pressable onPress={() => router.push('/explore' as never)}>
+            <Text style={styles.sectionAction}>Ver todas →</Text>
+          </Pressable>
         </View>
 
-        <FeaturedRouteCard
-          route={route}
-          onPress={() =>
-            router.push({
-              pathname: '/routes/[slug]',
-              params: { slug: route.slug },
-            })
-          }
-        />
+        {presentation.featuredRoute ? (
+          <FeaturedRouteCard
+            route={presentation.featuredRoute}
+            onPress={() =>
+              router.push({
+                pathname: '/routes/[slug]',
+                params: { slug: presentation.featuredRoute?.slug ?? '' },
+              })
+            }
+          />
+        ) : (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Catálogo en preparación</Text>
+            <Text style={styles.emptyBody}>Las rutas aparecerán aquí en cuanto estén verificadas y disponibles.</Text>
+          </View>
+        )}
 
-        <View style={styles.challengeCard}>
-          <View style={styles.challengeIcon}>
-            <View style={styles.challengeMedal} />
-            <View style={styles.challengeRibbonLeft} />
-            <View style={styles.challengeRibbonRight} />
+        <View style={styles.safetyCard}>
+          <View style={styles.safetyBadge}><Text style={styles.safetyBadgeText}>✓</Text></View>
+          <View style={styles.safetyCopy}>
+            <Text style={styles.safetyTitle}>Tiempo y seguridad antes de salir</Text>
+            <Text style={styles.safetyBody}>La aventura empieza comprobando condiciones, avisos y preparación.</Text>
           </View>
-          <View style={styles.challengeCopy}>
-            <Text style={styles.challengeEyebrow}>PRÓXIMAMENTE</Text>
-            <Text style={styles.challengeTitle}>Retos de temporada</Text>
-            <Text style={styles.challengeBody}>
-              Completa rutas, descubre lugares y sube en el ranking de Mágina.
-            </Text>
-          </View>
+          <Pressable onPress={() => router.push('/map' as never)} style={styles.safetyArrow}>
+            <Text style={styles.safetyArrowText}>→</Text>
+          </Pressable>
         </View>
 
         <View style={styles.brandFooter}>
           <Text style={styles.brandFooterClaim}>{brand.supportingClaim}</Text>
-          <View style={styles.brandFooterLine} />
+          <Text style={styles.brandFooterLocation}>{brand.identity.descriptor}</Text>
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNavWrap}>
-        <BottomNav active="Rutas" />
-      </View>
+      <PrimaryTabBar active="Inicio" />
     </SafeAreaView>
-  );
-}
-
-function ValueItem({ kind, title }: { kind: 'route' | 'heritage' | 'nature'; title: string }) {
-  return (
-    <View style={styles.valueItem}>
-      <View style={styles.valueIcon}>
-        {kind === 'route' ? <RouteValueGlyph /> : null}
-        {kind === 'heritage' ? <HeritageValueGlyph /> : null}
-        {kind === 'nature' ? <NatureValueGlyph /> : null}
-      </View>
-      <Text style={styles.valueTitle}>{title}</Text>
-    </View>
-  );
-}
-
-function RouteValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.valueMountain} />
-      <View style={styles.valuePath} />
-    </View>
-  );
-}
-
-function HeritageValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.templeRoof} />
-      <View style={styles.templeColumns}>
-        <View style={styles.templeColumn} />
-        <View style={styles.templeColumn} />
-        <View style={styles.templeColumn} />
-      </View>
-      <View style={styles.templeBase} />
-    </View>
-  );
-}
-
-function NatureValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.leafStem} />
-      <View style={styles.leafLeft} />
-      <View style={styles.leafRight} />
-    </View>
-  );
-}
-
-function SearchGlyph() {
-  return (
-    <View style={styles.searchGlyph}>
-      <View style={styles.searchCircle} />
-      <View style={styles.searchHandle} />
-    </View>
   );
 }
 
@@ -215,301 +163,156 @@ const styles = StyleSheet.create({
     paddingBottom: 126,
   },
   hero: {
-    height: 292,
+    minHeight: 330,
     overflow: 'hidden',
     borderRadius: radius.xl,
-    backgroundColor: colors.sky,
+    backgroundColor: colors.olive900,
     padding: spacing[24],
     justifyContent: 'flex-end',
     ...shadow.card,
   },
-  heroSkyGlow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: '#BFDCE9',
-    opacity: 0.54,
+  heroGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#47725B',
+    opacity: 0.55,
   },
-  heroSun: {
+  sun: {
     position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#F0D274',
-    right: 34,
-    top: 28,
-    opacity: 0.92,
-  },
-  heroMountainBack: {
-    position: 'absolute',
-    width: 330,
-    height: 165,
-    borderRadius: 70,
-    backgroundColor: '#789489',
-    right: -120,
-    bottom: 20,
-    transform: [{ rotate: '-17deg' }],
-  },
-  heroMountainMid: {
-    position: 'absolute',
-    width: 325,
-    height: 155,
-    borderRadius: 66,
-    backgroundColor: colors.olive500,
-    left: -120,
-    bottom: -5,
-    transform: [{ rotate: '17deg' }],
-  },
-  heroMountainFront: {
-    position: 'absolute',
-    width: 340,
-    height: 140,
-    borderRadius: 60,
-    backgroundColor: colors.olive900,
-    right: -118,
-    bottom: -70,
-    transform: [{ rotate: '8deg' }],
-  },
-  heroPath: {
-    position: 'absolute',
-    width: 68,
-    height: 185,
-    borderRadius: 40,
-    backgroundColor: colors.limestone,
-    left: '48%',
-    bottom: -108,
-    transform: [{ rotate: '19deg' }],
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    right: 30,
+    top: 26,
+    backgroundColor: colors.aoveGold,
     opacity: 0.96,
   },
-  heroCopy: {
-    maxWidth: 305,
+  mountainBack: {
+    position: 'absolute',
+    width: 330,
+    height: 145,
+    borderRadius: 64,
+    right: -108,
+    bottom: 90,
+    backgroundColor: '#6D8A72',
+    transform: [{ rotate: '-14deg' }],
   },
-  heroKicker: {
-    color: colors.aoveGold,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.7,
-    marginBottom: spacing[8],
+  mountainMid: {
+    position: 'absolute',
+    width: 320,
+    height: 150,
+    borderRadius: 64,
+    left: -120,
+    bottom: 72,
+    backgroundColor: colors.olive700,
+    transform: [{ rotate: '17deg' }],
+  },
+  mountainFront: {
+    position: 'absolute',
+    width: 350,
+    height: 135,
+    borderRadius: 58,
+    right: -120,
+    bottom: 34,
+    backgroundColor: '#173C2D',
+    transform: [{ rotate: '9deg' }],
+  },
+  path: {
+    position: 'absolute',
+    width: 54,
+    height: 150,
+    borderRadius: 28,
+    backgroundColor: colors.limestone,
+    left: '48%',
+    bottom: 0,
+    opacity: 0.86,
+    transform: [{ rotate: '18deg' }],
+  },
+  heroCopy: {
+    zIndex: 2,
+    maxWidth: 310,
+    marginBottom: spacing[20],
+  },
+  greeting: {
+    color: colors.limestone,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: spacing[4],
   },
   heroTitle: {
     color: colors.white,
-    fontSize: typography.display,
+    fontSize: 31,
+    lineHeight: 34,
     fontWeight: '900',
-    lineHeight: 35,
-    letterSpacing: -0.7,
+    letterSpacing: -0.8,
   },
-  heroBody: {
+  heroSubtitle: {
     color: colors.limestone,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: spacing[12],
-    maxWidth: 285,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing[8],
+    maxWidth: 290,
   },
-  valueStrip: {
+  searchBox: {
+    zIndex: 2,
+    height: 52,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing[16],
+  },
+  searchGlyph: {
+    color: colors.olive900,
+    fontSize: 24,
+    marginRight: spacing[8],
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.ink,
+    fontSize: 13,
+  },
+  quickGrid: {
+    flexDirection: 'row',
     gap: spacing[8],
     paddingVertical: spacing[20],
   },
-  valueItem: {
+  quickAction: {
     flex: 1,
-    alignItems: 'center',
-  },
-  valueIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.oliveWash,
+    minHeight: 84,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  valueTitle: {
-    marginTop: spacing[8],
+  pressed: {
+    opacity: 0.78,
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.oliveWash,
+    marginBottom: spacing[8],
+  },
+  quickGlyph: {
+    color: colors.olive900,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  quickLabel: {
     color: colors.ink,
     fontSize: 10,
     fontWeight: '800',
     textAlign: 'center',
   },
-  valueGlyphBox: {
-    width: 25,
-    height: 25,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueMountain: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderBottomWidth: 16,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: colors.olive900,
-    bottom: 2,
-  },
-  valuePath: {
-    position: 'absolute',
-    width: 3,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: colors.white,
-    bottom: 1,
-    transform: [{ rotate: '23deg' }],
-  },
-  templeRoof: {
-    position: 'absolute',
-    top: 2,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 11,
-    borderRightWidth: 11,
-    borderBottomWidth: 7,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: colors.olive900,
-  },
-  templeColumns: {
-    position: 'absolute',
-    top: 10,
-    flexDirection: 'row',
-    gap: 3,
-  },
-  templeColumn: {
-    width: 3,
-    height: 10,
-    backgroundColor: colors.olive900,
-  },
-  templeBase: {
-    position: 'absolute',
-    bottom: 2,
-    width: 23,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-  },
-  leafStem: {
-    position: 'absolute',
-    width: 3,
-    height: 22,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-18deg' }],
-  },
-  leafLeft: {
-    position: 'absolute',
-    width: 13,
-    height: 6,
-    borderRadius: 7,
-    backgroundColor: colors.olive700,
-    left: 1,
-    top: 8,
-    transform: [{ rotate: '28deg' }],
-  },
-  leafRight: {
-    position: 'absolute',
-    width: 14,
-    height: 6,
-    borderRadius: 7,
-    backgroundColor: colors.olive900,
-    right: 0,
-    top: 5,
-    transform: [{ rotate: '-25deg' }],
-  },
-  searchBox: {
-    height: 56,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: spacing[16],
-    paddingRight: spacing[8],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchGlyph: {
-    width: 24,
-    height: 24,
-    marginRight: spacing[8],
-  },
-  searchCircle: {
-    position: 'absolute',
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: colors.olive900,
-    left: 2,
-    top: 2,
-  },
-  searchHandle: {
-    position: 'absolute',
-    width: 8,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-    left: 13,
-    top: 15,
-    transform: [{ rotate: '45deg' }],
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.ink,
-    fontSize: 14,
-  },
-  filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.warmBackground,
-  },
-  filterLineWide: {
-    width: 17,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-    marginBottom: 5,
-  },
-  filterLineNarrow: {
-    width: 9,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-  },
-  filters: {
-    gap: spacing[8],
-    paddingVertical: spacing[16],
-  },
-  filterChip: {
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing[16],
-    paddingVertical: spacing[8],
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.olive900,
-    borderColor: colors.olive900,
-  },
-  filterText: {
-    color: colors.ink,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  filterTextActive: {
-    color: colors.white,
-  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginTop: spacing[4],
     marginBottom: spacing[12],
   },
   sectionTitle: {
@@ -519,7 +322,7 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 3,
   },
   sectionAction: {
@@ -527,74 +330,76 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
   },
-  challengeCard: {
-    flexDirection: 'row',
+  emptyCard: {
     borderRadius: radius.lg,
-    backgroundColor: colors.limestone,
     padding: spacing[20],
-    marginTop: spacing[20],
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  challengeIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.aoveGold,
-    marginRight: spacing[16],
-    position: 'relative',
-  },
-  challengeMedal: {
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: colors.olive900,
-    marginTop: -6,
-  },
-  challengeRibbonLeft: {
-    position: 'absolute',
-    width: 4,
-    height: 12,
-    backgroundColor: colors.olive900,
-    bottom: 8,
-    left: 19,
-    transform: [{ rotate: '18deg' }],
-  },
-  challengeRibbonRight: {
-    position: 'absolute',
-    width: 4,
-    height: 12,
-    backgroundColor: colors.olive900,
-    bottom: 8,
-    right: 19,
-    transform: [{ rotate: '-18deg' }],
-  },
-  challengeCopy: {
-    flex: 1,
-  },
-  challengeEyebrow: {
-    color: colors.earth,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  challengeTitle: {
+  emptyTitle: {
     color: colors.ink,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
-    marginTop: 2,
   },
-  challengeBody: {
+  emptyBody: {
     color: colors.muted,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 18,
     marginTop: spacing[4],
+  },
+  safetyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    padding: spacing[16],
+    marginTop: spacing[20],
+    backgroundColor: colors.limestone,
+  },
+  safetyBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.olive900,
+  },
+  safetyBadgeText: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  safetyCopy: {
+    flex: 1,
+    marginLeft: spacing[12],
+  },
+  safetyTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  safetyBody: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  safetyArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+  },
+  safetyArrowText: {
+    color: colors.olive900,
+    fontSize: 18,
+    fontWeight: '900',
   },
   brandFooter: {
     alignItems: 'center',
-    paddingTop: spacing[32],
-    paddingBottom: spacing[8],
+    paddingVertical: spacing[32],
   },
   brandFooterClaim: {
     color: colors.olive700,
@@ -602,17 +407,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontStyle: 'italic',
   },
-  brandFooterLine: {
-    width: 42,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.aoveGold,
+  brandFooterLocation: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 2.1,
     marginTop: spacing[8],
-  },
-  bottomNavWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
 });

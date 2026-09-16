@@ -37,10 +37,6 @@ export interface OliveTreeDashboardModel {
   actions: OliveTreeDashboardAction[];
 }
 
-const numberFormatter = new Intl.NumberFormat('es-ES', {
-  maximumFractionDigits: 0,
-});
-
 const actions: OliveTreeDashboardAction[] = [
   {
     id: 'rewards',
@@ -73,7 +69,7 @@ function nonNegativeInteger(value: number): number {
 }
 
 function formatNumber(value: number): string {
-  return numberFormatter.format(nonNegativeInteger(value));
+  return String(nonNegativeInteger(value)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function progressPercentage(value: number): number {

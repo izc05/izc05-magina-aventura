@@ -10,7 +10,7 @@ No se distribuyen claves secretas al navegador. El cliente solo usa la URL públ
 - Rutas: alta, edición versionada, estados `draft -> review -> published -> archived`, GPX y PostGIS.
 - Editor visual del trazado con checkpoints y descubrimientos.
 - Paquetes PMTiles/offline por versión de geometría.
-- Multimedia: subida privada, metadatos, etiquetas, archivo y asociación a rutas.
+- Multimedia: subida privada, metadatos, etiquetas, archivo y asociación a rutas; la app puede leer únicamente recursos activos asociados a rutas publicadas mediante RLS.
 - Usuarios: listado seguro, ficha administrativa, roles y estado `active / warned / suspended`.
 - Comunidad: resumen, moderación, reportes y chat público por canales.
 - Gamificación: niveles, insignias, retos, temporadas y colecciones.
@@ -18,9 +18,9 @@ No se distribuyen claves secretas al navegador. El cliente solo usa la URL públ
 - Almazaras/partners, premios, stock, reservas y canjes.
 - QR de un solo uso con lectura por cámara o imagen cuando el navegador soporta `BarcodeDetector`.
 - Notificaciones globales o segmentadas por ruta, municipio o rol, con cola de entrega por dispositivo.
-- Seguridad e incidencias de ruta.
+- Seguridad e incidencias de ruta, incluido cierre temporal que bloquea nuevas aventuras sin archivar la ruta.
 - Configuración operativa/feature flags.
-- Administradores y RBAC.
+- Administradores y RBAC con whitelist explícita de capacidades.
 - Auditoría de acciones sensibles.
 
 ## Arquitectura
@@ -44,6 +44,7 @@ apps/admin/
   map-asset-tools.mjs
   reward-tools.mjs
   audit-tools.mjs
+  safety-tools.mjs
   src/core/
   tests/
   scripts/
@@ -105,7 +106,7 @@ A partir de ahí, la gestión de roles se hace desde Admin. El backend impide re
 ## Roles
 
 - `super_admin`: control completo.
-- `admin`: operación general salvo gestión de administradores críticos.
+- `admin`: operación general salvo gestión de administradores críticos. Sus capacidades están enumeradas explícitamente para que una función sensible añadida en el futuro no quede concedida automáticamente.
 - `route_manager`: rutas, mapa, descubrimientos y multimedia.
 - `moderator`: usuarios, comunidad, moderación y auditoría.
 - `partner`: premios y canjes limitados a su almazara/partner.
@@ -120,9 +121,19 @@ Al editar contenido o geometría se crea una nueva versión. Si una ruta publica
 
 El editor visual permite colocar checkpoints y descubrimientos pulsando sobre el trazado y modificar su estado. El GPX se transforma a `LINESTRING` SRID 4326 antes de guardarse.
 
+## Seguridad de ruta y cierres temporales
+
+Una incidencia puede informar al usuario o marcar `blocks_adventure=true`. En ese segundo caso la ruta sigue publicada y conserva todo su contenido, pero `route_adventure_gate(route_id)` devuelve `can_start=false` mientras la incidencia bloqueante esté abierta y dentro de su ventana temporal.
+
+El panel dispone de una consola específica para cerrar temporalmente y reabrir rutas. Resolver la incidencia o alcanzar `ends_at` elimina el bloqueo sin archivar la ruta.
+
+Los visitantes anónimos/autenticados solo pueden leer incidencias activas de rutas publicadas; el historial interno y las incidencias de borradores siguen protegidos por RLS.
+
 ## Multimedia
 
 Los originales viven en el bucket privado `media`. `media_assets` guarda título, alt text, tipo MIME, tamaño, etiquetas y estado de archivo. `route_media` permite reutilizar el mismo recurso como hero, galería, seguridad o descubrimiento.
+
+El bucket continúa siendo privado. RLS permite descargar únicamente activos no archivados vinculados a rutas publicadas; el resto solo está disponible para administración autorizada.
 
 El panel archiva en lugar de borrar físicamente por defecto para no romper rutas que todavía referencien el archivo.
 
@@ -170,7 +181,7 @@ Las funciones de consumo de la cola están concedidas únicamente a `service_rol
 - Tokens QR almacenados como hash.
 - Audit log y ledger de aceitunas son append-only desde el punto de vista del cliente autenticado.
 - El escritor interno de auditoría no es ejecutable directamente por `anon`/`authenticated`.
-- Auditoría cubre también asociaciones de media y catálogos de gamificación.
+- Auditoría cubre geometrías, asociaciones de media y catálogos de gamificación.
 - Sesiones Admin se guardan en `sessionStorage` y renuevan automáticamente el access token mediante el refresh token.
 - CSP y headers defensivos para hosting estático.
 
@@ -191,6 +202,6 @@ incluye:
 - tests del guard de configuración pública;
 - en GitHub Actions, prebuild Android;
 - `supabase db reset` desde cero;
-- pgTAP para contratos, RLS, privilegios, auditoría y RPC administrativos.
+- pgTAP para contratos, RLS, privilegios, auditoría, multimedia pública, cierres de ruta y RPC administrativos.
 
 La rama de trabajo es `feat/admin-v1` y el PR correspondiente permanece separado de `main` hasta revisión/merge explícito.

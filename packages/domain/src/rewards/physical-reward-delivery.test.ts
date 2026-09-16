@@ -128,6 +128,19 @@ describe('confirmPhysicalRewardDelivery', () => {
     },
   );
 
+  it('rejects an active credential that expired after scan but before delivery', () => {
+    const result = confirmPhysicalRewardDelivery(
+      input({
+        credential: credential({ expiresAt: '2026-09-16T15:04:59.000Z' }),
+        redeemedAt: '2026-09-16T15:05:00.000Z',
+      }),
+    );
+
+    expect(result.reasons).toEqual(['credential-expired']);
+    expect(result.oliveMovement).toBeNull();
+    expect(result.redemption).toBeNull();
+  });
+
   it('treats a previously committed redemption as an idempotent no-op', () => {
     const result = confirmPhysicalRewardDelivery(
       input({ alreadyCommittedRedemptionIds: ['redemption-1'] }),

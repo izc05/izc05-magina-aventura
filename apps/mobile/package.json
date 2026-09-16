@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@magina-aventura/activity-engine": "workspace:*",
     "@magina-aventura/contracts": "workspace:*",
     "@magina-aventura/offline-sync": "workspace:*",
     "@maplibre/maplibre-react-native": "^11.3.10",

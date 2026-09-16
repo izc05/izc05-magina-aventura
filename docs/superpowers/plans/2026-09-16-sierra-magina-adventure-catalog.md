@@ -4,7 +4,7 @@
 
 **Goal:** Build an isolated, source-traceable Sierra Mágina adventure catalog that validates real routes, geometry, POIs, safety/restrictions, family/accessibility facts, and exposes a stable read model for later RC consumption.
 
-**Architecture:** Keep shared data shapes in `@magina-aventura/contracts`, business rules in `@magina-aventura/domain`, geometry rules in `@magina-aventura/geo`, source-file parsing in `@magina-aventura/route-import`, and canonical records in a new `@magina-aventura/adventure-catalog` package. The catalog must remain usable without Supabase and must not touch mobile UI, Weather, GPS tracking, Community, Admin, authentication, onboarding, or promotional web flows.
+**Architecture:** Keep shared data shapes in `@magina-aventura/contracts`, business rules in `@magina-aventura/domain`, geometry rules in `@magina-aventura/geo`, source-file parsing in `@magina-aventura/route-import`, and canonical records in a new `@magina-aventura/adventure-catalog` package. The catalog remains portable without Supabase and does not touch mobile UI, Weather, GPS tracking, Community, Admin, authentication, onboarding, or promotional web flows.
 
 **Tech Stack:** TypeScript 6, Node >=22.13, pnpm >=10, Vitest 3, workspace packages, GeoJSON-compatible primitives, existing `fast-xml-parser` route importer.
 
@@ -12,23 +12,45 @@
 
 ## Global Constraints
 
-- Work only on `feat/adventure-catalog-v1` until the catalog contract and starter dataset are stable.
+- Work only on `feat/adventure-catalog-v1` until catalog contracts and the starter dataset are stable.
 - Do not redesign route screens or modify mobile/web product flows.
 - Do not couple the canonical catalog to live Weather, GPS, Community, Admin, or Supabase.
 - No invented routes, POIs, closures, potable-water claims, accessibility claims, or safety facts.
-- A lack of current closure information must never become a guaranteed `open` state.
+- Lack of current closure information must never become a guaranteed `open` state.
 - Official/source facts and Mágina Aventura editorial derivations must remain distinguishable.
-- Canonical source geometry must remain separate from simplified/mobile derivatives.
-- Sensitive facts require provenance and a last-checked date.
-- Preserve the existing separation between official Parque Natural routes, provincial R routes, homologated GR/PR/SL routes, municipal routes, and community-only leads.
-- Reuse prior research: 17/17 official senderos have been identified, provincial R routes and GR/PR/SL have been audited, and REDIAM is the preferred geometry source for the official set when geometry is available.
-- The known temporary closure affecting the Las Viñas/Cuadros adventure must be modeled as a restriction/advisory and must not be overwritten by route metadata.
+- Canonical source geometry stays separate from simplified/mobile derivatives.
+- Sensitive facts require provenance and `checkedAt`.
+- Preserve authority families: Parque Natural/Junta, provincial R routes, GR/PR/SL, municipal routes, community-only leads.
+- Reuse the prior audited inventory rather than restarting research.
+- The known temporary closure affecting Las Viñas/Cuadros must be an independent restriction/advisory and must prevent an unconditional `open` state until authoritative evidence confirms otherwise.
+
+## Audited official inventory to carry forward
+
+The 17 Junta/Parque Natural route identities already researched are:
+
+1. Adelfal de Cuadros — Bedmar y Garcíez
+2. Caño del Aguadero — Bedmar y Garcíez
+3. Castillo de Albanchez — Albanchez de Mágina
+4. Castillo de Mata Bejid — Cambil
+5. El Peralejo — Cambil
+6. Fuenmayor — Torres
+7. Gibralberca — Cambil
+8. Hoyalinos — Torres
+9. Cueva de la Graja — Jimena
+10. Las Viñas — Bedmar y Garcíez
+11. Pinar de Cánava — Jimena
+12. Puerto de la Mata — Cambil
+13. Sierra de la Cruz — Jódar
+14. Hoyo de la Laguna — Bélmez de la Moraleda
+15. Pico Mágina y Miramundos — Huelma
+16. Umbría de los Corzos — Cambil
+17. Veredón–Mojón Blanco — Pegalajar
+
+Provincial R1–R9 remain a separate authority family. Known route facts from prior research include R1 Cueva de la Graja–Los Caracoles–Pinar de Cánava and R2 Albanchez–Aznaitín; R4, R5, and R8 must remain non-publishable until authoritative track geometry is located and validated.
 
 ---
 
 ## File Structure
-
-New or expanded units:
 
 ```text
 packages/contracts/src/catalog.ts
@@ -51,6 +73,8 @@ packages/adventure-catalog/tsconfig.json
 packages/adventure-catalog/src/index.ts
 packages/adventure-catalog/src/catalog.ts
 packages/adventure-catalog/src/catalog.test.ts
+packages/adventure-catalog/src/read-model.ts
+packages/adventure-catalog/src/read-model.test.ts
 packages/adventure-catalog/src/data/sources.ts
 packages/adventure-catalog/src/data/adventures.ts
 packages/adventure-catalog/src/data/pois.ts
@@ -61,8 +85,6 @@ packages/adventure-catalog/src/quality-report.test.ts
 packages/adventure-catalog/scripts/validate-catalog.ts
 docs/catalog/source-ledger.md
 ```
-
-Existing exports/package manifests are modified only where required to expose these units.
 
 ---
 
@@ -75,9 +97,9 @@ Existing exports/package manifests are modified only where required to expose th
 
 **Interfaces:**
 - Produces: `Adventure`, `TrackAsset`, `CatalogPoi`, `CatalogSource`, `Restriction`, `DifficultyFactors`, `FamilyFactors`, `AccessibilityFact`, `CatalogSnapshot`, `VerificationState`, `OperationalStatus`.
-- Existing `RouteSummary` / `RouteDetail` remain untouched in this task so current consumers do not break.
+- Existing `RouteSummary` / `RouteDetail` remain unchanged.
 
-- [ ] **Step 1: Write the compile-time contract test**
+- [ ] **Step 1: Write the failing compile-time contract test**
 
 ```ts
 import type { Adventure, CatalogSnapshot, Restriction } from './catalog';
@@ -154,9 +176,9 @@ Run: `pnpm --filter @magina-aventura/contracts typecheck`
 
 Expected: FAIL because `./catalog` does not exist.
 
-- [ ] **Step 3: Implement the complete catalog types**
+- [ ] **Step 3: Implement the complete contract**
 
-Use these exact core unions and field semantics in `catalog.ts`:
+Create `packages/contracts/src/catalog.ts` with these exact public shapes:
 
 ```ts
 export type VerificationState =
@@ -186,6 +208,13 @@ export interface CatalogSource {
   verificationState: VerificationState;
 }
 
+export interface CatalogFact {
+  code: string;
+  text: string;
+  sourceIds: string[];
+  verificationState: VerificationState;
+}
+
 export interface DifficultyFactors {
   physicalDemand: 1 | 2 | 3 | 4 | 5;
   technicalTerrain: 1 | 2 | 3 | 4 | 5;
@@ -194,11 +223,105 @@ export interface DifficultyFactors {
   remoteness: 1 | 2 | 3 | 4 | 5;
   simpleLabel: SimpleDifficulty;
 }
+
+export interface FamilyFactors {
+  editorialSuitability: 'suitable' | 'conditional' | 'not_recommended' | 'review_required';
+  minimumAge: number | null;
+  strollerViability: 'yes' | 'no' | 'unknown';
+  factors: CatalogFact[];
+}
+
+export interface AccessibilityFact extends CatalogFact {
+  feature: 'surface' | 'width' | 'steps' | 'slope' | 'barrier' | 'adapted_parking' | 'adapted_facility';
+}
+
+export interface AdventureMetrics {
+  distanceKm: number | null;
+  ascentM: number | null;
+  descentM: number | null;
+  minElevationM: number | null;
+  maxElevationM: number | null;
+  durationMinutesMin: number | null;
+  durationMinutesMax: number | null;
+}
+
+export interface Adventure {
+  id: string;
+  slug: string;
+  name: string;
+  summary: string;
+  description: string;
+  activityTypes: ActivityType[];
+  municipalityIds: string[];
+  shape: RouteShape;
+  publicationState: PublicationState;
+  verificationState: VerificationState;
+  sourceIds: string[];
+  trackId: string | null;
+  metrics: AdventureMetrics;
+  difficulty: DifficultyFactors;
+  family: FamilyFactors;
+  accessibilityFacts: AccessibilityFact[];
+  stableSafetyCharacteristics: CatalogFact[];
+}
+
+export interface TrackAsset {
+  id: string;
+  adventureId: string;
+  geometryVersion: number;
+  format: 'gpx' | 'geojson' | 'kml' | 'gml';
+  sourceIds: string[];
+  verifiedAt: string | null;
+  geometryQuality: 'verified' | 'cross_checked' | 'unverified';
+  geometryRef: string;
+  metrics: AdventureMetrics;
+}
+
+export interface WaterMetadata {
+  potableStatus: 'confirmed' | 'not_confirmed' | 'not_potable' | 'unknown';
+  seasonalReliability: 'reliable' | 'seasonal' | 'unknown';
+  lastVerifiedAt: string | null;
+}
+
+export interface CatalogPoi {
+  id: string;
+  name: string;
+  category: 'water' | 'viewpoint' | 'parking' | 'recreation_area' | 'refuge' | 'geology' | 'heritage' | 'visitor_facility' | 'village_service' | 'emergency_reference';
+  position: readonly [longitude: number, latitude: number];
+  adventureIds: string[];
+  sourceIds: string[];
+  verificationState: VerificationState;
+  water: WaterMetadata | null;
+}
+
+export interface Restriction {
+  id: string;
+  scope:
+    | { type: 'adventure'; adventureId: string }
+    | { type: 'poi'; poiId: string }
+    | { type: 'area'; areaRef: string };
+  type: 'temporary_closure' | 'access_restriction' | 'wildfire' | 'forestry_works' | 'hunting' | 'weather' | 'damaged_trail' | 'water_outage' | 'open_confirmation';
+  severity: 'info' | 'warning' | 'restricting' | 'blocking';
+  status: 'active' | 'scheduled' | 'resolved' | 'unknown';
+  startsAt: string | null;
+  endsAt: string | null;
+  sourceIds: string[];
+  publishedAt: string | null;
+  checkedAt: string;
+  reason: string;
+}
+
+export interface CatalogSnapshot {
+  generatedAt: string;
+  adventures: Adventure[];
+  tracks: TrackAsset[];
+  pois: CatalogPoi[];
+  sources: CatalogSource[];
+  restrictions: Restriction[];
+}
 ```
 
-Complete the file with the interfaces exercised by the type-test. All safety/family/accessibility fact entries must include `sourceIds: string[]` and `verificationState` so editorial and official claims remain distinguishable.
-
-- [ ] **Step 4: Export the new contract and run typecheck**
+- [ ] **Step 4: Export and verify**
 
 Add to `packages/contracts/src/index.ts`:
 
@@ -219,7 +342,7 @@ git commit -m "feat(catalog): define canonical adventure contracts"
 
 ---
 
-### Task 2: Add catalog invariants, provenance validation, and operational status
+### Task 2: Add catalog invariants, provenance validation, status, and completeness
 
 **Files:**
 - Create: `packages/domain/src/catalog/validate-catalog.ts`
@@ -232,22 +355,17 @@ git commit -m "feat(catalog): define canonical adventure contracts"
 - Modify: `packages/domain/package.json`
 
 **Interfaces:**
-- Consumes: `CatalogSnapshot`, `Adventure`, `Restriction`, `CatalogSource`.
 - Produces: `validateCatalog(snapshot): CatalogValidationIssue[]`, `deriveOperationalStatus(adventureId, restrictions): OperationalStatus`, `calculateCompleteness(adventure, snapshot): CatalogCompleteness`.
 
-- [ ] **Step 1: Write failing invariant tests**
-
-Test these exact failures:
+- [ ] **Step 1: Write failing tests**
 
 ```ts
 expect(validateCatalog(snapshotWithUnknownSourceId)).toContainEqual(
   expect.objectContaining({ code: 'unknown_source_reference', severity: 'error' }),
 );
-
 expect(validateCatalog(snapshotWithPotableWaterAndNoSource)).toContainEqual(
   expect.objectContaining({ code: 'sensitive_fact_without_provenance', severity: 'error' }),
 );
-
 expect(deriveOperationalStatus('ma-001', [activeBlockingClosure])).toBe('closed');
 expect(deriveOperationalStatus('ma-001', [])).toBe('unknown');
 ```
@@ -258,9 +376,7 @@ Run: `pnpm --filter @magina-aventura/domain test`
 
 Expected: FAIL because catalog modules do not exist.
 
-- [ ] **Step 3: Add contracts dependency**
-
-Add to `packages/domain/package.json`:
+- [ ] **Step 3: Add the contracts dependency**
 
 ```json
 "dependencies": {
@@ -268,9 +384,7 @@ Add to `packages/domain/package.json`:
 }
 ```
 
-- [ ] **Step 4: Implement validation rules**
-
-`validateCatalog` must emit hard errors for:
+- [ ] **Step 4: Implement exact validation codes**
 
 ```ts
 export type CatalogValidationCode =
@@ -284,27 +398,24 @@ export type CatalogValidationCode =
   | 'published_without_required_core_data';
 ```
 
-A `publishable` adventure requires identity, at least one source, known distance, duration range, difficulty factors, and a verified/cross-checked track unless the adventure category explicitly has no route geometry. Do not require optional POIs to make a route publishable.
+`publishable` requires identity, at least one valid source, non-null distance, duration range, difficulty factors, and a `verified`/`cross_checked` track for route-based activities. POIs are not mandatory for publication.
 
 - [ ] **Step 5: Implement operational status precedence**
 
-Use this precedence:
-
 ```ts
-blocking active closure => 'closed'
-active restriction => 'restricted'
-active warning/advisory => 'caution'
-no current authoritative operational evidence => 'unknown'
+blocking active notice => 'closed'
+active restricting notice => 'restricted'
+active warning => 'caution'
+active open_confirmation from official/cross-checked source => 'open'
+otherwise => 'unknown'
 ```
 
-Do not return `open` merely because the restriction array is empty. `open` is allowed only when an authoritative active-status record explicitly confirms access.
+Resolved notices do not affect current status.
 
-- [ ] **Step 6: Implement completeness scoring**
-
-Return booleans/percentages for exactly these dimensions:
+- [ ] **Step 6: Implement completeness dimensions**
 
 ```ts
-type CompletenessDimension =
+export type CompletenessDimension =
   | 'identity'
   | 'geometry'
   | 'metrics'
@@ -318,11 +429,9 @@ type CompletenessDimension =
   | 'freshness';
 ```
 
-The report is diagnostic only; missing optional dimensions must not silently mutate publication state.
+Each dimension returns `{ complete: boolean; score: number }`, with `score` in `0..100`. Missing optional dimensions produce warnings only and never mutate publication state.
 
-- [ ] **Step 7: Run tests and typecheck**
-
-Run:
+- [ ] **Step 7: Verify**
 
 ```bash
 pnpm --filter @magina-aventura/domain test
@@ -340,7 +449,7 @@ git commit -m "feat(catalog): validate provenance status and completeness"
 
 ---
 
-### Task 3: Make geometry metrics reproducible and validate canonical tracks
+### Task 3: Make canonical geometry reproducible and testable
 
 **Files:**
 - Create: `packages/geo/src/track-metrics.ts`
@@ -350,12 +459,9 @@ git commit -m "feat(catalog): validate provenance status and completeness"
 - Modify: `packages/geo/src/index.ts`
 
 **Interfaces:**
-- Consumes: `RouteLineFeature`, elevations aligned with coordinates.
-- Produces: `calculateTrackMetrics(line, elevationsM)`, `validateCanonicalGeometry(line, acceptanceBounds?)`.
+- Produces: `calculateTrackMetrics(line, elevationsM)`, `validateCanonicalGeometry(line, options?)`.
 
 - [ ] **Step 1: Write failing metric tests**
-
-Cover distance, ascent/descent, min/max elevation, malformed elevation arrays, impossible coordinate jumps, and optional acceptance bounds.
 
 ```ts
 const metrics = calculateTrackMetrics(line, [700, 720, 710]);
@@ -364,6 +470,8 @@ expect(metrics.descentM).toBe(10);
 expect(metrics.minElevationM).toBe(700);
 expect(metrics.maxElevationM).toBe(720);
 ```
+
+Also test invalid lon/lat, fewer than two coordinates, zero-length routes, non-finite values, and segment gaps.
 
 - [ ] **Step 2: Run tests and confirm failure**
 
@@ -383,15 +491,20 @@ export interface TrackMetrics {
 }
 ```
 
-Use existing distance helpers for horizontal distance. Elevation metrics are `null` when the elevation series is incomplete or unusable rather than fabricated.
+Use the existing distance helper. Elevation outputs become `null` if the elevation array length differs from the coordinate count or contains unusable gaps.
 
-- [ ] **Step 4: Implement geometry validation**
+- [ ] **Step 4: Implement explicit geometry QA**
 
-Reject invalid lon/lat, fewer than two coordinates, non-finite values, zero-length geometry, and implausible discontinuities. Acceptance bounds must be supplied by the caller; do not encode an invented protected-area polygon as an official Sierra Mágina boundary.
+```ts
+export interface GeometryValidationOptions {
+  acceptanceBounds?: readonly [west: number, south: number, east: number, north: number];
+  maxSegmentKm?: number;
+}
+```
+
+Defaults: no acceptance bounds and `maxSegmentKm = 5`. A segment longer than the threshold yields `suspicious_segment_gap`; it is a hard validation failure for canonical publishable geometry. Bounds are supplied by the caller; do not encode an invented protected-area polygon.
 
 - [ ] **Step 5: Export and verify**
-
-Run:
 
 ```bash
 pnpm --filter @magina-aventura/geo test
@@ -409,7 +522,7 @@ git commit -m "feat(geo): add canonical track metrics and validation"
 
 ---
 
-### Task 4: Extend source-file ingestion without coupling it to catalog storage
+### Task 4: Extend source-file ingestion without storage coupling
 
 **Files:**
 - Create: `packages/route-import/src/geojson.ts`
@@ -420,10 +533,9 @@ git commit -m "feat(geo): add canonical track metrics and validation"
 - Modify: `packages/route-import/src/index.ts`
 
 **Interfaces:**
-- Consumes: raw GPX/GeoJSON text plus route id, geometry version, source id.
-- Produces: normalized geometry and source metadata; no database writes.
+- Produces normalized geometry plus source metadata; no database writes.
 
-- [ ] **Step 1: Write GeoJSON importer tests**
+- [ ] **Step 1: Write failing GeoJSON tests**
 
 ```ts
 const imported = parseGeoJsonRoute(
@@ -439,15 +551,15 @@ expect(imported.line.properties.routeId).toBe('ma-001');
 expect(imported.line.geometry.type).toBe('LineString');
 ```
 
-Also reject Polygon, MultiPolygon, empty LineString, invalid coordinates, and JSON that is not a Feature/LineString.
+Reject Polygon, MultiPolygon, empty LineString, invalid coordinates, and non-Feature input.
 
-- [ ] **Step 2: Run importer tests and confirm failure**
+- [ ] **Step 2: Run tests and confirm failure**
 
 Run: `pnpm --filter @magina-aventura/route-import test`
 
 Expected: FAIL for missing GeoJSON parser.
 
-- [ ] **Step 3: Implement normalized source metadata**
+- [ ] **Step 3: Implement source metadata**
 
 ```ts
 export interface ImportedGeometrySource {
@@ -458,15 +570,11 @@ export interface ImportedGeometrySource {
 }
 ```
 
-Keep format metadata separate from `RouteLineFeature` so canonical geometry remains reusable.
+- [ ] **Step 4: Extend GPX result with metrics**
 
-- [ ] **Step 4: Extend GPX result with deterministic metrics**
+After `validateRouteLineFeature`, call `calculateTrackMetrics` and return metrics alongside line/start/bounds/elevations. Existing callers must continue to typecheck.
 
-After `validateRouteLineFeature`, call `calculateTrackMetrics` and return the result alongside line/start/bounds/elevations. Existing consumers must continue to compile.
-
-- [ ] **Step 5: Export and verify**
-
-Run:
+- [ ] **Step 5: Verify**
 
 ```bash
 pnpm --filter @magina-aventura/route-import test
@@ -500,9 +608,8 @@ git commit -m "feat(route-import): normalize GPX and GeoJSON catalog geometry"
 
 **Interfaces:**
 - Produces: `getCatalogSnapshot()`, `listAdventures(filters?)`, `getAdventureBySlug(slug)`, `getAdventurePois(adventureId)`, `getAdventureRestrictions(adventureId)`.
-- Does not know Supabase, React Native, Expo, Weather, GPS, or Admin.
 
-- [ ] **Step 1: Write failing catalog read-model tests**
+- [ ] **Step 1: Write failing read tests**
 
 ```ts
 expect(getAdventureBySlug('las-vinas-cuadros')?.id).toBe('ma-001');
@@ -513,8 +620,6 @@ expect(getAdventureRestrictions('ma-001')).toEqual(
 ```
 
 - [ ] **Step 2: Add package manifest**
-
-Use:
 
 ```json
 {
@@ -540,11 +645,11 @@ Use:
 }
 ```
 
-- [ ] **Step 3: Seed only evidence-backed starter records**
+- [ ] **Step 3: Seed the first evidence-backed route**
 
-Start with the already researched Las Viñas/Cuadros entry as `ma-001`, keeping the official route figure (8.7 km, ~3 h, medium/moderate source difficulty) separate from independently calculated geometry metrics. Record the temporary closure as a `Restriction`, not inside the Adventure description. Do not mark the route operationally open while that restriction remains active or unverified as lifted.
+Create `ma-001` Las Viñas with the already verified official figures: circular, 8.7 km, about 3 hours, official difficulty medium/moderate, Bedmar y Garcíez, start area at Cuadros. Keep independently calculated figures (8.99 km, +426 m, 568–917 m, 2 h 56 min) out of the official metrics object unless stored with an explicit non-official provenance source. Represent the known closure as `Restriction(type='temporary_closure', severity='blocking')` and keep `publicationState='draft'` until geometry/provenance validation passes.
 
-- [ ] **Step 4: Implement read functions**
+- [ ] **Step 4: Implement pure in-memory selectors**
 
 ```ts
 export interface AdventureFilters {
@@ -555,11 +660,7 @@ export interface AdventureFilters {
 }
 ```
 
-Filters are pure in-memory selectors over the canonical snapshot in V1.
-
-- [ ] **Step 5: Run package tests and workspace typecheck**
-
-Run:
+- [ ] **Step 5: Verify**
 
 ```bash
 pnpm --filter @magina-aventura/adventure-catalog test
@@ -578,16 +679,13 @@ git commit -m "feat(catalog): add portable canonical catalog package"
 
 ---
 
-### Task 6: Build the quality gate and human-readable source ledger
+### Task 6: Add quality gate and source ledger
 
 **Files:**
 - Create: `packages/adventure-catalog/src/quality-report.ts`
 - Create: `packages/adventure-catalog/src/quality-report.test.ts`
 - Create: `packages/adventure-catalog/scripts/validate-catalog.ts`
 - Create: `docs/catalog/source-ledger.md`
-
-**Interfaces:**
-- Produces a machine validation result plus readable per-route completeness report.
 
 - [ ] **Step 1: Write failing quality-report tests**
 
@@ -602,33 +700,36 @@ expect(report.adventures.find((item) => item.id === 'ma-001')).toEqual(
 );
 ```
 
-- [ ] **Step 2: Implement CLI exit behavior**
+- [ ] **Step 2: Implement CLI hard-failure behavior**
 
 ```ts
-const result = validateCatalog(getCatalogSnapshot());
-const hardErrors = result.filter((issue) => issue.severity === 'error');
+const issues = validateCatalog(getCatalogSnapshot());
+const hardErrors = issues.filter((issue) => issue.severity === 'error');
 if (hardErrors.length > 0) {
   console.error(JSON.stringify(hardErrors, null, 2));
   process.exitCode = 1;
 }
 ```
 
-Completeness warnings print but do not automatically fail CI.
+- [ ] **Step 3: Create the source ledger with fixed columns**
 
-- [ ] **Step 3: Create the source ledger**
+Use this Markdown table schema:
 
-For every source used in data files, add a row with source id, authority/publisher, route/POI/restriction scope, URL, checked date, reuse/license note when known, and which claims depend on it. The source ledger is documentation; the canonical `CatalogSource` objects remain the machine source of truth.
+```md
+| Source ID | Publisher | Authority family | Scope | URL | Published | Checked | Verification | License/reuse | Claims |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+```
 
-- [ ] **Step 4: Run quality validation**
+Every source in `sources.ts` must have one ledger row.
 
-Run:
+- [ ] **Step 4: Verify**
 
 ```bash
 pnpm --filter @magina-aventura/adventure-catalog test
 pnpm --filter @magina-aventura/adventure-catalog validate
 ```
 
-Expected: PASS for hard invariants; any remaining completeness warnings are printed explicitly.
+Expected: PASS for hard invariants; completeness warnings print without changing exit code.
 
 - [ ] **Step 5: Commit**
 
@@ -639,7 +740,7 @@ git commit -m "feat(catalog): add source ledger and quality gate"
 
 ---
 
-### Task 7: Populate the audited Sierra Mágina route inventory in controlled batches
+### Task 7: Populate the audited real Sierra Mágina inventory in authority batches
 
 **Files:**
 - Modify: `packages/adventure-catalog/src/data/sources.ts`
@@ -648,35 +749,29 @@ git commit -m "feat(catalog): add source ledger and quality gate"
 - Modify: `packages/adventure-catalog/src/data/tracks.ts`
 - Modify: `packages/adventure-catalog/src/data/restrictions.ts`
 - Modify: `docs/catalog/source-ledger.md`
-- Add route geometry fixtures/assets only when a lawful authoritative source provides them.
+- Add geometry assets only when an authoritative source lawfully provides them.
 
-**Interfaces:**
-- Consumes the contracts and validation gates from Tasks 1–6.
-- Produces the real starter corpus used later by RC.
+- [ ] **Step 1: Add all 17 audited official identities**
 
-- [ ] **Step 1: Import the 17 official senderos as identities first**
+Create one `Adventure` per route from the exact inventory at the top of this plan. Start every entry as `draft`; preserve authority, municipality, source URL, and checked date. Do not infer missing numeric fields.
 
-Use the previously audited 17/17 official senderos. Keep their authority and source lineage explicit. A route identity may be `draft` before its geometry is imported; do not invent geometry to make it publishable.
+- [ ] **Step 2: Attach authoritative geometry**
 
-- [ ] **Step 2: Attach authoritative geometry where available**
+Prefer REDIAM/Junta geometry for the 17 official routes when available. Each `TrackAsset` stores source id, geometry version, format, verified date, geometry quality, geometry ref, and calculated metrics. If source-published metrics differ from calculated geometry metrics, preserve both through separate source-backed records and surface a quality warning.
 
-Prefer REDIAM/Junta geometry for the official set where available. For every imported asset, store source id, geometry version, format, verified date, and calculated metrics. When official source numbers differ from calculated track numbers, preserve both and flag the discrepancy instead of silently replacing either value.
+- [ ] **Step 3: Add provincial R routes separately**
 
-- [ ] **Step 3: Add provincial R routes as a separate authority family**
-
-Import the audited provincial R inventory without merging identities into similarly named official/municipal routes. Keep known POIs/checkpoints such as Cueva de la Graja, Pinar de Cánava, Aznaitín, Zurreón, Mata Bejid, Puerto de la Mata, Pico Mágina/Miramundos, Gargantón, Cuadros, Caño del Aguadero, Torre del Lucero, and Bélmez only where their association is source-backed.
+Keep R1–R9 distinct from similarly named Junta/municipal routes. Known checkpoint/POI associations may be added only when source-backed. R4/R5/R8 remain `draft` while authoritative geometry is unresolved.
 
 - [ ] **Step 4: Add GR/PR/SL and municipal routes with independent identity rules**
 
-A homologated or municipal route may overlap geometry with another adventure but remains a separate catalog entry when authority, official naming, route code, or legal status differs. Use aliases/relationships rather than destructive deduplication.
+Overlapping geometry does not imply duplicate identity when route code, authority, legal/homologation status, or official naming differs. Model aliases/relationships; do not destructively merge records.
 
 - [ ] **Step 5: Apply publication gates**
 
-Only set `publicationState: 'publishable'` when `validateCatalog` has no hard errors and the route has source-backed core data plus validated geometry when the activity requires a track. R4/R5/R8 or any other route whose authoritative track has not been located/validated remains draft rather than receiving a community track as if official.
+Set `publicationState='publishable'` only when `validateCatalog` returns zero hard errors for the route, provenance is complete, and geometry is validated for route-based activities. Community geometry cannot be promoted as official geometry.
 
-- [ ] **Step 6: Re-run full validation after every batch**
-
-Run:
+- [ ] **Step 6: Validate each batch**
 
 ```bash
 pnpm --filter @magina-aventura/adventure-catalog validate
@@ -684,17 +779,15 @@ pnpm test
 pnpm typecheck
 ```
 
-Expected: zero hard catalog errors and all workspace tests/typechecks passing.
+Expected: zero hard catalog errors and all workspace checks passing.
 
-- [ ] **Step 7: Commit each authority family separately**
+- [ ] **Step 7: Commit authority families separately**
 
 ```bash
 git commit -am "data(catalog): add official Sierra Magina senderos"
 git commit -am "data(catalog): add provincial adventure routes"
 git commit -am "data(catalog): add homologated and municipal routes"
 ```
-
-Do not combine unrelated authority families into one opaque data commit.
 
 ---
 
@@ -704,12 +797,11 @@ Do not combine unrelated authority families into one opaque data commit.
 - Create: `packages/adventure-catalog/src/read-model.ts`
 - Create: `packages/adventure-catalog/src/read-model.test.ts`
 - Modify: `packages/adventure-catalog/src/index.ts`
-- Do not modify RC/app UI in this task.
 
 **Interfaces:**
-- Produces a storage-independent consumer surface.
+- Produces storage-independent consumer API; no RC/app changes.
 
-- [ ] **Step 1: Write failing read-model tests**
+- [ ] **Step 1: Write failing reader tests**
 
 ```ts
 const catalog = createCatalogReader(getCatalogSnapshot());
@@ -718,7 +810,7 @@ expect(catalog.bySlug('las-vinas-cuadros')?.adventure.id).toBe('ma-001');
 expect(catalog.bySlug('las-vinas-cuadros')?.operationalStatus).not.toBe('open');
 ```
 
-- [ ] **Step 2: Implement the reader**
+- [ ] **Step 2: Implement exact reader interface**
 
 ```ts
 export interface CatalogReader {
@@ -729,11 +821,9 @@ export interface CatalogReader {
 }
 ```
 
-`AdventureDetailView` combines canonical adventure data with derived operational status and completeness metadata but never mutates the canonical record.
+`AdventureDetailView` combines canonical data with derived operational status and completeness metadata without mutating canonical records.
 
 - [ ] **Step 3: Verify package and workspace**
-
-Run:
 
 ```bash
 pnpm --filter @magina-aventura/adventure-catalog test
@@ -744,16 +834,14 @@ pnpm typecheck
 
 Expected: PASS.
 
-- [ ] **Step 4: Compare branch scope**
-
-Run:
+- [ ] **Step 4: Verify branch isolation**
 
 ```bash
 git diff --stat main...HEAD
 git diff --name-only main...HEAD
 ```
 
-Expected: changes limited to contracts/domain/geo/route-import/adventure-catalog/docs plus lockfile changes required by the new package. No mobile UI, Weather, GPS tracking, Community, Admin, auth, onboarding, or promo files.
+Expected paths: contracts/domain/geo/route-import/adventure-catalog/docs plus required lockfile changes. No mobile UI, Weather, GPS tracking, Community, Admin, auth, onboarding, or promo files.
 
 - [ ] **Step 5: Commit**
 
@@ -766,10 +854,10 @@ git commit -m "feat(catalog): expose stable catalog read model"
 
 ## Final Verification
 
-Run all of the following from repository root:
+Run from repository root:
 
 ```bash
-pnpm install --frozen-lockfile
+pnpm install
 pnpm test
 pnpm typecheck
 pnpm lint
@@ -780,11 +868,11 @@ git diff --name-only main...HEAD
 
 Success criteria:
 
-1. All tests, typechecks, lint, and catalog hard validation pass.
-2. The catalog contains real Sierra Mágina records only; no development fixtures are presented as real adventures.
-3. Every sensitive safety/water/accessibility/restriction claim has source provenance.
-4. The Las Viñas/Cuadros restriction is represented independently from route metadata and prevents a derived unconditional `open` state.
-5. The 17 official senderos are represented as distinct source-backed identities; geometry is publishable only where validated.
-6. Provincial, homologated, municipal, and community-derived records remain distinguishable by authority/source and are not silently merged.
-7. RC/mobile product code has not been modified.
-8. The final catalog read model is storage-independent and ready for a later adapter into RC/Supabase without changing canonical data semantics.
+1. Tests, typechecks, lint, and hard catalog validation pass.
+2. Catalog contains real Sierra Mágina records only; no development fixture is presented as a real adventure.
+3. Sensitive safety/water/accessibility/restriction claims have provenance.
+4. Las Viñas/Cuadros closure remains independent from route metadata and prevents unconditional `open`.
+5. All 17 official senderos exist as distinct source-backed identities; only validated geometry becomes publishable.
+6. Provincial, homologated, municipal, and community-derived records remain distinguishable by authority/source.
+7. RC/mobile product code remains untouched.
+8. Read model is storage-independent and ready for later RC/Supabase adapters without changing canonical semantics.

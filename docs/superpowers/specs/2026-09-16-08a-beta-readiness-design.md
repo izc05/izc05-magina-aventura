@@ -61,7 +61,7 @@ interface BetaGate {
 
 `MANUAL` means code can prepare the test, but a human/device/environment action is still required. A manual gate is not a failure; it is an explicit remaining obligation.
 
-`NOT_APPLICABLE` is allowed only when the candidate deliberately excludes that capability.
+`NOT_APPLICABLE` is allowed only when the selected candidate profile deliberately excludes that capability.
 
 The overall candidate state is derived, not manually typed:
 
@@ -110,7 +110,7 @@ Rules:
 
 - database/RLS contracts must be green at the exact integration head;
 - mobile community must not be treated as ready before the identity/community backend chain is integrated;
-- real authenticated write flows, if excluded from the beta candidate, must be explicitly marked `NOT_APPLICABLE` rather than silently assumed.
+- authenticated Community write flows are explicitly deferred from the initial internal Android beta and must appear as `NOT_APPLICABLE` for that profile, not as silently passing.
 
 ### 6.3 Visual Android lane
 
@@ -182,7 +182,7 @@ The initial required automatic gate set is:
 - exploration/retry idempotency tests;
 - progression retry/idempotency tests;
 - reward grant/outbox/validation/delivery tests;
-- community RLS/contracts when community is part of the candidate.
+- community RLS/contracts only for candidate profiles that include Community.
 
 An automated gate becomes `BLOCKED` if its evidence is missing for the current candidate head, even if an older branch run was green.
 
@@ -221,10 +221,11 @@ Once a staging project exists:
 - migrations apply from a clean database;
 - first authorized Super Admin can authenticate;
 - RBAC prevents unauthorized admin actions;
-- route/content operations work;
-- append-only olive ledger invariant holds;
-- reward reservation/redemption QR remains one-time and atomic;
+- route/content operations needed for the pilot work;
+- append-only olive ledger invariant holds when reward validation is included;
 - no service-role credential is exposed to browser/mobile clients.
+
+Physical/partner QR redemption is not a blocking gate for `android-internal-beta`; it becomes required for the later public/reward-enabled profile.
 
 ### Pilot content
 
@@ -241,9 +242,7 @@ For the selected Bedmar/Sierra Mágina pilot route:
 
 The readiness system supports explicit candidate profiles so unfinished optional features do not create ambiguous status.
 
-Initial profile:
-
-`android-internal-beta`
+### `android-internal-beta`
 
 Required areas:
 
@@ -253,12 +252,22 @@ Required areas:
 - GPS/offline/recovery;
 - exploration/checkpoints/discoveries;
 - progression domain;
+- reward-domain validation/idempotency contracts;
 - backend/auth required by the selected runtime flow;
-- Admin/staging only where needed to provision real pilot content and reward validation.
+- Admin/staging capabilities needed to provision real pilot content and inspect authoritative state.
 
-Community and real reward redemption may be either required or explicitly deferred for the first internal beta; the profile must state that choice rather than infer it.
+Explicitly deferred (`NOT_APPLICABLE` for this profile):
 
-A later profile may be added for `public-beta` with stricter Community, reward/QR, moderation and operational requirements.
+- authenticated Community write flows;
+- public moderation operations not needed by the pilot;
+- partner-facing physical reward handoff;
+- real bottle redemption/canje QR.
+
+This keeps the first beta focused on proving the core promise: install the app on Android, follow a real Sierra Mágina route, track it robustly, discover/check in at real points, finish the adventure, and produce trustworthy progression/reward state.
+
+### Later profile: `public-beta`
+
+The later public beta promotes Community, moderation, partner/reward operations and one-time QR redemption to required gates, along with the corresponding operational and security smoke tests.
 
 ## 11. Readiness report
 
@@ -291,7 +300,7 @@ The readiness layer is conservative:
 
 - changed head SHA invalidates older CI evidence for that branch/candidate;
 - missing evidence blocks automatic readiness rather than defaulting to green;
-- a failed manual test remains recorded until a later passing test for a newer/equal candidate supersedes it;
+- a failed manual test remains recorded until a later passing test for the same candidate or an explicitly identified successor candidate supersedes it;
 - merging/rebasing changes the candidate identity and requires appropriate re-verification;
 - failures never silently downgrade a required gate to optional.
 

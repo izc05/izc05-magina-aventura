@@ -2,11 +2,11 @@
 
 ## Goal
 
-Build a protected web administration application inside the existing monorepo so the Super Admin can operate Mágina Aventura without changing application code. The admin must manage routes and map content, users and permissions, multimedia, community moderation, gamification, rewards and QR redemptions, notifications, and audit history.
+Provide a protected control plane inside the existing Mágina Aventura monorepo so authorized staff can operate the app without changing mobile code. The Super Admin must be able to manage routes, maps, people, multimedia, public community/chat, gamification, olives, rewards/QR, notifications, safety, configuration and audit history.
 
 ## Repository placement
 
-The repository remains a pnpm monorepo. The mobile app stays in `apps/mobile`; the new control plane lives in `apps/admin`. Shared domain contracts stay in packages rather than being duplicated inside the web app.
+The repository remains a pnpm monorepo. The mobile product remains in `apps/mobile`; Admin lives in `apps/admin` and shares the existing route/domain schema rather than duplicating entities.
 
 ```text
 apps/
@@ -20,36 +20,38 @@ packages/
   route-import/
 supabase/
   migrations/
-  seed/
-  tests/
+  tests/database/
 ```
 
-## Runtime and dependencies
+## Runtime choice
 
-- Node.js >= 22.13.0.
-- pnpm 10.15.0.
-- TypeScript 6.x, matching the repository.
-- Next.js 16.3.3, React 19.2.3.
-- `@supabase/supabase-js` 2.116.0.
-- `@supabase/ssr` 0.12.7.
-- Supabase Data API access is granted explicitly for every new public table and RLS is enabled on every exposed table.
-- No service-role or secret key is ever shipped to the browser.
+Admin is a dependency-free static web application composed of native ES modules, HTML and CSS. This is intentional: the repository CI installs with `pnpm --frozen-lockfile`, and adding a separate web framework would introduce a lockfile/dependency migration unrelated to the control-plane requirements.
 
-## Roles and authorization
+The browser talks to Supabase Auth, Data API and Storage through HTTPS using only the project URL and a publishable key. Secret/service-role credentials are never browser configuration. Sensitive behavior is enforced in RLS and narrowly scoped RPCs.
 
-Roles are stored in database authorization tables, never in editable user metadata.
+Node.js remains >= 22.13.0 and pnpm remains 10.15.0.
 
-- `super_admin`: full platform access.
-- `admin`: general operation except critical role/configuration changes.
-- `route_manager`: routes, GPX, checkpoints, discoveries and route media.
-- `moderator`: reports, community content and moderation actions.
-- `partner`: only the partner/almazara records, rewards, stock and QR redemptions assigned to that partner.
+## Authentication and session lifecycle
 
-Authorization is enforced twice: page/action guards in `apps/admin` and RLS/database functions in Supabase. UI hiding alone never grants or removes permission.
+Admin uses Supabase email/password Auth. Sessions are stored in `sessionStorage`, not persistent local storage. If an access token expires, the client uses the refresh token once and retries the failed request. Logout clears the local session immediately and attempts remote token revocation.
 
-## Admin navigation
+A signed-in account still has no Admin access unless it has a row in `user_admin_roles`.
 
-The persistent desktop navigation contains:
+## Roles and capabilities
+
+- `super_admin`: every capability.
+- `admin`: general operation except critical administrator-role management.
+- `route_manager`: routes, map, discoveries and multimedia.
+- `moderator`: users, public community/chat, moderation and audit.
+- `partner`: rewards and redemptions scoped to its own almazara/partner.
+
+Authorization is enforced at two layers: navigation/action availability in Admin and RLS/RPC checks in Supabase. UI hiding never substitutes for database authorization.
+
+The system prevents revocation of the final `super_admin`.
+
+## Navigation
+
+Admin exposes:
 
 1. Dashboard
 2. Routes
@@ -59,110 +61,123 @@ The persistent desktop navigation contains:
 6. Users
 7. Community
 8. Moderation
-9. Levels & XP
-10. Challenges & badges
-11. Olives ledger
-12. Rewards
-13. Partners / almazaras
-14. QR redemptions
-15. Notifications
-16. Safety / incidents
-17. Administrators
-18. Audit log
-19. Settings
-
-The first production slice must make the route workflow complete before the secondary modules are expanded.
+9. Gamification
+10. Olives ledger
+11. Rewards
+12. Partners / almazaras
+13. QR redemptions
+14. Notifications
+15. Safety / incidents
+16. Administrators
+17. Audit log
+18. Settings
 
 ## Route CMS
 
-The existing `routes`, `route_versions`, `route_geometries`, `checkpoints`, `discoveries` and route-map payload tables remain authoritative. Admin must not create parallel route entities.
+The canonical entities remain `routes`, `route_versions`, `route_geometries`, `checkpoints`, `discoveries` and `route_map_assets`.
 
-A route editor supports:
+Admin supports route creation, title/slug changes, versioned content editing, GPX import, PostGIS LineString geometry, checkpoints, discoveries, media associations, PMTiles metadata and lifecycle states:
 
-- municipality, slug, title and status;
-- description, safety notes, difficulty, distance, duration, elevation gain;
-- reward XP and reward olives;
-- GPX import and geometry versioning;
-- checkpoints with point, radius, required/active state;
-- discoveries with category, point, radius, XP/olive reward and visibility;
-- route hero/gallery media;
-- draft -> review -> published -> archived workflow;
-- preview before publication.
+```text
+draft -> review -> published -> archived
+```
 
-Publishing is a server-side operation and records an audit entry.
+Content and geometry edits create new versions. Editing a published route moves it back to `review`; a published route is never silently mutated in place. Publication validates that current content and geometry exist.
+
+The visual route editor renders the geometry, checkpoints and discoveries and lets staff place new points directly on the trace. Coordinates are converted deterministically between route longitude/latitude and the editor SVG.
+
+## Offline map assets
+
+A route map asset belongs to a specific geometry version. Admin can register/update/delete PMTiles metadata including object key, HTTPS URL, style URL, byte size, checksum, zoom range and polygon bounds. A new geometry version does not overwrite the map asset associated with the previous geometry.
 
 ## Multimedia
 
-Use Supabase Storage with a dedicated `media` bucket and database metadata. Admin can upload, search, tag, reuse and archive assets. Replacement/upsert policies must grant the Storage operations required by Supabase while retaining role checks. Original files are preserved; display variants may be added later without changing references.
+Supabase Storage uses a private `media` bucket. `media_assets` stores title, MIME type, size, alt text, tags and archive status. `route_media` reuses an asset as hero/gallery/safety/discovery content.
+
+Archiving is the default removal mechanism so existing route references are not broken. Storage and metadata permissions are enforced separately.
 
 ## Users
 
-The user panel exposes safe operational information: account identifier, profile information when available, role memberships, activity summary, XP/olive balances, rewards and moderation state. Passwords and authentication secrets are never visible.
+Admin exposes safe operational fields only: UUID/email, registration/sign-in dates, Admin roles, partner scope, moderation state, olive balance, redemption counts and community/chat activity summary. Passwords and Auth secrets never appear.
 
-Administrative corrections to XP or olives must append ledger entries with reason and actor; direct balance overwrites are forbidden.
+Moderation state is `active`, `warned` or `suspended`. Public-chat posting rejects suspended users.
 
-## Community and moderation
+## Public community and chat
 
-Administration handles public community content and reports. Moderators can hide/restore content, warn/suspend users and resolve reports. Every moderation action is audited.
+Administration supports public community moderation and a public channel chat. Channels may be global, route-scoped or municipality-scoped. Messages can be visible, hidden or deleted and may be reported. Moderators can resolve/dismiss reports and every sensitive action is audited.
 
-Private conversations are not exposed as a general admin inbox. If private-chat abuse reporting is added, only reported message context needed to resolve a report is accessible to authorized moderators.
+Private conversations are intentionally not exposed as a general Admin inbox.
 
 ## Gamification
 
-Gamification rules are data-driven rather than compiled into the mobile app. Admin manages levels, badges, challenges, seasons and reward rules. XP and olives are awarded by server/database-controlled operations after activity validation.
+Admin manages data-driven levels, badges, challenges, seasons and discovery collections. Seasons include XP/olive multipliers. Collections group discoveries and can grant completion XP/olive rewards.
 
-Olives use an append-only transaction ledger. Current balance is derived or maintained from ledger transactions; every mutation has source, amount, user, actor/system source and timestamp.
+Olives use an append-only `olive_transactions` ledger. Administrative corrections are additive transactions with actor and reason; direct balance overwrite is forbidden.
 
-## Rewards and QR redemption
+## Rewards and QR
 
-Partners/almazaras can publish rewards with stock, olive price, per-user limits and validity windows. Redemption flow:
+Partners/almazaras manage rewards with olive price, stock, active status and validity. The redemption lifecycle is:
 
-`available -> reserved -> redeemed`
+```text
+reserved -> redeemed
+        |-> expired
+        |-> cancelled
+```
 
-A reservation may transition to `expired` or `cancelled`; reserved olives are restored according to the transaction ledger rules.
+Reservation and reversal use ledger transactions and stock updates. A redemption QR contains an opaque token; only its hash is persisted. Redemption is atomic and one-time.
 
-The QR contains an opaque one-time redemption token, never reward/price data trusted by the client. Validation occurs on the server/database side. A successful scan is atomic: verify token, status, partner, expiry and stock; mark redeemed; record timestamp and actor; append audit event.
+Admin can validate a token manually or use camera/image QR reading when the browser supports `BarcodeDetector`. Camera scanning only fills the token; the database remains authoritative for final redemption.
 
-## Notifications and safety
+## Notifications
 
-Admins can create global or segmented notifications, including route closures, weather/safety warnings and challenge announcements. Route safety incidents can temporarily close a route without deleting it. Notification delivery adapters are outside the first slice, but records, audience and lifecycle are managed from Admin.
+Admin creates drafts and publishes notifications to:
 
-## Audit log
+- all users;
+- followers of a route;
+- followers of a municipality;
+- an administrative role.
 
-Sensitive actions append immutable audit events with actor user ID, action name, entity type, entity ID, before/after JSON where appropriate, request metadata and timestamp. Examples include route publication, permission changes, reward stock changes, moderation actions, balance corrections and redemption confirmation.
+Device registrations and topic subscriptions are per-user. Publication fans out into `notification_deliveries`. Raw push tokens are never exposed through Admin. Queue-claim/complete functions are executable by `service_role` only, providing a safe integration boundary for a server/Edge Function dispatcher.
 
-## Security constraints
+## Safety
 
-- RLS enabled on every exposed table.
-- Explicit Data API grants for new public tables.
-- Authorization never relies on `raw_user_meta_data`.
-- `SECURITY DEFINER` is avoided unless a narrowly scoped operation genuinely needs it; any such function lives outside the exposed schema, verifies `auth.uid()`, has a fixed search path, and receives explicit execute grants only.
-- UPDATE policies include both `USING` and `WITH CHECK`.
-- Server components/actions use the authenticated Supabase session; secret/service credentials are server-only and used only where the Auth Admin API is unavoidable.
-- All critical mutations validate input and create an audit event.
+Route safety incidents carry severity, lifecycle and optional time window. Authorized staff can create and resolve incidents without deleting route history.
+
+## Settings
+
+`app_settings` provides auditable JSON configuration and feature flags. Rows may be explicitly public-readable for the app or private to authorized Admin users. Initial settings include community, rewards, weather, maintenance mode, reward reservation duration and default checkpoint radius.
+
+## Audit
+
+Sensitive mutations append immutable events to `admin_audit_log` with actor, action, entity identity, before/after data and timestamp where available. Examples include route versions/publication, role changes, moderation, reward/canje operations, settings, PMTiles and user-state changes.
+
+## Security requirements
+
+- RLS enabled on exposed Admin tables.
+- Explicit grants for Data API access.
+- No authorization based on editable `user_metadata`.
+- No secret/service-role key in `apps/admin`.
+- `SECURITY DEFINER` only for narrow privileged operations and with `search_path=''` plus fully qualified relations.
+- Sensitive RPCs verify capability/actor.
+- Service-only notification queue functions are revoked from `anon` and `authenticated`.
+- Storage bucket is private.
+- QR tokens are opaque and stored hashed.
+- Static hosting sends CSP, frame denial, nosniff and restrictive camera permissions.
+- Runtime browser config is generated from deployment environment and rejects secret keys.
 
 ## Error handling
 
-Admin mutations return structured user-safe errors. Database constraint/RLS failures are not swallowed. Route publication rejects incomplete route data. Redemption rejects invalid, expired, already-used or wrong-partner tokens. UI presents retryable failures without losing unsaved form data where practical.
+RLS/constraint/RPC failures are surfaced to the operator. Route publication fails on incomplete data; QR redemption fails on invalid/reused/expired tokens; configuration rejects invalid JSON; GPX import rejects invalid tracks; session expiry refreshes once and otherwise returns to login.
 
-## Testing
+## Testing and CI
 
-- Vitest unit tests for pure authorization, validation and state transitions.
-- Supabase pgTAP tests for roles/RLS, ledger invariants and one-time QR redemption behavior.
-- Next.js typecheck/build in CI.
-- Existing mobile and package tests remain green.
-- Every schema migration resets cleanly with `supabase db reset`.
+- Existing TypeScript/Vitest suites remain unchanged and green.
+- Node tests cover Admin pure logic: permissions/navigation, redemption state machine, GPX parsing, route-editor coordinate transforms, QR parsing, media helpers and session refresh.
+- Every Admin `.mjs` is syntax-checked in the root test command.
+- pgTAP covers Admin tables, RLS presence and RPC contracts.
+- GitHub Actions runs frozen install, typecheck, all tests, Expo Android prebuild, package-boundary checks, local Supabase start/reset and database tests.
+- All migrations must rebuild successfully from an empty local database.
 
-## Delivery sequence
+## Deployment boundary
 
-1. Admin shell, Supabase SSR session handling and RBAC.
-2. Complete route CMS, GPX/map content and publication.
-3. Multimedia library.
-4. Users and role administration.
-5. Community moderation.
-6. Gamification and olives ledger.
-7. Partners, rewards and QR redemption.
-8. Notifications/safety.
-9. Dashboard metrics, audit views and final security/CI pass.
-
-The route CMS is the first acceptance milestone; the full list above is the target for the Admin platform.
+Code completion does not create a paid/hosted Supabase project or merge into `main`. Live deployment requires an actual Supabase project, its public URL/publishable key, first-user bootstrap and hosting configuration. Those are explicit environment/account actions, not assumptions made by the feature branch.

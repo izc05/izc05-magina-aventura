@@ -43,7 +43,6 @@ function ensureSampleMap(
 ): Map<number, LocationSample> {
   const existing = database.samples.get(activityId);
   if (existing) return existing;
-
   const created = new Map<number, LocationSample>();
   database.samples.set(activityId, created);
   return created;
@@ -55,7 +54,6 @@ function ensureSnapshotMap(
 ): Map<number, ActivitySnapshot> {
   const existing = database.snapshots.get(activityId);
   if (existing) return existing;
-
   const created = new Map<number, ActivitySnapshot>();
   database.snapshots.set(activityId, created);
   return created;
@@ -67,7 +65,6 @@ function latestSnapshot(
 ): ActivitySnapshot | null {
   const snapshots = database.snapshots.get(activityId);
   if (!snapshots || snapshots.size === 0) return null;
-
   const latestSequence = Math.max(...snapshots.keys());
   const snapshot = snapshots.get(latestSequence);
   return snapshot ? cloneSnapshot(snapshot) : null;
@@ -108,22 +105,18 @@ export class MemoryActivityStore implements ActivityStore {
       }
     }
 
-    if (snapshot) {
-      ensureSnapshotMap(this.database, activityId).set(
-        snapshot.lastProcessedSequence,
-        cloneSnapshot(snapshot),
-      );
-    }
+    if (!snapshot) return;
+
+    ensureSnapshotMap(this.database, activityId).set(
+      snapshot.lastProcessedSequence,
+      cloneSnapshot(snapshot),
+    );
 
     const session = this.database.sessions.get(activityId);
-    if (session && samples.length > 0) {
-      const highestSequence = Math.max(
-        session.lastProcessedSequence,
-        ...samples.map((sample) => sample.sequence),
-      );
+    if (session) {
       this.database.sessions.set(activityId, {
         ...session,
-        lastProcessedSequence: highestSequence,
+        lastProcessedSequence: snapshot.lastProcessedSequence,
       });
     }
   }
@@ -158,7 +151,10 @@ export class MemoryActivityStore implements ActivityStore {
     session: ActivitySession,
     snapshot: ActivitySnapshot,
   ): Promise<void> {
-    this.database.sessions.set(session.activityId, cloneSession(session));
+    this.database.sessions.set(session.activityId, {
+      ...cloneSession(session),
+      lastProcessedSequence: snapshot.lastProcessedSequence,
+    });
     ensureSnapshotMap(this.database, session.activityId).set(
       snapshot.lastProcessedSequence,
       cloneSnapshot(snapshot),

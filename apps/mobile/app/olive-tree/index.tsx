@@ -8,59 +8,53 @@ import { colors, radius, shadow, spacing, typography } from '../../src/theme/tok
 
 const model = buildOliveTreeDashboardModel(developmentOliveTreeDashboard);
 
-function OliveTreeScene() {
+function OliveTreeIllustration() {
   return (
     <View accessibilityLabel="Olivo en crecimiento" style={styles.scene}>
       <View style={styles.sun} />
-      <View style={styles.hillBack} />
-      <View style={styles.hillFront} />
+      <View style={styles.hill} />
       <View style={styles.treeShadow} />
       <View style={styles.trunk} />
-      <View style={[styles.branch, styles.branchLeft]} />
-      <View style={[styles.branch, styles.branchRight]} />
       <View style={[styles.canopy, styles.canopyLeft]} />
       <View style={[styles.canopy, styles.canopyRight]} />
       <View style={[styles.canopy, styles.canopyTop]} />
-      <View style={[styles.oliveDot, styles.oliveOne]} />
-      <View style={[styles.oliveDot, styles.oliveTwo]} />
-      <View style={[styles.oliveDot, styles.oliveThree]} />
-      <View style={[styles.oliveDot, styles.oliveFour]} />
+      <View style={[styles.olive, styles.oliveLeft]} />
+      <View style={[styles.olive, styles.oliveCenter]} />
+      <View style={[styles.olive, styles.oliveRight]} />
     </View>
   );
 }
 
-function ActionCard({
+function DashboardAction({
   action,
 }: {
   action: (typeof model.actions)[number];
 }) {
-  const isRewards = action.id === 'rewards';
+  const active = action.id === 'rewards';
 
   return (
     <Pressable
-      accessibilityRole={isRewards ? 'button' : undefined}
-      disabled={!isRewards}
-      onPress={isRewards ? () => router.push('/rewards') : undefined}
+      accessibilityRole={active ? 'button' : undefined}
+      disabled={!active}
+      onPress={active ? () => router.push('/rewards') : undefined}
       style={({ pressed }) => [
         styles.actionCard,
-        pressed && isRewards ? styles.actionCardPressed : null,
+        pressed && active ? styles.pressed : null,
       ]}
     >
-      <View style={styles.actionIconShell}>
-        <Text style={styles.actionIcon}>
-          {action.id === 'rewards'
-            ? '🫒'
-            : action.id === 'customize'
-              ? '✦'
-              : action.id === 'history'
-                ? '◌'
-                : '⌁'}
-        </Text>
-      </View>
+      <Text style={styles.actionGlyph}>
+        {action.id === 'rewards'
+          ? '🫒'
+          : action.id === 'customize'
+            ? '✦'
+            : action.id === 'history'
+              ? '◌'
+              : '⌁'}
+      </Text>
       <Text style={styles.actionTitle}>{action.label}</Text>
-      <Text style={styles.actionDescription}>{action.description}</Text>
-      <Text style={isRewards ? styles.actionLink : styles.actionSoon}>
-        {isRewards ? 'Abrir →' : 'Próximamente'}
+      <Text style={styles.actionBody}>{action.description}</Text>
+      <Text style={active ? styles.actionLink : styles.actionSoon}>
+        {active ? 'Abrir →' : 'Próximamente'}
       </Text>
     </Pressable>
   );
@@ -73,8 +67,8 @@ export default function OliveTreeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <View>
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
             <Text style={styles.kicker}>MÁGINA · PROGRESO</Text>
             <Text style={styles.title}>{model.title}</Text>
           </View>
@@ -82,25 +76,24 @@ export default function OliveTreeScreen() {
             accessibilityLabel="Abrir recompensas"
             accessibilityRole="button"
             onPress={() => router.push('/rewards')}
-            style={styles.balancePill}
+            style={({ pressed }) => [styles.balancePill, pressed ? styles.pressed : null]}
           >
-            <Text style={styles.balancePillIcon}>🫒</Text>
-            <Text style={styles.balancePillText}>{model.availableOlivesLabel}</Text>
+            <Text style={styles.balanceText}>🫒 {model.availableOlivesLabel}</Text>
           </Pressable>
         </View>
 
         <View style={styles.heroCard}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.stageEyebrow}>ETAPA ACTUAL</Text>
-            <Text style={styles.stageTitle}>{model.stageLabel}</Text>
-            <Text style={styles.levelLabel}>{model.levelLabel}</Text>
+          <View style={styles.heroHeading}>
+            <Text style={styles.heroEyebrow}>ETAPA ACTUAL</Text>
+            <Text style={styles.heroTitle}>{model.stageLabel}</Text>
+            <Text style={styles.heroLevel}>{model.levelLabel}</Text>
           </View>
 
-          <OliveTreeScene />
+          <OliveTreeIllustration />
 
-          <View style={styles.progressBlock}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Crecimiento permanente</Text>
+          <View style={styles.progressSection}>
+            <View style={styles.progressRow}>
+              <Text style={styles.progressLabel}>Crecimiento permanente</Text>
               <Text style={styles.progressValue}>{model.progressPercentage}%</Text>
             </View>
             <View style={styles.progressTrack}>
@@ -116,55 +109,53 @@ export default function OliveTreeScreen() {
         </View>
 
         <View style={styles.walletCard}>
-          <View style={styles.walletHeader}>
-            <View>
+          <View style={styles.walletTop}>
+            <View style={styles.walletCopy}>
               <Text style={styles.sectionEyebrow}>TU COSECHA</Text>
               <Text style={styles.walletTitle}>Aceitunas disponibles</Text>
             </View>
             <Text style={styles.walletAmount}>{model.availableOlivesLabel} 🫒</Text>
           </View>
 
-          <View style={styles.walletDivider} />
+          <View style={styles.divider} />
 
-          <View style={styles.walletMetrics}>
-            <View style={styles.metricBlock}>
+          <View style={styles.metricRow}>
+            <View style={styles.metric}>
               <Text style={styles.metricValue}>{model.reservedOlivesLabel}</Text>
               <Text style={styles.metricLabel}>Pendientes de canje</Text>
             </View>
-            <View style={styles.metricSeparator} />
-            <View style={styles.metricBlock}>
+            <View style={styles.metricDivider} />
+            <View style={styles.metric}>
               <Text style={styles.metricValue}>{model.collectionLabel}</Text>
               <Text style={styles.metricLabel}>Colección digital</Text>
             </View>
           </View>
 
-          <Text style={styles.walletHistory}>{model.historyLabel}</Text>
-          <Text style={styles.walletNote}>
-            Gastar aceitunas no reduce el nivel ni hace retroceder tu olivo.
+          <Text style={styles.history}>{model.historyLabel}</Text>
+          <Text style={styles.note}>
+            Gastar aceitunas no reduce tu nivel ni hace retroceder el olivo.
           </Text>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>TU ESPACIO</Text>
-            <Text style={styles.sectionTitle}>Hazlo crecer a tu manera</Text>
-          </View>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionEyebrow}>TU ESPACIO</Text>
+          <Text style={styles.sectionTitle}>Hazlo crecer a tu manera</Text>
         </View>
 
         <View style={styles.actionGrid}>
           {model.actions.map((action) => (
-            <ActionCard action={action} key={action.id} />
+            <DashboardAction action={action} key={action.id} />
           ))}
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoIcon}>✦</Text>
+          <Text style={styles.infoGlyph}>✦</Text>
           <View style={styles.infoCopy}>
             <Text style={styles.infoTitle}>Tu olivo cuenta tu historia</Text>
             <Text style={styles.infoBody}>
               Las aventuras verificadas hacen crecer el árbol y pueden darte
-              aceitunas. El árbol conserva para siempre tu progreso; las
-              aceitunas son la recompensa que puedes gastar.
+              aceitunas. El árbol conserva tu progreso; las aceitunas son la
+              recompensa que puedes gastar.
             </Text>
           </View>
         </View>
@@ -182,203 +173,167 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[20],
     paddingBottom: spacing[40],
   },
-  headerRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing[12],
-    paddingTop: spacing[16],
-    paddingBottom: spacing[20],
+    paddingVertical: spacing[16],
+  },
+  headerCopy: {
+    flex: 1,
   },
   kicker: {
     color: colors.olive700,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.8,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.6,
   },
   title: {
     color: colors.ink,
     fontSize: typography.title,
-    fontWeight: '800',
+    fontWeight: '900',
     marginTop: 3,
   },
   balancePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[4],
     backgroundColor: colors.white,
+    borderRadius: radius.pill,
     borderColor: colors.border,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
     paddingHorizontal: spacing[12],
     paddingVertical: 9,
     ...shadow.card,
   },
-  balancePillIcon: {
-    fontSize: 14,
+  balanceText: {
+    color: colors.olive900,
+    fontSize: 13,
+    fontWeight: '900',
   },
-  balancePillText: {
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: '800',
+  pressed: {
+    opacity: 0.78,
   },
   heroCard: {
     overflow: 'hidden',
     backgroundColor: colors.olive900,
     borderRadius: radius.lg,
-    minHeight: 500,
     ...shadow.card,
   },
-  heroCopy: {
+  heroHeading: {
     paddingHorizontal: spacing[24],
     paddingTop: spacing[24],
-    zIndex: 4,
+    zIndex: 2,
   },
-  stageEyebrow: {
-    color: colors.limestone,
+  heroEyebrow: {
+    color: colors.aoveGold,
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.8,
-    opacity: 0.8,
+    fontWeight: '900',
+    letterSpacing: 1.7,
   },
-  stageTitle: {
+  heroTitle: {
     color: colors.white,
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
     marginTop: spacing[4],
   },
-  levelLabel: {
+  heroLevel: {
     color: colors.limestone,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     marginTop: spacing[4],
   },
   scene: {
-    height: 290,
-    marginTop: -12,
+    height: 270,
+    marginTop: -8,
     overflow: 'hidden',
   },
   sun: {
     position: 'absolute',
     right: 34,
-    top: 34,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    top: 38,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: colors.aoveGold,
     opacity: 0.76,
   },
-  hillBack: {
+  hill: {
     position: 'absolute',
-    left: -80,
-    right: -30,
-    bottom: 22,
-    height: 130,
-    borderRadius: 100,
-    backgroundColor: colors.olive700,
-    opacity: 0.5,
-    transform: [{ rotate: '-5deg' }],
-  },
-  hillFront: {
-    position: 'absolute',
-    left: -50,
-    right: -90,
-    bottom: -34,
-    height: 140,
-    borderRadius: 100,
+    left: -60,
+    right: -70,
+    bottom: -38,
+    height: 145,
+    borderRadius: 90,
     backgroundColor: colors.earth,
     opacity: 0.58,
-    transform: [{ rotate: '4deg' }],
+    transform: [{ rotate: '3deg' }],
   },
   treeShadow: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 38,
-    width: 180,
-    height: 28,
-    borderRadius: 90,
+    bottom: 44,
+    width: 172,
+    height: 24,
+    borderRadius: 86,
     backgroundColor: colors.ink,
-    opacity: 0.28,
+    opacity: 0.25,
   },
   trunk: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 55,
+    bottom: 58,
     width: 34,
-    height: 130,
+    height: 126,
     borderRadius: 16,
     backgroundColor: '#79563D',
     transform: [{ rotate: '2deg' }],
   },
-  branch: {
-    position: 'absolute',
-    alignSelf: 'center',
-    width: 16,
-    height: 90,
-    borderRadius: 8,
-    backgroundColor: '#79563D',
-    bottom: 118,
-  },
-  branchLeft: {
-    marginLeft: -52,
-    transform: [{ rotate: '-44deg' }],
-  },
-  branchRight: {
-    marginLeft: 52,
-    transform: [{ rotate: '44deg' }],
-  },
   canopy: {
     position: 'absolute',
-    backgroundColor: colors.olive500,
     borderRadius: 80,
+    backgroundColor: colors.olive500,
   },
   canopyLeft: {
     width: 132,
-    height: 112,
-    left: '16%',
-    top: 64,
-    transform: [{ rotate: '-7deg' }],
+    height: 106,
+    left: '15%',
+    top: 66,
   },
   canopyRight: {
-    width: 138,
-    height: 116,
+    width: 136,
+    height: 110,
     right: '14%',
-    top: 60,
-    transform: [{ rotate: '8deg' }],
+    top: 63,
   },
   canopyTop: {
     width: 126,
-    height: 118,
+    height: 112,
     alignSelf: 'center',
-    top: 28,
+    top: 31,
     backgroundColor: colors.olive700,
   },
-  oliveDot: {
+  olive: {
     position: 'absolute',
     width: 8,
     height: 12,
     borderRadius: 6,
     backgroundColor: '#28392B',
-    zIndex: 3,
   },
-  oliveOne: { left: '35%', top: 90 },
-  oliveTwo: { right: '34%', top: 104 },
-  oliveThree: { left: '46%', top: 56 },
-  oliveFour: { right: '26%', top: 132 },
-  progressBlock: {
+  oliveLeft: { left: '34%', top: 100 },
+  oliveCenter: { left: '49%', top: 69 },
+  oliveRight: { right: '29%', top: 112 },
+  progressSection: {
     paddingHorizontal: spacing[24],
     paddingBottom: spacing[24],
-    marginTop: -6,
   },
-  progressHeader: {
+  progressRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing[8],
   },
-  progressTitle: {
+  progressLabel: {
     color: colors.white,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   progressValue: {
@@ -388,9 +343,9 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 8,
+    overflow: 'hidden',
     borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.16)',
-    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
@@ -399,90 +354,91 @@ const styles = StyleSheet.create({
   },
   milestone: {
     color: colors.limestone,
-    marginTop: spacing[8],
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    opacity: 0.9,
+    marginTop: spacing[8],
   },
   walletCard: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
+    borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing[20],
     marginTop: spacing[16],
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     ...shadow.card,
   },
-  walletHeader: {
+  walletTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-end',
+    justifyContent: 'space-between',
     gap: spacing[12],
+  },
+  walletCopy: {
+    flex: 1,
   },
   sectionEyebrow: {
     color: colors.olive700,
     fontSize: 10,
     fontWeight: '900',
-    letterSpacing: 1.5,
+    letterSpacing: 1.4,
   },
   walletTitle: {
     color: colors.ink,
     fontSize: 17,
-    fontWeight: '750',
+    fontWeight: '700',
     marginTop: 2,
   },
   walletAmount: {
     color: colors.olive900,
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '900',
   },
-  walletDivider: {
+  divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
     marginVertical: spacing[16],
   },
-  walletMetrics: {
+  metricRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
   },
-  metricBlock: {
+  metric: {
     flex: 1,
   },
-  metricSeparator: {
+  metricDivider: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
     marginHorizontal: spacing[12],
   },
   metricValue: {
     color: colors.ink,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   metricLabel: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 3,
   },
-  walletHistory: {
+  history: {
     color: colors.olive700,
     fontSize: 12,
     fontWeight: '700',
     marginTop: spacing[16],
   },
-  walletNote: {
+  note: {
     color: colors.muted,
     fontSize: 11,
     lineHeight: 16,
     marginTop: spacing[4],
   },
-  sectionHeader: {
+  sectionHeading: {
     marginTop: spacing[32],
     marginBottom: spacing[12],
   },
   sectionTitle: {
     color: colors.ink,
     fontSize: typography.section,
-    fontWeight: '800',
+    fontWeight: '900',
     marginTop: 2,
   },
   actionGrid: {
@@ -493,46 +449,34 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48.3%',
-    minHeight: 178,
-    backgroundColor: colors.white,
+    minHeight: 170,
     borderRadius: radius.md,
-    padding: spacing[16],
-    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.white,
+    padding: spacing[16],
   },
-  actionCardPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.985 }],
-  },
-  actionIconShell: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.limestone,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[12],
-  },
-  actionIcon: {
-    fontSize: 16,
+  actionGlyph: {
     color: colors.olive900,
+    fontSize: 18,
+    marginBottom: spacing[12],
   },
   actionTitle: {
     color: colors.ink,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '900',
   },
-  actionDescription: {
+  actionBody: {
+    flexGrow: 1,
     color: colors.muted,
     fontSize: 11,
     lineHeight: 16,
     marginTop: spacing[4],
-    flexGrow: 1,
   },
   actionLink: {
     color: colors.olive700,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '900',
     marginTop: spacing[12],
   },
   actionSoon: {
@@ -543,16 +487,15 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: spacing[12],
-    backgroundColor: colors.limestone,
     borderRadius: radius.md,
+    backgroundColor: colors.limestone,
     padding: spacing[16],
     marginTop: spacing[24],
   },
-  infoIcon: {
+  infoGlyph: {
     color: colors.aoveGold,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
   },
   infoCopy: {
@@ -560,13 +503,13 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     color: colors.ink,
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '900',
   },
   infoBody: {
     color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: spacing[4],
   },
 });

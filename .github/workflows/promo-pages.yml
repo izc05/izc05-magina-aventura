@@ -27,6 +27,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Verify promo branding and navigation
+        run: node --test apps/promo/test/branding.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload promo site

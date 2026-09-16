@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { colors, radius, spacing } from '../../src/theme/tokens';
 
@@ -15,6 +16,8 @@ export default function ActiveAdventureScreen() {
     return null;
   }
 
+  const presentation = presentActiveAdventure(route);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
@@ -26,23 +29,34 @@ export default function ActiveAdventureScreen() {
         <View style={styles.routeLineB} />
         <View style={styles.userRadius} />
         <View style={styles.userDot} />
-        <View style={[styles.discovery, styles.discoveryOne]}><Text style={styles.discoveryText}>🌿</Text></View>
-        <View style={[styles.discovery, styles.discoveryTwo]}><Text style={styles.discoveryText}>🏛</Text></View>
-        <View style={[styles.discovery, styles.discoveryThree]}><Text style={styles.discoveryText}>🫒</Text></View>
+        <View style={styles.mapModeBadge}>
+          <Text style={styles.mapModeText}>VISTA DEMO</Text>
+        </View>
       </View>
 
       <View style={styles.topHud}>
         <View style={styles.topHudHeader}>
-          <View>
-            <Text style={styles.routeName}>{route.title}</Text>
-            <Text style={styles.routePlace}>{route.municipalityName}</Text>
+          <View style={styles.routeCopy}>
+            <Text style={styles.routeName}>{presentation.routeTitle}</Text>
+            <Text style={styles.routePlace}>{presentation.place}</Text>
           </View>
-          <View style={styles.progressBadge}><Text style={styles.progressText}>0 %</Text></View>
+          <View style={styles.progressBadge}>
+            <Text style={styles.progressText}>{presentation.progress}</Text>
+          </View>
         </View>
         <View style={styles.metrics}>
-          <View><Text style={styles.metricValue}>0.0 km</Text><Text style={styles.metricLabel}>Distancia</Text></View>
-          <View><Text style={styles.metricValue}>00:00</Text><Text style={styles.metricLabel}>Tiempo</Text></View>
-          <View><Text style={styles.metricValue}>+0 m</Text><Text style={styles.metricLabel}>Desnivel</Text></View>
+          <View>
+            <Text style={styles.metricValue}>{presentation.distance}</Text>
+            <Text style={styles.metricLabel}>Distancia</Text>
+          </View>
+          <View>
+            <Text style={styles.metricValue}>{presentation.elapsed}</Text>
+            <Text style={styles.metricLabel}>Tiempo</Text>
+          </View>
+          <View>
+            <Text style={styles.metricValue}>{presentation.elevation}</Text>
+            <Text style={styles.metricLabel}>Desnivel</Text>
+          </View>
         </View>
       </View>
 
@@ -51,19 +65,33 @@ export default function ActiveAdventureScreen() {
       </Pressable>
 
       <View style={styles.bottomCard}>
-        <Text style={styles.bottomEyebrow}>MODO SIMULADO · GPS EN PLAN 04</Text>
-        <Text style={styles.bottomTitle}>Siguiente objetivo</Text>
+        <Text style={styles.bottomEyebrow}>{presentation.modeLabel}</Text>
+        <Text style={styles.bottomTitle}>Estado de la aventura</Text>
         <View style={styles.objectiveRow}>
-          <View style={styles.objectiveIcon}><Text style={styles.objectiveIconText}>🌿</Text></View>
+          <View style={styles.objectiveIcon}>
+            <Text style={styles.objectiveIconText}>⌖</Text>
+          </View>
           <View style={styles.objectiveCopy}>
-            <Text style={styles.objectiveName}>Descubrimiento de prueba</Text>
-            <Text style={styles.objectiveDistance}>140 m · Flora</Text>
+            <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
+            <Text style={styles.objectiveDistance}>{presentation.objectiveMeta}</Text>
           </View>
         </View>
+
+        <View style={styles.rewardPreview}>
+          <Text style={styles.rewardPreviewLabel}>RECOMPENSA DE LA RUTA</Text>
+          <Text style={styles.rewardPreviewValue}>{presentation.rewardPreview}</Text>
+        </View>
+
         <View style={styles.actionRow}>
-          <Pressable style={styles.actionButton}><Text style={styles.actionButtonText}>⚑ Ruta</Text></Pressable>
-          <Pressable style={styles.pauseButton}><Text style={styles.pauseButtonText}>Ⅱ Pausar</Text></Pressable>
-          <Pressable style={styles.actionButton}><Text style={styles.actionButtonText}>! SOS</Text></Pressable>
+          <Pressable style={styles.actionButton} onPress={() => router.back()}>
+            <Text style={styles.actionButtonText}>← Preparación</Text>
+          </Pressable>
+          <View style={styles.disabledPrimaryButton}>
+            <Text style={styles.disabledPrimaryText}>GPS pendiente</Text>
+          </View>
+          <View style={styles.disabledButton}>
+            <Text style={styles.disabledButtonText}>SOS · demo</Text>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -79,13 +107,11 @@ const styles = StyleSheet.create({
   routeLineB: { position: 'absolute', width: 230, height: 8, borderRadius: radius.pill, backgroundColor: colors.olive700, right: -55, top: '42%', transform: [{ rotate: '27deg' }] },
   userRadius: { position: 'absolute', width: 150, height: 150, borderRadius: 75, borderWidth: 2, borderColor: colors.sky, backgroundColor: 'rgba(143,184,200,0.13)', left: '50%', top: '50%', marginLeft: -75, marginTop: -75 },
   userDot: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: colors.olive900, borderWidth: 5, borderColor: colors.white, left: '50%', top: '50%', marginLeft: -12, marginTop: -12 },
-  discovery: { position: 'absolute', width: 52, height: 52, borderRadius: 26, backgroundColor: colors.white, borderWidth: 3, borderColor: colors.aoveGold, alignItems: 'center', justifyContent: 'center' },
-  discoveryOne: { left: '23%', top: '39%' },
-  discoveryTwo: { right: '20%', top: '29%' },
-  discoveryThree: { right: '18%', top: '57%' },
-  discoveryText: { fontSize: 22 },
+  mapModeBadge: { position: 'absolute', top: 210, left: spacing[20], borderRadius: radius.pill, backgroundColor: colors.ink, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
+  mapModeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   topHud: { position: 'absolute', top: spacing[12], left: spacing[16], right: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border },
-  topHudHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topHudHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[12] },
+  routeCopy: { flex: 1 },
   routeName: { color: colors.ink, fontSize: 17, fontWeight: '900' },
   routePlace: { color: colors.muted, fontSize: 11, marginTop: 2 },
   progressBadge: { borderRadius: radius.pill, backgroundColor: colors.olive900, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
@@ -100,13 +126,18 @@ const styles = StyleSheet.create({
   bottomTitle: { color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: spacing[8] },
   objectiveRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing[12] },
   objectiveIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.limestone, alignItems: 'center', justifyContent: 'center', marginRight: spacing[12] },
-  objectiveIconText: { fontSize: 22 },
+  objectiveIconText: { color: colors.olive700, fontSize: 24, fontWeight: '900' },
   objectiveCopy: { flex: 1 },
   objectiveName: { color: colors.ink, fontSize: 16, fontWeight: '900' },
-  objectiveDistance: { color: colors.olive700, fontSize: 12, fontWeight: '800', marginTop: 3 },
+  objectiveDistance: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 3 },
+  rewardPreview: { marginTop: spacing[16], paddingTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border },
+  rewardPreviewLabel: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  rewardPreviewValue: { color: colors.olive900, fontSize: 14, fontWeight: '900', marginTop: spacing[4] },
   actionRow: { flexDirection: 'row', gap: spacing[8], marginTop: spacing[16] },
-  actionButton: { flex: 1, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  actionButtonText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
-  pauseButton: { flex: 1.2, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center' },
-  pauseButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
+  actionButton: { flex: 1.2, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[8] },
+  actionButtonText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
+  disabledPrimaryButton: { flex: 1.2, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.olive900, opacity: 0.52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing[8] },
+  disabledPrimaryText: { color: colors.white, fontSize: 11, fontWeight: '900', textAlign: 'center' },
+  disabledButton: { flex: 1, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, opacity: 0.62, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[8] },
+  disabledButtonText: { color: colors.muted, fontSize: 11, fontWeight: '800', textAlign: 'center' },
 });

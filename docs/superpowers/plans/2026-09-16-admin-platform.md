@@ -2,7 +2,8 @@
 
 **Branch:** `feat/admin-v1`  
 **PR:** #8  
-**Spec:** `docs/superpowers/specs/2026-09-16-admin-platform-design.md`
+**Spec:** `docs/superpowers/specs/2026-09-16-admin-platform-design.md`  
+**Staging runbook:** `docs/admin-staging-runbook.md`
 
 ## Goal
 
@@ -153,22 +154,24 @@ Deliver a secure Super Admin control plane for Mágina Aventura so routes, maps,
 - [x] Pure-package boundary validation.
 - [x] Local Supabase start/reset from an empty database.
 - [x] pgTAP database contract suite has passed repeatedly during hardening.
-- [ ] Latest head: full GitHub Actions run green after final route-closure/docs hardening.
-- [ ] Final PR review: no unresolved review threads/findings.
-- [ ] Mark PR #8 ready for review once latest CI is green.
+- [x] Full GitHub Actions run green on the completed Admin feature head before staging handoff.
+- [x] Final PR review check: no unresolved review threads/findings at staging handoff.
+- [x] PR #8 marked ready for review.
+- [x] Staging deployment/smoke-test runbook committed.
 
 ## 11 · Live environment boundary
 
-These steps require account/environment choices and are intentionally not performed implicitly by the feature branch:
+These steps require account/environment choices and are intentionally not performed implicitly by the feature branch. Follow `docs/admin-staging-runbook.md`.
 
-- [ ] Select/create the production or staging Supabase project.
+- [ ] Select/create the staging Supabase project.
 - [ ] Apply migrations to that project.
+- [ ] Run Supabase security/performance advisors.
 - [ ] Create the first Auth account and bootstrap one `super_admin` row.
-- [ ] Configure `SUPABASE_URL` + publishable key in hosting.
-- [ ] Deploy `apps/admin` behind the chosen Admin hostname.
-- [ ] Smoke-test login, route edit/publish, media upload, suspension, temporary closure/reopen, QR redemption and notification publication against the live project.
+- [ ] Configure Supabase URL + publishable key in hosting.
+- [ ] Deploy `apps/admin` behind the chosen staging Admin hostname.
+- [ ] Pass the 20-step staging smoke test.
 - [ ] Merge PR #8 into `main` only after explicit approval.
 
 ## Definition of nearly closed
 
-The feature is considered **nearly closed** when the latest feature-branch head passes the complete CI matrix and PR #8 has no unresolved code/security findings. Live Supabase provisioning, first-account bootstrap, hosting smoke test and merge remain the only environment/approval-dependent steps.
+The feature code is **nearly closed**: implementation, hardening, CI, review handoff and staging procedure are prepared. The remaining boundary is operational: provision staging, apply the already-tested migrations, bootstrap the first Super Admin, deploy the static Admin, run the smoke test and obtain explicit approval for merge.

@@ -88,6 +88,9 @@ create unique index route_municipalities_one_primary_uidx
   on public.route_municipalities(route_id)
   where is_primary;
 
+create index route_municipalities_municipality_idx
+  on public.route_municipalities(municipality_id, route_id);
+
 create table public.route_catalog_restrictions (
   id uuid primary key default gen_random_uuid(),
   route_id uuid not null references public.routes(id) on delete cascade,

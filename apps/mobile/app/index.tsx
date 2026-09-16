@@ -224,7 +224,11 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   heroSkyGlow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: '#BFDCE9',
     opacity: 0.54,
   },

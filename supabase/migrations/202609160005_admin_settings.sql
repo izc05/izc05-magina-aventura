@@ -16,10 +16,12 @@ grant insert, update on public.app_settings to authenticated;
 create policy "public settings are readable"
 on public.app_settings for select
 to anon, authenticated
-using (
-  public_readable
-  or private.admin_has_capability('settings.manage', auth.uid())
-);
+using (public_readable);
+
+create policy "settings admins read all"
+on public.app_settings for select
+to authenticated
+using (private.admin_has_capability('settings.manage', auth.uid()));
 
 create policy "settings admins insert"
 on public.app_settings for insert

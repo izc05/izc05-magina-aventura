@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildRewardCatalogModel } from './reward-catalog-model';
+import {
+  buildRewardCatalogModel,
+  type RewardCatalogItemInput,
+} from './reward-catalog-model';
 
 describe('buildRewardCatalogModel', () => {
-  const items = [
+  const items: RewardCatalogItemInput[] = [
     {
       id: 'digital-dawn',
       name: 'Amanecer entre Olivos',
-      kind: 'digital' as const,
-      rarity: 'rare' as const,
+      kind: 'digital',
+      rarity: 'rare',
       priceOlives: 800,
       partnerName: null,
       owned: true,
@@ -17,8 +20,8 @@ describe('buildRewardCatalogModel', () => {
     {
       id: 'physical-aove',
       name: 'AOVE Sierra Mágina · 500 ml',
-      kind: 'physical' as const,
-      rarity: 'epic' as const,
+      kind: 'physical',
+      rarity: 'epic',
       priceOlives: 3500,
       partnerName: 'Almazara de Mágina',
       owned: false,
@@ -27,8 +30,8 @@ describe('buildRewardCatalogModel', () => {
     {
       id: 'digital-wall',
       name: 'Muro de Piedra Legendario',
-      kind: 'digital' as const,
-      rarity: 'legendary' as const,
+      kind: 'digital',
+      rarity: 'legendary',
       priceOlives: 5000,
       partnerName: null,
       owned: false,
@@ -110,12 +113,13 @@ describe('buildRewardCatalogModel', () => {
       ['expired', 'Finalizado'],
       ['inactive', 'No disponible'],
     ] as const;
+    const template = items[2]!;
 
     for (const [reason, expected] of reasons) {
       const model = buildRewardCatalogModel({
         items: [
           {
-            ...items[2],
+            ...template,
             id: `reward-${reason}`,
             eligibility: { eligible: false, reasons: [reason] },
           },

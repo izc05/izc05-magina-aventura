@@ -4,7 +4,7 @@ import { brand, type BottomNavigationItem } from '../../theme/branding';
 import { colors, spacing } from '../../theme/tokens';
 
 type BottomNavProps = Readonly<{
-  active: BottomNavigationItem;
+  active: BottomNavigationItem | 'Rutas';
   onSelect?: (item: BottomNavigationItem) => void;
 }>;
 

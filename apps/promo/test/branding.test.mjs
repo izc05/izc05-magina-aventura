@@ -42,6 +42,16 @@ test('uses scene assets directly from the main stylesheet without the temporary 
   assert.match(css, /background-position:var\(--scene-x/);
 });
 
+test('renders exploration as a recognisable app preview instead of a decorative crop', () => {
+  assert.match(html, /class="phone-shell/);
+  assert.match(html, /class="phone-map/);
+  assert.match(html, /Rutas cerca de ti/);
+  assert.match(html, /Mapa/);
+  assert.match(html, /Guardadas/);
+  assert.match(css, /\.phone-shell/);
+  assert.match(css, /\.phone-route-line/);
+});
+
 test('keeps the four cinematic story titles in semantic HTML', () => {
   for (const text of [
     'Explora Sierra Mágina',

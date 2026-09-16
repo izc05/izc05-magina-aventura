@@ -12,7 +12,7 @@
     "ios": "pnpm --filter @magina-aventura/mobile ios",
     "web": "pnpm --filter @magina-aventura/mobile web",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm -r --if-present test && node --test apps/admin/tests/*.test.mjs",
     "lint": "pnpm -r --if-present lint"
   }
 }

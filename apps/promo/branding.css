@@ -83,6 +83,10 @@
   color:rgba(255,255,255,.7);
   white-space:nowrap;
 }
+.frame{background-image:var(--scene-image),var(--scene-fallback)}
+.frame[data-scene-frame="1"],.frame[data-scene-frame="2"],.frame[data-scene-frame="3"]{--scene-fallback:url('assets/scenes/scene-01.webp')}
+.frame[data-scene-frame="4"],.frame[data-scene-frame="5"],.frame[data-scene-frame="6"]{--scene-fallback:url('assets/scenes/scene-06.webp')}
+.frame[data-scene-frame="7"],.frame[data-scene-frame="8"],.frame[data-scene-frame="9"]{--scene-fallback:url('assets/scenes/scene-09.webp')}
 .story-sequence{
   position:absolute;
   inset:0;

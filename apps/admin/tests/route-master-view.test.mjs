@@ -139,6 +139,15 @@ test('track map tab embeds import and visual editor without asking for route UUI
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });
 
+test('track source choices match the source kinds accepted by the track RPC', () => {
+  const html = routeMasterShellHtml(snapshot, 'track');
+  for (const value of ['official', 'field', 'community', 'manual']) {
+    assert.match(html, new RegExp(`<option value="${value}"`));
+  }
+  assert.doesNotMatch(html, /<option value="map"/);
+  assert.doesNotMatch(html, /<option value="other"/);
+});
+
 test('sources validation tab renders publication gate, provenance and editable controls', () => {
   const html = routeMasterShellHtml(snapshot, 'sources');
   assert.match(html, /data-route-master-panel="sources"/);

@@ -7,7 +7,11 @@ export function sceneState(progress, sceneIndex, sceneCount) {
   const local = clamp((progress - start) / segment);
   const center = start + segment / 2;
   const distance = Math.abs(progress - center) / segment;
-  const visibility = clamp(1 - Math.max(0, distance - 0.15) * 1.7);
+  let visibility = clamp(1 - Math.max(0, distance - 0.15) * 1.7);
+
+  if (sceneIndex === 0 && progress <= center) visibility = 1;
+  if (sceneIndex === count - 1 && progress >= center) visibility = 1;
+
   const active = progress >= start && (sceneIndex === count - 1 ? progress <= 1 : progress < start + segment);
   return { local, visibility, active };
 }

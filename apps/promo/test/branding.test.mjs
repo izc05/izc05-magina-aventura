@@ -5,12 +5,33 @@ import { readFileSync } from 'node:fs';
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const branding = readFileSync(new URL('../branding.css', import.meta.url), 'utf8');
+const fullLogo = readFileSync(new URL('../assets/magina-aventura-logo.svg', import.meta.url), 'utf8');
+const iconLogo = readFileSync(new URL('../assets/magina-aventura-icon.svg', import.meta.url), 'utf8');
 
-test('uses the compact Mágina Aventura brand lockup instead of the large white logo card', () => {
-  assert.match(html, /assets\/magina-aventura-icon\.svg/);
-  assert.match(html, /class="hero-brand-lockup"/);
-  assert.doesNotMatch(html, /hero-logo-panel/);
-  assert.match(branding, /\.hero-brand-lockup/);
+test('uses the approved full Mágina Aventura logo in the main web lockups', () => {
+  const fullLogoReferences = html.match(/assets\/magina-aventura-logo\.svg/g) ?? [];
+  assert.ok(fullLogoReferences.length >= 2, `expected the full official logo in header and hero, found ${fullLogoReferences.length}`);
+  assert.match(html, /class="brand-logo"/);
+  assert.match(html, /class="hero-brand-logo"/);
+  assert.match(branding, /\.brand-logo/);
+  assert.match(branding, /\.hero-brand-logo/);
+});
+
+test('pins the approved mountain-path-sun artwork and removes the old olive branch mark', () => {
+  for (const source of [fullLogo, iconLogo]) {
+    assert.match(source, /data-brand-mark="mountain-path-sun"/);
+    assert.match(source, /#D4AF37/i);
+    assert.doesNotMatch(source, /rama de olivo/i);
+    assert.doesNotMatch(source, /<ellipse/i);
+  }
+  assert.match(fullLogo, /Mágina Aventura/);
+  assert.match(fullLogo, /SIERRA MÁGINA · JAÉN/);
+});
+
+test('keeps the compact official symbol for favicons and in-app mockups', () => {
+  assert.match(html, /rel="icon" href="assets\/magina-aventura-icon\.svg"/);
+  assert.match(html, /phone-appbar[\s\S]*assets\/magina-aventura-icon\.svg/);
+  assert.match(html, /profile-ui-brand[\s\S]*assets\/magina-aventura-icon\.svg/);
 });
 
 test('authors nine cinematic frames with progressive scene metadata', () => {

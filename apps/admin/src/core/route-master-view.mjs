@@ -170,7 +170,7 @@ function trackPanelHtml(snapshot) {
 
     <form class="form two route-track-import-form" data-route-track-import-form>
       <div class="field"><label>Archivo GPX o KML</label><input name="file" type="file" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" required></div>
-      <div class="field"><label>Procedencia</label><select name="source_kind"><option value="official">Oficial</option><option value="map">Mapa/cartografía</option><option value="field">Trabajo de campo</option><option value="other">Otra</option></select></div>
+      <div class="field"><label>Procedencia</label><select name="source_kind"><option value="official">Oficial</option><option value="field">Trabajo de campo</option><option value="community">Comunidad</option><option value="manual">Manual / cartografía</option></select></div>
       <div class="field span-2"><label>URL de origen</label><input name="source_url" type="url" placeholder="https://…"></div>
       <div class="field span-2"><label>Notas del track</label><textarea name="notes" placeholder="Origen, fecha, autor o comprobaciones realizadas"></textarea></div>
       <button type="submit" class="btn primary span-2">Importar y versionar track</button>

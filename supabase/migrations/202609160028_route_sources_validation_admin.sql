@@ -78,6 +78,7 @@ as $$
 $$;
 
 revoke all on function public.admin_add_route_source(uuid,text,text,text,boolean,timestamptz,text) from public;
+revoke execute on function public.admin_add_route_source(uuid,text,text,text,boolean,timestamptz,text) from anon;
 grant execute on function public.admin_add_route_source(uuid,text,text,text,boolean,timestamptz,text) to authenticated;
 
 create or replace function private.admin_update_route_validation(
@@ -235,4 +236,5 @@ as $$
 $$;
 
 revoke all on function public.admin_update_route_validation(uuid,text,text,text,text,text,text) from public;
+revoke execute on function public.admin_update_route_validation(uuid,text,text,text,text,text,text) from anon;
 grant execute on function public.admin_update_route_validation(uuid,text,text,text,text,text,text) to authenticated;

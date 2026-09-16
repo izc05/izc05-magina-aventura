@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ANDROID_INTERNAL_BETA_PROFILE,
   buildBetaReadinessReport,
-  type BetaCandidateProfile,
-} from './beta-report';
+} from '../index';
+import type { BetaCandidateProfile } from './beta-report';
 import type {
   BetaGateDefinition,
   BetaGateEvidence,

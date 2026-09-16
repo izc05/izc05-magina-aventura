@@ -51,18 +51,18 @@ function stateList(snapshot) {
   return `<div class="visual-route-lists"><div><h3>Checkpoints (${checkpoints.length})</h3><ul>${checkpoints.length ? checkpoints.map((r)=>item(r,'checkpoint')).join('') : '<li class="muted">Sin checkpoints.</li>'}</ul></div><div><h3>Descubrimientos (${discoveries.length})</h3><ul>${discoveries.length ? discoveries.map((r)=>item(r,'discovery')).join('') : '<li class="muted">Sin descubrimientos.</li>'}</ul></div></div>`;
 }
 
-function editorForms(routeId) {
+function editorForms() {
   return `<div class="visual-route-forms">
     <div class="selected-coordinate"><strong>Punto seleccionado</strong><span id="selected-coordinate">Pulsa sobre el mapa</span></div>
     <form id="visual-checkpoint-create" class="form two">
-      <input type="hidden" name="route_id" value="${esc(routeId)}"><input type="hidden" name="lng"><input type="hidden" name="lat">
+      <input type="hidden" name="lng"><input type="hidden" name="lat">
       <div class="field"><label>Checkpoint</label><input name="name" required placeholder="Ej. Mirador del sendero"></div>
       <div class="field"><label>Radio GPS (m)</label><input name="trigger_radius_m" type="number" min="5" max="500" value="30" required></div>
       <label class="check"><input name="required" type="checkbox"> Obligatorio para completar la ruta</label>
       <button class="btn primary">Añadir checkpoint</button>
     </form>
     <form id="visual-discovery-create" class="form two">
-      <input type="hidden" name="route_id" value="${esc(routeId)}"><input type="hidden" name="lng"><input type="hidden" name="lat">
+      <input type="hidden" name="lng"><input type="hidden" name="lat">
       <div class="field"><label>Descubrimiento</label><input name="name" required placeholder="Ej. Encina centenaria"></div>
       <div class="field"><label>Categoría</label><select name="category"><option>flora</option><option>fauna</option><option>heritage</option><option>olive</option><option>tradition</option><option>landscape</option></select></div>
       <div class="field"><label>Radio GPS (m)</label><input name="trigger_radius_m" type="number" min="5" max="500" value="30" required></div>
@@ -73,8 +73,15 @@ function editorForms(routeId) {
   </div>`;
 }
 
-function renderRouteEditor(snapshot) {
-  const workspace = document.querySelector('#visual-route-workspace');
+async function afterRouteEditorMutation(routeId, workspace, onChange) {
+  if (typeof onChange === 'function') {
+    await onChange();
+    return;
+  }
+  await loadRouteSnapshot(routeId, workspace, null);
+}
+
+function renderRouteEditor(snapshot, workspace, onChange = null) {
   if (!workspace) return;
   const points = Array.isArray(snapshot.coordinates) ? snapshot.coordinates : [];
   if (points.length < 2) throw new Error('La ruta no tiene geometría suficiente');
@@ -85,31 +92,31 @@ function renderRouteEditor(snapshot) {
   workspace.classList.remove('empty-workspace');
   workspace.innerHTML = `<div class="visual-route-summary"><div><strong>${esc(snapshot.title)}</strong><span>${esc(snapshot.status)} · geometría v${esc(snapshot.version)}</span></div><div class="map-legend"><span><i class="checkpoint-dot"></i>Checkpoint</span><span><i class="discovery-dot"></i>Descubrimiento</span></div></div>
     <div class="route-canvas-wrap"><svg id="route-canvas" class="route-canvas" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="Trazado editable de la ruta"><rect width="100%" height="100%" class="route-canvas-bg"></rect><polyline class="route-polyline-halo" points="${polylinePoints(points,SVG_WIDTH,SVG_HEIGHT,SVG_PADDING)}"></polyline><polyline class="route-polyline" points="${polylinePoints(points,SVG_WIDTH,SVG_HEIGHT,SVG_PADDING)}"></polyline>${checkpointMarkers}${discoveryMarkers}<circle id="selected-map-point" class="selected-map-point" r="7" cx="-100" cy="-100"></circle></svg></div>
-    ${editorForms(snapshot.route_id)}${stateList(snapshot)}`;
+    ${editorForms()}${stateList(snapshot)}`;
 
-  const svg = document.querySelector('#route-canvas');
+  const svg = workspace.querySelector('#route-canvas');
   svg.addEventListener('click', (event) => {
     const rect = svg.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (SVG_WIDTH / rect.width);
     const y = (event.clientY - rect.top) * (SVG_HEIGHT / rect.height);
     const [lng, lat] = svgToLngLat(x,y,bounds,SVG_WIDTH,SVG_HEIGHT,SVG_PADDING);
-    document.querySelector('#selected-map-point').setAttribute('cx', String(x));
-    document.querySelector('#selected-map-point').setAttribute('cy', String(y));
-    document.querySelector('#selected-coordinate').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    workspace.querySelector('#selected-map-point').setAttribute('cx', String(x));
+    workspace.querySelector('#selected-map-point').setAttribute('cy', String(y));
+    workspace.querySelector('#selected-coordinate').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     for (const formId of ['visual-checkpoint-create','visual-discovery-create']) {
-      const form = document.querySelector(`#${formId}`);
+      const form = workspace.querySelector(`#${formId}`);
       form.elements.lng.value = lng.toFixed(7);
       form.elements.lat.value = lat.toFixed(7);
     }
   });
 
-  document.querySelector('#visual-checkpoint-create').addEventListener('submit', async (event) => {
+  workspace.querySelector('#visual-checkpoint-create').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!form.elements.lng.value) return show('Selecciona primero un punto en el trazado','error');
     try {
       await insert('checkpoints', {
-        route_id: form.elements.route_id.value,
+        route_id: snapshot.route_id,
         name: form.elements.name.value.trim(),
         position: `SRID=4326;POINT(${Number(form.elements.lng.value)} ${Number(form.elements.lat.value)})`,
         trigger_radius_m: Number(form.elements.trigger_radius_m.value),
@@ -117,17 +124,17 @@ function renderRouteEditor(snapshot) {
         active: true
       });
       show('Checkpoint añadido');
-      await loadRouteSnapshot(form.elements.route_id.value);
+      await afterRouteEditorMutation(snapshot.route_id, workspace, onChange);
     } catch (error) { show(error.message,'error'); }
   });
 
-  document.querySelector('#visual-discovery-create').addEventListener('submit', async (event) => {
+  workspace.querySelector('#visual-discovery-create').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!form.elements.lng.value) return show('Selecciona primero un punto en el trazado','error');
     try {
       await insert('discoveries', {
-        route_id: form.elements.route_id.value,
+        route_id: snapshot.route_id,
         name: form.elements.name.value.trim(),
         category: form.elements.category.value,
         position: `SRID=4326;POINT(${Number(form.elements.lng.value)} ${Number(form.elements.lat.value)})`,
@@ -137,37 +144,45 @@ function renderRouteEditor(snapshot) {
         active: true
       });
       show('Descubrimiento añadido');
-      await loadRouteSnapshot(form.elements.route_id.value);
+      await afterRouteEditorMutation(snapshot.route_id, workspace, onChange);
     } catch (error) { show(error.message,'error'); }
   });
 
-  workspace.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-toggle-type]');
-    if (!button) return;
-    event.stopPropagation();
-    const active = button.dataset.active !== 'true';
-    const tableName = button.dataset.toggleType === 'checkpoint' ? 'checkpoints' : 'discoveries';
-    try {
-      await patch(tableName, `id=eq.${encodeURIComponent(button.dataset.id)}`, { active });
-      show(active ? 'Elemento activado' : 'Elemento desactivado');
-      await loadRouteSnapshot(snapshot.route_id);
-    } catch (error) { show(error.message,'error'); }
+  workspace.querySelectorAll('[data-toggle-type]').forEach((button) => {
+    button.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      const active = button.dataset.active !== 'true';
+      const tableName = button.dataset.toggleType === 'checkpoint' ? 'checkpoints' : 'discoveries';
+      try {
+        await patch(tableName, `id=eq.${encodeURIComponent(button.dataset.id)}`, { active });
+        show(active ? 'Elemento activado' : 'Elemento desactivado');
+        await afterRouteEditorMutation(snapshot.route_id, workspace, onChange);
+      } catch (error) { show(error.message,'error'); }
+    });
   });
 }
 
-async function loadRouteSnapshot(routeId) {
-  const workspace = document.querySelector('#visual-route-workspace');
+async function loadRouteSnapshot(routeId, workspace, onChange = null) {
   if (workspace) workspace.innerHTML = '<p class="muted">Cargando trazado…</p>';
-  const snapshot = await rpc('admin_route_editor_snapshot', { target_route_id: routeId.trim() });
-  renderRouteEditor(snapshot);
+  const snapshot = await rpc('admin_route_editor_snapshot', { target_route_id: String(routeId).trim() });
+  renderRouteEditor(snapshot, workspace, onChange);
+  return snapshot;
+}
+
+export async function mountRouteEditor(workspace, routeId, options = {}) {
+  if (!workspace) throw new Error('Falta el contenedor del editor de ruta');
+  const normalizedRouteId = String(routeId ?? '').trim();
+  if (!normalizedRouteId) throw new Error('Falta la ruta para cargar el editor');
+  return loadRouteSnapshot(normalizedRouteId, workspace, options.onChange ?? null);
 }
 
 function bindRouteEditor() {
   const form = document.querySelector('#visual-route-load');
-  if (!form) return;
+  const workspace = document.querySelector('#visual-route-workspace');
+  if (!form || !workspace) return;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    try { await loadRouteSnapshot(form.elements.route_id.value); }
+    try { await mountRouteEditor(workspace, form.elements.route_id.value); }
     catch (error) { show(error.message,'error'); }
   });
 }

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feat/integration-gps-visual-v1
 
 jobs:
   verify:
@@ -41,9 +42,24 @@ jobs:
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
+      - name: Verify Android background location permissions
+        run: |
+          manifest="apps/mobile/android/app/src/main/AndroidManifest.xml"
+          for permission in \
+            android.permission.ACCESS_FINE_LOCATION \
+            android.permission.ACCESS_COARSE_LOCATION \
+            android.permission.ACCESS_BACKGROUND_LOCATION \
+            android.permission.FOREGROUND_SERVICE \
+            android.permission.FOREGROUND_SERVICE_LOCATION; do
+            if ! grep -q "$permission" "$manifest"; then
+              echo "Missing required Android location permission: $permission"
+              exit 1
+            fi
+          done
+
       - name: Verify pure package boundaries
         run: |
-          if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src; then
+          if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src packages/activity-engine/src; then
             echo "Infrastructure import detected in pure packages"
             exit 1
           fi
@@ -68,3 +84,25 @@ jobs:
           if command -v supabase >/dev/null 2>&1; then
             supabase stop --no-backup
           fi
+
+      - name: Setup Java for Android build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Build Android GPS candidate APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Upload Android GPS candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: magina-aventura-gps-v1-debug-${{ github.run_number }}
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

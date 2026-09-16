@@ -1,4 +1,4 @@
-import { getSession, rpc, table } from './src/core/api.mjs';
+import { getSession, patch, rpc, table } from './src/core/api.mjs';
 import { canPermanentlyDeleteRoute, confirmRouteDeletionInput } from './src/core/route-editor.mjs';
 import { routeListRowHtml, routeMasterShellHtml } from './src/core/route-master-view.mjs';
 import { parseTrackText, sha256Hex } from './src/core/track-import.mjs';
@@ -107,7 +107,7 @@ function requiredNumber(values, name) {
   return value;
 }
 
-function bindRouteMasterForms(stage, list, route) {
+function bindRouteMasterForms(stage, list, route, snapshot) {
   const sourceForm = stage.querySelector('[data-route-source-form]');
   sourceForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -205,6 +205,41 @@ function bindRouteMasterForms(stage, list, route) {
     }
   });
 
+  const discoveries = Array.isArray(snapshot.discoveries) ? snapshot.discoveries : [];
+  stage.querySelectorAll('[data-route-discovery-form]').forEach((form) => {
+    if (!form.querySelector('[data-route-discovery-save]')) {
+      form.insertAdjacentHTML('beforeend', '<button type="submit" class="btn primary span-2" data-route-discovery-save>Guardar descubrimiento</button>');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const index = Number(form.dataset.discoveryIndex);
+      const discovery = discoveries[index];
+      if (!Number.isInteger(index) || !discovery?.id) {
+        flash('No se pudo identificar el descubrimiento seleccionado.', 'error');
+        return;
+      }
+
+      const values = new FormData(form);
+      setFormBusy(form, true);
+      try {
+        await patch('discoveries', `id=eq.${encodeURIComponent(discovery.id)}&route_id=eq.${encodeURIComponent(route.id)}`, {
+          name: String(values.get('name') ?? '').trim(),
+          category: String(values.get('category') ?? 'landscape'),
+          trigger_radius_m: requiredNumber(values, 'trigger_radius_m'),
+          reward_xp: requiredNumber(values, 'reward_xp'),
+          reward_olives: requiredNumber(values, 'reward_olives'),
+          active: values.get('active') === 'on'
+        });
+        flash('Descubrimiento actualizado.');
+        await reloadRouteMaster(stage, list, route, 'discoveries');
+      } catch (error) {
+        flash(`No se pudo guardar el descubrimiento: ${error.message}`, 'error');
+        setFormBusy(form, false);
+      }
+    });
+  });
+
   const trackForm = stage.querySelector('[data-route-track-import-form]');
   trackForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -267,7 +302,7 @@ function renderRouteMaster(stage, list, route, snapshot, activeTab = 'summary') 
     button.addEventListener('click', () => renderRouteMaster(stage, list, route, snapshot, button.dataset.routeMasterTab));
   });
 
-  bindRouteMasterForms(stage, list, route);
+  bindRouteMasterForms(stage, list, route, snapshot);
   if (activeTab === 'track') mountRouteMasterTrackEditor(stage, list, route);
 }
 

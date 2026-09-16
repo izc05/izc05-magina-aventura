@@ -2,7 +2,7 @@ export const brand = {
   name: 'Mágina Aventura',
   location: 'Sierra Mágina · Jaén',
   claim: 'Camina. Descubre. Conquista Mágina.',
-  supportingClaim: 'Más que rutas, historias por vivir.',
+  supportingClaim: 'Más que rutas, vivencias que dejan huella.',
   identity: {
     version: '2026-09-16-approved-logo',
     mark: 'mountain-path-sun',
@@ -20,7 +20,7 @@ export const brand = {
     warmWhite: '#FAF9F6',
     sky: '#7FB3D9',
   },
-  bottomNavigation: ['Rutas', 'Retos', 'Colecciones', 'Ranking', 'Perfil'] as const,
+  bottomNavigation: ['Inicio', 'Explorar', 'Mapa', 'Comunidad', 'Perfil'] as const,
 } as const;
 
 export type BottomNavigationItem = (typeof brand.bottomNavigation)[number];

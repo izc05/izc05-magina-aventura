@@ -41,6 +41,21 @@ jobs:
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
+      - name: Verify Android background location permissions
+        run: |
+          manifest="apps/mobile/android/app/src/main/AndroidManifest.xml"
+          for permission in \
+            android.permission.ACCESS_FINE_LOCATION \
+            android.permission.ACCESS_COARSE_LOCATION \
+            android.permission.ACCESS_BACKGROUND_LOCATION \
+            android.permission.FOREGROUND_SERVICE \
+            android.permission.FOREGROUND_SERVICE_LOCATION; do
+            if ! grep -q "$permission" "$manifest"; then
+              echo "Missing required Android location permission: $permission"
+              exit 1
+            fi
+          done
+
       - name: Verify pure package boundaries
         run: |
           if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src; then

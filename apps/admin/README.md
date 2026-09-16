@@ -1,46 +1,190 @@
 # Mágina Aventura Admin
 
-Panel de control web para la operación de Mágina Aventura. No comparte secretos con el cliente y todas las operaciones sensibles dependen de las políticas RLS y funciones RPC de Supabase.
+Panel web operativo para gestionar Mágina Aventura sin tocar código de la app móvil. Vive en `apps/admin`, usa el mismo Supabase que `apps/mobile` y se despliega como sitio estático protegido por Supabase Auth, RLS, RPC y auditoría.
 
-## Configuración
+No se distribuyen claves secretas al navegador. El cliente solo usa la URL pública de Supabase y una publishable key.
 
-Copia los valores públicos del proyecto en `config.js` durante el despliegue:
+## Alcance implementado
+
+- Dashboard operativo y métricas.
+- Rutas: alta, edición versionada, estados `draft -> review -> published -> archived`, GPX y PostGIS.
+- Editor visual del trazado con checkpoints y descubrimientos.
+- Paquetes PMTiles/offline por versión de geometría.
+- Multimedia: subida privada, metadatos, etiquetas, archivo y asociación a rutas.
+- Usuarios: listado seguro, ficha administrativa, roles y estado `active / warned / suspended`.
+- Comunidad: resumen, moderación, reportes y chat público por canales.
+- Gamificación: niveles, insignias, retos, temporadas y colecciones.
+- Aceitunas: ledger append-only y correcciones administrativas justificadas.
+- Almazaras/partners, premios, stock, reservas y canjes.
+- QR de un solo uso con lectura por cámara o imagen cuando el navegador soporta `BarcodeDetector`.
+- Notificaciones globales o segmentadas por ruta, municipio o rol, con cola de entrega por dispositivo.
+- Seguridad e incidencias de ruta.
+- Configuración operativa/feature flags.
+- Administradores y RBAC.
+- Auditoría de acciones sensibles.
+
+## Arquitectura
+
+El Admin no incorpora un framework web adicional para no romper el lockfile congelado del monorepo. Está compuesto por módulos ES nativos y usa las APIs HTTP de Supabase directamente.
+
+```text
+apps/admin/
+  index.html
+  app.mjs
+  enhancements.mjs
+  people-community.mjs
+  visual-tools.mjs
+  settings-tools.mjs
+  chat-tools.mjs
+  dashboard-user-tools.mjs
+  gamification-tools.mjs
+  route-content-tools.mjs
+  media-tools.mjs
+  notification-tools.mjs
+  map-asset-tools.mjs
+  src/core/
+  tests/
+  scripts/
+```
+
+Las reglas de seguridad reales viven en Supabase. Ocultar un botón nunca sustituye a RLS/RPC.
+
+## Configuración de despliegue
+
+El archivo `config.js` del repositorio se mantiene vacío:
 
 ```js
-window.MAGINA_ADMIN_CONFIG = {
-  supabaseUrl: 'https://<project-ref>.supabase.co',
-  publishableKey: 'sb_publishable_...'
+window.MAGINA_ADMIN_CONFIG = window.MAGINA_ADMIN_CONFIG || {
+  supabaseUrl: '',
+  publishableKey: ''
 };
 ```
 
-No pongas nunca una secret key/service-role en este archivo.
+En CI/despliegue configura únicamente:
 
-El directorio puede servirse como sitio estático. Para desarrollo local, cualquier servidor HTTP que sirva `apps/admin` es suficiente.
+```text
+MAGINA_ADMIN_SUPABASE_URL=https://<project-ref>.supabase.co
+MAGINA_ADMIN_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+Y ejecuta:
+
+```bash
+pnpm build:admin-config
+```
+
+El script `apps/admin/scripts/write-config.mjs` rechaza URLs no HTTPS y se niega a escribir claves secret/service-role en un archivo de navegador.
+
+Nunca uses aquí `service_role`, `sb_secret_...` ni otra clave privada.
+
+## Hosting estático
+
+Publica el contenido de `apps/admin` en un hosting estático. La configuración `_headers` incluye CSP, `X-Frame-Options`, `nosniff`, política de cámara y `no-store` para `config.js`.
+
+La cámara QR requiere HTTPS en producción. Un subdominio recomendado es:
+
+```text
+admin.<dominio-de-magina-aventura>
+```
+
+El Admin lleva `noindex,nofollow`; además conviene proteger el subdominio con las reglas de acceso del proveedor si se desea una segunda barrera.
 
 ## Primer Super Admin
 
-La aplicación no puede concederse privilegios a sí misma. Después de crear la primera cuenta en Supabase Auth, un operador de base de datos debe ejecutar una única vez:
+La aplicación nunca puede elevarse a sí misma. Tras crear la primera cuenta en Supabase Auth, un operador de base de datos ejecuta una única vez:
 
 ```sql
 insert into public.user_admin_roles(user_id, role_id)
 values ('<AUTH_USER_UUID>'::uuid, 'super_admin');
 ```
 
-A partir de ese momento el Super Admin puede conceder roles desde el propio panel. Mantener el bootstrap fuera de la aplicación evita que una cuenta recién creada pueda elevar sus propios permisos.
+A partir de ahí, la gestión de roles se hace desde Admin. El backend impide revocar el último `super_admin`.
 
 ## Roles
 
 - `super_admin`: control completo.
-- `admin`: operación general excepto concesión de Super Admin/roles críticos.
+- `admin`: operación general salvo gestión de administradores críticos.
 - `route_manager`: rutas, mapa, descubrimientos y multimedia.
 - `moderator`: usuarios, comunidad, moderación y auditoría.
-- `partner`: premios y canjes de su almazara/partner.
+- `partner`: premios y canjes limitados a su almazara/partner.
+
+Los permisos se guardan en tablas de autorización; nunca se confía en `user_metadata` editable por el usuario.
+
+## Rutas y versiones
+
+`routes`, `route_versions` y `route_geometries` siguen siendo las entidades canónicas. El Admin no crea modelos paralelos.
+
+Al editar contenido o geometría se crea una nueva versión. Si una ruta publicada cambia, vuelve a `review` para impedir cambios silenciosos en producción. La publicación valida que exista contenido y geometría vigentes.
+
+El editor visual permite colocar checkpoints y descubrimientos pulsando sobre el trazado y modificar su estado. El GPX se transforma a `LINESTRING` SRID 4326 antes de guardarse.
+
+## Multimedia
+
+Los originales viven en el bucket privado `media`. `media_assets` guarda título, alt text, tipo MIME, tamaño, etiquetas y estado de archivo. `route_media` permite reutilizar el mismo recurso como hero, galería, seguridad o descubrimiento.
+
+El panel archiva en lugar de borrar físicamente por defecto para no romper rutas que todavía referencien el archivo.
+
+## Comunidad y chat
+
+El panel gestiona contenido público y reportes. El chat incorporado es público por canales globales, de ruta o municipio; soporta ocultar/restaurar/eliminar mensajes y resolver reportes.
+
+No existe un lector administrativo general de conversaciones privadas. La privacidad de mensajes privados se mantiene fuera del panel.
+
+## Aceitunas y premios
+
+Las aceitunas son un ledger de transacciones. Una corrección administrativa añade un movimiento con actor y motivo; nunca sobrescribe un saldo sin trazabilidad.
+
+El flujo de premio es:
+
+```text
+available -> reserved -> redeemed
+                  |-> expired
+                  |-> cancelled
+```
+
+La reserva descuenta aceitunas y stock de forma transaccional. Cancelación/caducidad los devuelve. El QR contiene un token opaco; la base de datos almacena su hash y el token solo puede canjearse una vez.
+
+## Notificaciones
+
+`admin_notifications` gestiona borrador/publicación y audiencia:
+
+- `all`
+- `route`
+- `municipality`
+- `role`
+
+`push_device_subscriptions`, `notification_topic_subscriptions` y `notification_deliveries` preparan el fan-out por dispositivo. Los tokens de push no se muestran en Admin.
+
+Las funciones de consumo de la cola están concedidas únicamente a `service_role`, de modo que un navegador autenticado no puede extraer tokens ni hacerse pasar por el despachador de notificaciones.
 
 ## Seguridad
 
-- RLS está habilitado en todas las tablas administrativas expuestas.
-- Las operaciones privilegiadas usan funciones de base de datos que validan `auth.uid()`.
-- Los roles no dependen de `user_metadata`.
-- Los movimientos de aceitunas son transacciones de ledger, no sobrescrituras de saldo.
-- Los QR usan tokens opacos cuyo hash se almacena en base de datos y son de un solo uso.
-- Las acciones sensibles generan entradas de auditoría.
+- RLS en cada tabla administrativa expuesta.
+- Grants explícitos por tabla/función.
+- Ninguna autorización depende de `raw_user_meta_data`.
+- `SECURITY DEFINER` solo en operaciones estrechas y con `search_path=''`.
+- Funciones privilegiadas comprueban capacidad y/o actor.
+- Service-role nunca llega al navegador.
+- Tokens QR almacenados como hash.
+- Auditoría de cambios sensibles.
+- Sesiones Admin se guardan en `sessionStorage` y renuevan automáticamente el access token mediante el refresh token.
+- CSP y headers defensivos para hosting estático.
+
+## Verificación
+
+El comando raíz:
+
+```bash
+pnpm test
+```
+
+incluye:
+
+- tests existentes de los paquetes y la app móvil;
+- validación de sintaxis de todos los `.mjs` de Admin;
+- tests Node del núcleo Admin;
+- en GitHub Actions, prebuild Android;
+- `supabase db reset` desde cero;
+- pgTAP para contratos, RLS y RPC administrativos.
+
+La rama de trabajo es `feat/admin-v1` y el PR correspondiente permanece separado de `main` hasta revisión/merge explícito.

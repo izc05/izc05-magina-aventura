@@ -28,7 +28,7 @@ const adventure: Adventure = {
   sourceIds: ['source-1'],
   trackId: null,
   metrics: {
-    distanceKm: 8.7,
+    distanceKm: 8.72,
     ascentM: null,
     descentM: null,
     minElevationM: null,
@@ -37,12 +37,14 @@ const adventure: Adventure = {
     durationMinutesMax: 180,
   },
   difficulty: {
-    physicalDemand: 3,
-    technicalTerrain: 2,
-    navigationComplexity: 2,
-    exposure: 1,
-    remoteness: 2,
+    physicalDemand: null,
+    technicalTerrain: null,
+    navigationComplexity: null,
+    exposure: null,
+    remoteness: null,
     simpleLabel: 'moderate',
+    sourceIds: ['source-1'],
+    verificationState: 'official_verified',
   },
   family: {
     editorialSuitability: 'review_required',
@@ -64,11 +66,12 @@ const snapshot: CatalogSnapshot = {
 };
 
 describe('calculateCompleteness', () => {
-  it('reports identity and sources complete while geometry remains incomplete', () => {
+  it('reports identity and sources complete while geometry and detailed difficulty remain incomplete', () => {
     const report = calculateCompleteness(adventure, snapshot, new Date('2026-09-16T18:00:00Z'));
     expect(report.dimensions.identity.complete).toBe(true);
     expect(report.dimensions.sources.complete).toBe(true);
     expect(report.dimensions.geometry.complete).toBe(false);
+    expect(report.dimensions.difficulty.complete).toBe(false);
     expect(report.overallScore).toBeGreaterThan(0);
     expect(report.overallScore).toBeLessThan(100);
   });

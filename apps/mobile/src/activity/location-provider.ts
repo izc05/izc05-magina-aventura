@@ -69,6 +69,11 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
         throw new Error('Location services are disabled');
       }
 
+      const foreground = await adapter.getForegroundPermission();
+      if (!granted(foreground)) {
+        throw new Error('Foreground location permission is required');
+      }
+
       const background = await adapter.getBackgroundPermission();
       if (!granted(background)) {
         throw new Error('Background location permission is required');

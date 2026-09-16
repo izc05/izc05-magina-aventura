@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  ONBOARDING_STORAGE_KEY,
+  onboardingSlides,
+  resolveFirstLaunchDestination,
+} from './onboarding-contract';
+
+describe('Mágina Aventura onboarding contract', () => {
+  it('keeps the approved versioned storage key', () => {
+    expect(ONBOARDING_STORAGE_KEY).toBe('magina_onboarding_seen_v1');
+  });
+
+  it('keeps the approved four-step first-launch sequence', () => {
+    expect(onboardingSlides).toHaveLength(4);
+    expect(onboardingSlides.map((slide) => slide.title)).toEqual([
+      'Bienvenido a Mágina Aventura',
+      'Descubre rutas',
+      'Camina y desbloquea',
+      'Gana XP y aceitunas',
+    ]);
+  });
+
+  it('routes a fresh install to onboarding and a returning install home', () => {
+    expect(resolveFirstLaunchDestination(false)).toBe('/onboarding');
+    expect(resolveFirstLaunchDestination(true)).toBe('/');
+  });
+});

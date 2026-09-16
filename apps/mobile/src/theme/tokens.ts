@@ -1,33 +1,39 @@
 export const colors = {
-  olive900: '#203A2B',
-  olive700: '#476A45',
-  olive500: '#789A64',
-  aoveGold: '#C89A3D',
+  olive900: '#2F4A2E',
+  olive700: '#526A45',
+  olive500: '#7D9366',
+  aoveGold: '#D4AF37',
   earth: '#8A6648',
-  limestone: '#E7E1D4',
-  warmBackground: '#F7F4ED',
+  limestone: '#E7E1D6',
+  warmBackground: '#FAF9F6',
   ink: '#172019',
-  sky: '#8FB8C8',
+  sky: '#7FB3D9',
   white: '#FFFFFF',
   muted: '#6B746D',
-  border: '#DDD6C8',
+  border: '#E5DED2',
+  oliveWash: '#EEF1E8',
+  goldWash: '#F6EFD8',
 } as const;
 
 export const spacing = {
   4: 4,
   8: 8,
+  10: 10,
   12: 12,
   16: 16,
   20: 20,
   24: 24,
+  28: 28,
   32: 32,
   40: 40,
+  48: 48,
 } as const;
 
 export const radius = {
   sm: 10,
   md: 16,
   lg: 24,
+  xl: 30,
   pill: 999,
 } as const;
 
@@ -47,5 +53,12 @@ export const shadow = {
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 3,
+  },
+  floating: {
+    shadowColor: colors.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 5,
   },
 } as const;

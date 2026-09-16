@@ -6,17 +6,33 @@
     "orientation": "portrait",
     "scheme": "maginaaventura",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#2F4A2E",
+    "primaryColor": "#2F4A2E",
+    "icon": "./assets/branding/icon.png",
     "newArchEnabled": true,
     "plugins": [
       "expo-router",
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#2F4A2E",
+          "image": "./assets/branding/splash-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.isivolt.maginaaventura"
     },
     "android": {
-      "package": "com.isivolt.maginaaventura"
+      "package": "com.isivolt.maginaaventura",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/adaptive-icon.png",
+        "backgroundColor": "#2F4A2E"
+      }
     },
     "web": {
       "bundler": "metro"

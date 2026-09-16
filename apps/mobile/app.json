@@ -14,6 +14,13 @@
       "expo-router",
       "@maplibre/maplibre-react-native",
       [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#2F4A2E",

@@ -33,14 +33,21 @@ type ExpectedTechnicalSheet = {
 
 const verifiedTechnicalSheets: ExpectedTechnicalSheet[] = [
   { slug: 'adelfal-de-cuadros', shape: 'linear', distanceKm: 0.453, durationMinutes: 20, difficulty: 'easy' },
+  { slug: 'cano-del-aguadero', shape: 'linear', distanceKm: 14.306, durationMinutes: 300, difficulty: 'hard' },
   { slug: 'castillo-de-albanchez', shape: 'linear', distanceKm: 0.206, durationMinutes: 20, difficulty: 'moderate' },
   { slug: 'castillo-de-mata-bejid', shape: 'linear', distanceKm: 3.55, durationMinutes: 75, difficulty: 'easy' },
+  { slug: 'el-peralejo', shape: 'circular', distanceKm: 2.268, durationMinutes: 60, difficulty: 'easy' },
+  { slug: 'fuenmayor', shape: 'linear', distanceKm: 6.405, durationMinutes: 140, difficulty: 'moderate' },
   { slug: 'gibralberca', shape: 'circular', distanceKm: 5.653, durationMinutes: 120, difficulty: 'moderate' },
   { slug: 'hoyalinos', shape: 'circular', distanceKm: 2.092, durationMinutes: 60, difficulty: 'moderate' },
   { slug: 'la-cueva-de-la-graja', shape: 'linear', distanceKm: 0.575, durationMinutes: 30, difficulty: 'moderate' },
   { slug: 'las-vinas', shape: 'circular', distanceKm: 8.72, durationMinutes: 180, difficulty: 'moderate' },
+  { slug: 'pinar-de-canava', shape: 'linear', distanceKm: 2.35, durationMinutes: 60, difficulty: 'hard' },
+  { slug: 'puerto-de-la-mata', shape: 'linear', distanceKm: 13.17, durationMinutes: 290, difficulty: 'moderate' },
+  { slug: 'sierra-de-la-cruz', shape: 'circular', distanceKm: 7.292, durationMinutes: 150, difficulty: 'moderate' },
   { slug: 'subida-al-hoyo-de-la-laguna', shape: 'linear', distanceKm: 5.475, durationMinutes: 180, difficulty: 'hard' },
   { slug: 'subida-a-pico-magina-y-miramundos', shape: 'linear', distanceKm: 14.773, durationMinutes: 300, difficulty: 'hard' },
+  { slug: 'umbria-de-los-corzos', shape: 'linear', distanceKm: 2.63, durationMinutes: 60, difficulty: 'easy' },
   { slug: 'veredon-mojon-blanco', shape: 'linear', distanceKm: 3.156, durationMinutes: 90, difficulty: 'moderate' },
 ];
 
@@ -77,6 +84,13 @@ describe('official Sierra Mágina starter catalog', () => {
     );
   });
 
+  it('keeps the official family-friendly evidence for El Peralejo', () => {
+    const route = getAdventureBySlug('el-peralejo');
+    expect(route?.family.factors).toContainEqual(
+      expect.objectContaining({ code: 'official_family_friendly' }),
+    );
+  });
+
   it('derives both currently closed Cuadros-area trails as closed', () => {
     const snapshot = getCatalogSnapshot();
     for (const slug of ['adelfal-de-cuadros', 'las-vinas']) {
@@ -88,7 +102,7 @@ describe('official Sierra Mágina starter catalog', () => {
     }
   });
 
-  it('passes hard catalog invariants while keeping incomplete routes as drafts', () => {
+  it('passes hard catalog invariants while keeping routes draft until geometry is validated', () => {
     const errors = validateCatalog(getCatalogSnapshot()).filter(
       (issue) => issue.severity === 'error',
     );

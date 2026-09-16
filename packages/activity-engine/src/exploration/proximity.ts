@@ -27,6 +27,15 @@ function resetProgress(): ExplorationTargetProgress {
   return { ...EMPTY_PROGRESS };
 }
 
+function evidenceGapSeconds(
+  previousEvidenceAt: string | null,
+  currentSampleAt: string,
+): number | null {
+  if (previousEvidenceAt === null) return null;
+
+  return (Date.parse(currentSampleAt) - Date.parse(previousEvidenceAt)) / 1_000;
+}
+
 export function evaluateExplorationSample(
   state: ExplorationState,
   sample: LocationSample,
@@ -58,8 +67,17 @@ export function evaluateExplorationSample(
       continue;
     }
 
+    const gapSeconds = evidenceGapSeconds(
+      currentProgress.lastEvidenceAt,
+      sample.timestamp,
+    );
+    const continuesEvidence =
+      gapSeconds === null || gapSeconds <= policy.maxEvidenceGapSeconds;
+
     const nextProgress: ExplorationTargetProgress = {
-      consecutiveSamples: currentProgress.consecutiveSamples + 1,
+      consecutiveSamples: continuesEvidence
+        ? currentProgress.consecutiveSamples + 1
+        : 1,
       lastEvidenceAt: sample.timestamp,
     };
     progressByTarget[target.id] = nextProgress;

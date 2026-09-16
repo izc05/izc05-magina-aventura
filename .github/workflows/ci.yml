@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feat/integration-gps-visual-v1
+      - feat/mobile-design-v1
 
 jobs:
   verify:

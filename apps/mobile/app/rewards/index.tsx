@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: typography.section,
     lineHeight: 25,
-    fontWeight: '850',
+    fontWeight: '800',
     marginTop: 2,
   },
   catalog: {
-    gap: spacing[14],
+    gap: spacing[16],
   },
   rewardCard: {
     backgroundColor: colors.white,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   rewardBody: {
-    padding: spacing[18] ?? spacing[20],
+    padding: spacing[20],
   },
   rewardMetaRow: {
     flexDirection: 'row',
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing[18] ?? spacing[20],
+    marginTop: spacing[20],
     gap: spacing[12],
   },
   rewardPrice: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   rewardAction: {
     borderRadius: radius.pill,
-    paddingHorizontal: spacing[14] ?? spacing[16],
+    paddingHorizontal: spacing[16],
     paddingVertical: 9,
   },
   rewardActionAvailable: {

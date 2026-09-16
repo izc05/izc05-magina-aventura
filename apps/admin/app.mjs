@@ -33,7 +33,7 @@ function sectionId() { return (location.hash || '#dashboard').slice(1); }
 function allowed(capability) { return canAny(roles, capability); }
 
 function renderLogin(message = '') {
-  app.innerHTML = `<main class="login-wrap"><section class="login"><h1>Mágina Aventura · Admin</h1><p class="muted">Acceso exclusivo para administración.</p>${message ? `<p class="error">${esc(message)}</p>` : ''}<form id="login" class="form"><div class="field"><label>Email</label><input name="email" type="email" required autocomplete="username"></div><div class="field"><label>Contraseña</label><input name="password" type="password" required autocomplete="current-password"></div><button class="btn primary">Entrar</button></form></section></main>`;
+  app.innerHTML = `<main class="login-wrap"><section class="login"><div class="admin-login-brand"><img class="admin-brand-logo" src="./assets/magina-aventura-logo.svg" alt="Mágina Aventura — Sierra Mágina, Jaén"><small>Panel de administración</small></div><p class="muted">Acceso exclusivo para administración.</p>${message ? `<p class="error">${esc(message)}</p>` : ''}<form id="login" class="form"><div class="field"><label>Email</label><input name="email" type="email" required autocomplete="username"></div><div class="field"><label>Contraseña</label><input name="password" type="password" required autocomplete="current-password"></div><button class="btn primary">Entrar</button></form></section></main>`;
   document.querySelector('#login').addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -53,7 +53,7 @@ async function loadAccess() {
 
 function renderShell(content, title) {
   const links = ADMIN_NAV_ITEMS.filter((item) => allowed(item.capability)).map((item) => `<a href="${item.href}" class="${sectionId() === item.id ? 'active' : ''}">${esc(item.label)}</a>`).join('');
-  app.innerHTML = `<div class="shell"><aside class="sidebar"><p class="brand">Mágina Aventura<small>Panel de administración</small></p><nav class="nav">${links}</nav></aside><main class="main"><header class="topbar"><div><h1>${esc(title)}</h1><p class="muted">${esc(roles.join(' · '))}</p></div><button id="logout" class="btn secondary">Salir</button></header><div id="flash"></div>${content}</main></div>`;
+  app.innerHTML = `<div class="shell"><aside class="sidebar"><img class="admin-brand-logo sidebar-logo" src="./assets/magina-aventura-logo.svg" alt="Mágina Aventura — Sierra Mágina, Jaén"><span class="admin-brand-caption">Panel de administración</span><nav class="nav">${links}</nav></aside><main class="main"><header class="topbar"><div><h1>${esc(title)}</h1><p class="muted">${esc(roles.join(' · '))}</p></div><button id="logout" class="btn secondary">Salir</button></header><div id="flash"></div>${content}</main></div>`;
   document.querySelector('#logout').addEventListener('click', () => { signOut(); roles = []; renderLogin(); });
 }
 

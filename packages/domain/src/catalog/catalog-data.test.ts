@@ -23,6 +23,27 @@ const expectedOfficialSlugs = [
   'veredon-mojon-blanco',
 ];
 
+type ExpectedTechnicalSheet = {
+  slug: string;
+  shape: 'circular' | 'linear';
+  distanceKm: number;
+  durationMinutes: number;
+  difficulty: 'easy' | 'moderate' | 'hard';
+};
+
+const verifiedTechnicalSheets: ExpectedTechnicalSheet[] = [
+  { slug: 'adelfal-de-cuadros', shape: 'linear', distanceKm: 0.453, durationMinutes: 20, difficulty: 'easy' },
+  { slug: 'castillo-de-albanchez', shape: 'linear', distanceKm: 0.206, durationMinutes: 20, difficulty: 'moderate' },
+  { slug: 'castillo-de-mata-bejid', shape: 'linear', distanceKm: 3.55, durationMinutes: 75, difficulty: 'easy' },
+  { slug: 'gibralberca', shape: 'circular', distanceKm: 5.653, durationMinutes: 120, difficulty: 'moderate' },
+  { slug: 'hoyalinos', shape: 'circular', distanceKm: 2.092, durationMinutes: 60, difficulty: 'moderate' },
+  { slug: 'la-cueva-de-la-graja', shape: 'linear', distanceKm: 0.575, durationMinutes: 30, difficulty: 'moderate' },
+  { slug: 'las-vinas', shape: 'circular', distanceKm: 8.72, durationMinutes: 180, difficulty: 'moderate' },
+  { slug: 'subida-al-hoyo-de-la-laguna', shape: 'linear', distanceKm: 5.475, durationMinutes: 180, difficulty: 'hard' },
+  { slug: 'subida-a-pico-magina-y-miramundos', shape: 'linear', distanceKm: 14.773, durationMinutes: 300, difficulty: 'hard' },
+  { slug: 'veredon-mojon-blanco', shape: 'linear', distanceKm: 3.156, durationMinutes: 90, difficulty: 'moderate' },
+];
+
 describe('official Sierra Mágina starter catalog', () => {
   it('contains the 17 audited official trail identities without publishing unverified geometry', () => {
     const snapshot = getCatalogSnapshot();
@@ -34,35 +55,37 @@ describe('official Sierra Mágina starter catalog', () => {
     expect(snapshot.adventures.every((adventure) => adventure.trackId === null)).toBe(true);
   });
 
-  it('stores official Las Viñas technical data without inventing detailed difficulty factors', () => {
-    const route = getAdventureBySlug('las-vinas');
+  it.each(verifiedTechnicalSheets)(
+    'stores the current official technical sheet for $slug without inventing detailed factors',
+    ({ slug, shape, distanceKm, durationMinutes, difficulty }) => {
+      const route = getAdventureBySlug(slug);
 
-    expect(route).not.toBeNull();
-    expect(route?.shape).toBe('circular');
-    expect(route?.metrics.distanceKm).toBe(8.72);
-    expect(route?.metrics.durationMinutesMin).toBe(180);
-    expect(route?.difficulty.simpleLabel).toBe('moderate');
-    expect(route?.difficulty.physicalDemand).toBeNull();
-    expect(route?.difficulty.technicalTerrain).toBeNull();
+      expect(route).not.toBeNull();
+      expect(route?.shape).toBe(shape);
+      expect(route?.metrics.distanceKm).toBe(distanceKm);
+      expect(route?.metrics.durationMinutesMin).toBe(durationMinutes);
+      expect(route?.metrics.durationMinutesMax).toBe(durationMinutes);
+      expect(route?.difficulty.simpleLabel).toBe(difficulty);
+      expect(route?.difficulty.physicalDemand).toBeNull();
+      expect(route?.difficulty.technicalTerrain).toBeNull();
+    },
+  );
+
+  it('keeps the current multi-municipality scope for Veredón-Mojón Blanco', () => {
+    expect(getAdventureBySlug('veredon-mojon-blanco')?.municipalityIds.sort()).toEqual(
+      ['mancha-real', 'pegalajar', 'torres'].sort(),
+    );
   });
 
-  it('stores official Hoyalinos technical data from its current route sheet', () => {
-    const route = getAdventureBySlug('hoyalinos');
-
-    expect(route?.shape).toBe('circular');
-    expect(route?.metrics.distanceKm).toBe(2.092);
-    expect(route?.metrics.durationMinutesMin).toBe(60);
-    expect(route?.difficulty.simpleLabel).toBe('moderate');
-  });
-
-  it('derives Las Viñas as closed from the current official temporary closure', () => {
+  it('derives both currently closed Cuadros-area trails as closed', () => {
     const snapshot = getCatalogSnapshot();
-    const route = getAdventureBySlug('las-vinas');
-    expect(route).not.toBeNull();
-
-    expect(
-      deriveOperationalStatus(route!.id, snapshot.restrictions, snapshot.sources),
-    ).toBe('closed');
+    for (const slug of ['adelfal-de-cuadros', 'las-vinas']) {
+      const route = getAdventureBySlug(slug);
+      expect(route).not.toBeNull();
+      expect(
+        deriveOperationalStatus(route!.id, snapshot.restrictions, snapshot.sources),
+      ).toBe('closed');
+    }
   });
 
   it('passes hard catalog invariants while keeping incomplete routes as drafts', () => {

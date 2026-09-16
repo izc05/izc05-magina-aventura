@@ -95,6 +95,8 @@ $json$
 $json$::jsonb
 );
 
+grant select on catalog_test_manifest to authenticated;
+
 select has_function('public','admin_ingest_catalog_manifest',array['jsonb'],'public catalog ingest RPC exists');
 select ok(not has_function_privilege('anon','public.admin_ingest_catalog_manifest(jsonb)','EXECUTE'),'anon cannot ingest catalog');
 

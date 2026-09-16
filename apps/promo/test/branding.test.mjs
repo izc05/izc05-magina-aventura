@@ -60,6 +60,17 @@ test('shows profile capabilities without fake user activity totals', () => {
   assert.doesNotMatch(html, />24<|58 km/);
 });
 
+test('finishes with a premium but honest Android release panel', () => {
+  assert.match(html, /data-download-device/);
+  assert.match(html, /data-release-status="coming-soon"/);
+  assert.match(html, /APK directa/);
+  assert.match(html, /Google Play/);
+  assert.match(html, /Próximamente/);
+  assert.match(css, /\.download-device/);
+  assert.match(css, /\.download-section::before/);
+  assert.doesNotMatch(html, /href="https:\/\/play\.google\.com/);
+});
+
 test('keeps the four cinematic story titles in semantic HTML', () => {
   for (const text of [
     'Explora Sierra Mágina',

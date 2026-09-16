@@ -6,16 +6,14 @@
   <meta name="theme-color" content="#0e1a12" />
   <meta name="description" content="Mágina Aventura: rutas, naturaleza, descubrimientos y progreso en Sierra Mágina." />
   <title>Mágina Aventura — Explora. Descubre. Vive.</title>
+  <link rel="icon" href="assets/magina-aventura-icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar" data-topbar>
     <a class="brand" href="#inicio" aria-label="Mágina Aventura, inicio">
-      <svg class="brand-mark" viewBox="0 0 76 38" aria-hidden="true">
-        <path d="M4 30 23 9l10 12L42 8l30 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="m15 30 10-11 7 8 10-12 14 15" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>
-      </svg>
-      <span><strong>MÁGINA</strong><small>AVENTURA</small></span>
+      <img class="brand-icon" src="assets/magina-aventura-icon.svg" alt="" width="42" height="42" />
+      <span><strong>Mágina Aventura</strong><small>SIERRA MÁGINA · JAÉN</small></span>
     </a>
     <nav aria-label="Principal">
       <a href="#exploracion">Exploración</a>
@@ -39,28 +37,53 @@
           <div class="frame" style="--i:8"></div>
         </div>
         <div class="cinema-vignette"></div>
+
         <div class="hero-copy" data-hero-copy>
-          <p class="eyebrow">SIERRA MÁGINA · JAÉN</p>
-          <h1>Más que senderismo.<br/><span>Una forma de descubrir.</span></h1>
-          <p>Rutas, naturaleza, patrimonio y progreso en una experiencia pensada para explorar Mágina desde el móvil.</p>
+          <div class="hero-logo-panel">
+            <img class="hero-logo" src="assets/magina-aventura-logo.svg" alt="Mágina Aventura — Sierra Mágina · Jaén" />
+          </div>
+          <p class="eyebrow">RUTAS · NATURALEZA · DESCUBRIMIENTOS</p>
+          <h1>Camina. Descubre.<br/><span>Vive Mágina.</span></h1>
+          <p>Una experiencia para recorrer Sierra Mágina con rutas, mapas, patrimonio, naturaleza y progreso desde el móvil.</p>
           <div class="hero-actions">
             <a class="button primary" href="#descarga">Descargar APK</a>
             <a class="button ghost" href="#exploracion">Ver la experiencia</a>
           </div>
         </div>
-        <div class="story-copy" data-story-copy aria-live="polite">
-          <p class="story-kicker">TU PRÓXIMA AVENTURA</p>
-          <p class="story-line">está más cerca</p>
+
+        <div class="story-sequence" aria-label="Historia de Mágina Aventura">
+          <article class="story-step story-left" data-story-step>
+            <p class="story-kicker">01 · EMPIEZA POR UNA RUTA</p>
+            <h2>Explora Sierra Mágina</h2>
+            <p>Elige una ruta, conoce su dificultad, distancia y desnivel antes de salir.</p>
+          </article>
+          <article class="story-step story-right" data-story-step>
+            <p class="story-kicker">02 · CADA PASO CUENTA</p>
+            <h2>Cada ruta es una aventura</h2>
+            <p>Sigue tu recorrido, acumula kilómetros y vive la sierra a tu propio ritmo.</p>
+          </article>
+          <article class="story-step story-left" data-story-step>
+            <p class="story-kicker">03 · CERCA DE TI</p>
+            <h2>Descubre lo que te rodea</h2>
+            <p>Flora, fauna, patrimonio y rincones especiales aparecen a medida que avanzas.</p>
+          </article>
+          <article class="story-step story-right story-final" data-story-step>
+            <p class="story-kicker">04 · ENTRA EN LA APP</p>
+            <h2>La aventura empieza aquí</h2>
+            <p>El recorrido termina acercándote al móvil, justo donde empieza la experiencia real.</p>
+            <a class="button primary story-cta" href="#descarga">Descargar aplicación</a>
+          </article>
         </div>
+
         <div class="scroll-indicator" aria-hidden="true"><span>SCROLL</span><i></i></div>
       </div>
     </section>
 
     <section id="exploracion" class="feature feature-light">
       <div class="feature-copy reveal">
-        <p class="eyebrow">EXPLORA</p>
+        <p class="eyebrow">EXPLORACIÓN</p>
         <h2>Todo Mágina<br/><span>en tu mano.</span></h2>
-        <p>Encuentra rutas, puntos de interés y lugares que merecen una parada. La web presenta la experiencia; la aplicación será donde realmente comienza la aventura.</p>
+        <p>Encuentra rutas, puntos de interés y lugares que merecen una parada. Esta web presenta la experiencia; la aplicación será donde realmente comienza la aventura.</p>
         <div class="feature-list" role="list">
           <span role="listitem">Rutas detalladas</span>
           <span role="listitem">Mapas y GPS</span>
@@ -98,6 +121,7 @@
       <div class="download-bg scene-crop crop-1" aria-hidden="true"></div>
       <div class="download-overlay"></div>
       <div class="download-content reveal">
+        <img class="download-icon" src="assets/magina-aventura-icon.svg" alt="" width="72" height="72" />
         <p class="eyebrow">MÁGINA AVENTURA</p>
         <h2>La sierra<br/><span>empieza aquí.</span></h2>
         <p>Primera versión para Android. Más adelante podremos enlazar Google Play cuando la publicación esté preparada.</p>
@@ -111,14 +135,14 @@
 
   <footer>
     <div class="footer-brand">
-      <svg class="brand-mark" viewBox="0 0 76 38" aria-hidden="true"><path d="M4 30 23 9l10 12L42 8l30 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <img class="footer-icon" src="assets/magina-aventura-icon.svg" alt="" width="44" height="44" />
       <span>Mágina Aventura</span>
     </div>
     <p>Explora · Descubre · Vive Sierra Mágina</p>
     <a href="#inicio">Volver arriba ↑</a>
   </footer>
 
-  <noscript><style>.frame:first-child{opacity:1}.cinematic{height:100vh}</style></noscript>
+  <noscript><style>.frame:first-child{opacity:1}.cinematic{height:100vh}.story-step:first-child{opacity:1}</style></noscript>
   <script src="app.js" defer></script>
 </body>
 </html>

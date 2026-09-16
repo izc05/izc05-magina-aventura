@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "maginaaventura",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#2F4A2E",
+    "backgroundColor": "#FAF9F6",
     "primaryColor": "#2F4A2E",
     "icon": "./assets/branding/icon.png",
     "newArchEnabled": true,
@@ -23,9 +23,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#2F4A2E",
+          "backgroundColor": "#FAF9F6",
           "image": "./assets/branding/splash-logo.png",
-          "imageWidth": 200,
+          "imageWidth": 220,
           "resizeMode": "contain"
         }
       ]
@@ -38,7 +38,7 @@
       "package": "com.isivolt.maginaaventura",
       "adaptiveIcon": {
         "foregroundImage": "./assets/branding/adaptive-icon.png",
-        "backgroundColor": "#2F4A2E"
+        "backgroundColor": "#FAF9F6"
       }
     },
     "web": {

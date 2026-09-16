@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const startLocationUpdatesAsync = vi.fn(async () => undefined);
+const mocks = vi.hoisted(() => ({
+  startLocationUpdatesAsync: vi.fn(async () => undefined),
+}));
 
 vi.mock('expo-location', () => ({
   Accuracy: { High: 99 },
@@ -10,7 +12,7 @@ vi.mock('expo-location', () => ({
   getBackgroundPermissionsAsync: vi.fn(async () => ({ status: 'granted' })),
   requestBackgroundPermissionsAsync: vi.fn(async () => ({ status: 'granted' })),
   hasStartedLocationUpdatesAsync: vi.fn(async () => false),
-  startLocationUpdatesAsync,
+  startLocationUpdatesAsync: mocks.startLocationUpdatesAsync,
   stopLocationUpdatesAsync: vi.fn(async () => undefined),
 }));
 
@@ -18,15 +20,15 @@ import { ACTIVITY_LOCATION_TASK } from './expo-location-adapter';
 import { expoLocationProvider } from './expo-location-provider';
 
 beforeEach(() => {
-  startLocationUpdatesAsync.mockClear();
+  mocks.startLocationUpdatesAsync.mockClear();
 });
 
 describe('expoLocationProvider native wiring', () => {
   it('starts the Expo background task through the shared provider contract', async () => {
     await expoLocationProvider.start('activity-native-wiring');
 
-    expect(startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
-    expect(startLocationUpdatesAsync).toHaveBeenCalledWith(
+    expect(mocks.startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
+    expect(mocks.startLocationUpdatesAsync).toHaveBeenCalledWith(
       ACTIVITY_LOCATION_TASK,
       expect.objectContaining({ distanceInterval: 8 }),
     );

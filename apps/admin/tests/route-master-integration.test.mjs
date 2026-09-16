@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const sourceUrl = new URL('../route-admin-tools.mjs', import.meta.url);
+const sourceBaseUrl = new URL('../route-admin-tools-base.mjs', import.meta.url);
 const visualToolsUrl = new URL('../visual-tools.mjs', import.meta.url);
 const safetyToolsUrl = new URL('../safety-tools.mjs', import.meta.url);
 
 async function source() {
-  return readFile(sourceUrl, 'utf8');
+  const [base, extension] = await Promise.all([
+    readFile(sourceBaseUrl, 'utf8'),
+    readFile(sourceUrl, 'utf8')
+  ]);
+  return `${base}\n${extension}`;
 }
 
 async function visualSource() {

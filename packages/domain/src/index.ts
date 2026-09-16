@@ -6,4 +6,5 @@ export * from './gamification/challenge-progress';
 export * from './gamification/level-progression';
 export * from './gamification/progression-cycle';
 export * from './gamification/ranking';
+export * from './rewards/olive-grants';
 export * from './routes/route-status';

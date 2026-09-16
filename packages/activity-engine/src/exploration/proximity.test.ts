@@ -64,7 +64,7 @@ describe('evaluateExplorationSample', () => {
     );
 
     expect(result.observations).toEqual([]);
-    expect(result.state.progressByTarget[target.id].consecutiveSamples).toBe(0);
+    expect(result.state.progressByTarget[target.id]!.consecutiveSamples).toBe(0);
   });
 
   it('unlocks only after the configured number of consecutive reliable samples', () => {
@@ -76,7 +76,7 @@ describe('evaluateExplorationSample', () => {
     );
 
     expect(first.observations).toEqual([]);
-    expect(first.state.progressByTarget[target.id].consecutiveSamples).toBe(1);
+    expect(first.state.progressByTarget[target.id]!.consecutiveSamples).toBe(1);
 
     const second = evaluateExplorationSample(
       first.state,
@@ -97,6 +97,6 @@ describe('evaluateExplorationSample', () => {
       sampleSequence: 2,
       accuracyMeters: 8,
     });
-    expect(second.observations[0].distanceMeters).toBeCloseTo(0, 6);
+    expect(second.observations[0]!.distanceMeters).toBeCloseTo(0, 6);
   });
 });

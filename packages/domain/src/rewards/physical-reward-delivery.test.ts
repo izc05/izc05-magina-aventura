@@ -115,6 +115,19 @@ describe('confirmPhysicalRewardDelivery', () => {
     expect(result.oliveMovement).toBeNull();
   });
 
+  it.each(['consumed', 'revoked', 'expired'] as const)(
+    'rechecks a stale valid scan and rejects a now-%s credential before delivery',
+    (status) => {
+      const result = confirmPhysicalRewardDelivery(
+        input({ credential: credential({ status }) }),
+      );
+
+      expect(result.reasons).toEqual(['credential-not-active']);
+      expect(result.oliveMovement).toBeNull();
+      expect(result.redemption).toBeNull();
+    },
+  );
+
   it('treats a previously committed redemption as an idempotent no-op', () => {
     const result = confirmPhysicalRewardDelivery(
       input({ alreadyCommittedRedemptionIds: ['redemption-1'] }),

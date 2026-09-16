@@ -1,6 +1,7 @@
 import type {
   ActivitySession,
   ActivitySnapshot,
+  ActivitySyncBatch,
   LocationSample,
 } from '@magina-aventura/contracts';
 
@@ -27,4 +28,7 @@ export interface ActivityStore {
     snapshot: ActivitySnapshot,
   ): Promise<void>;
   loadTrack(activityId: string): Promise<LocationSample[]>;
+  queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch>;
+  loadPendingSyncBatches(activityId: string): Promise<ActivitySyncBatch[]>;
+  markSyncBatchSynced(batchId: string): Promise<void>;
 }

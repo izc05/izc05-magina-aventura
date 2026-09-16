@@ -1,0 +1,27 @@
+begin;
+
+create extension if not exists pgtap with schema extensions;
+select plan(18);
+
+select has_table('public', 'admin_roles', 'admin_roles exists');
+select has_table('public', 'user_admin_roles', 'user_admin_roles exists');
+select has_table('public', 'admin_audit_log', 'admin_audit_log exists');
+select has_table('public', 'media_assets', 'media_assets exists');
+select has_table('public', 'moderation_reports', 'moderation_reports exists');
+select has_table('public', 'olive_transactions', 'olive_transactions exists');
+select has_table('public', 'reward_partners', 'reward_partners exists');
+select has_table('public', 'rewards', 'rewards exists');
+select has_table('public', 'reward_redemptions', 'reward_redemptions exists');
+select has_table('public', 'admin_notifications', 'admin_notifications exists');
+select has_table('public', 'route_safety_incidents', 'route_safety_incidents exists');
+
+select ok((select relrowsecurity from pg_class where oid = 'public.admin_roles'::regclass), 'RLS admin_roles');
+select ok((select relrowsecurity from pg_class where oid = 'public.user_admin_roles'::regclass), 'RLS user_admin_roles');
+select ok((select relrowsecurity from pg_class where oid = 'public.media_assets'::regclass), 'RLS media_assets');
+select ok((select relrowsecurity from pg_class where oid = 'public.olive_transactions'::regclass), 'RLS olive_transactions');
+select ok((select relrowsecurity from pg_class where oid = 'public.reward_redemptions'::regclass), 'RLS reward_redemptions');
+select has_function('public', 'admin_has_capability', array['text'], 'admin_has_capability exists');
+select has_function('public', 'redeem_reward_token', array['text'], 'redeem_reward_token exists');
+
+select * from finish();
+rollback;

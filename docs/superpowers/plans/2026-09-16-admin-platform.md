@@ -1,237 +1,166 @@
 # Mágina Aventura Admin Platform Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
-**Goal:** Build a secure Next.js administration application that lets authorized operators manage Mágina Aventura routes, media, users, community, gamification, rewards/QR, notifications and audit history.
-
-**Architecture:** Add `apps/admin` to the existing pnpm workspace and keep Supabase as the shared backend. Reuse existing route tables, add dedicated authorization/administration tables through migrations, enforce RBAC in RLS and server actions, and keep all sensitive mutations server/database controlled.
-
-**Tech Stack:** Node 22.13+, pnpm 10.15.0, TypeScript 6, Next.js 16.3.3, React 19.2.3, Supabase JS 2.116.0, Supabase SSR 0.12.7, Vitest, pgTAP.
-
+**Branch:** `feat/admin-v1`  
+**PR:** #8  
 **Spec:** `docs/superpowers/specs/2026-09-16-admin-platform-design.md`
 
-## Global Constraints
+## Goal
 
-- Never commit to `main`; use `feat/admin-v1`.
-- Never expose service-role/secret keys in browser code.
-- New public tables require explicit grants plus RLS.
-- Authorization data must not use user-editable metadata.
-- Route CMS must reuse existing route/checkpoint/discovery tables.
-- Sensitive mutations must append audit events.
-- XP and olives must be ledger-driven; no untracked balance overwrite.
-- QR redemption must be atomic and one-time.
+Deliver a secure Super Admin control plane for Mágina Aventura so routes, maps, users, multimedia, public community/chat, gamification, olives, rewards/QR, notifications, safety, roles, settings and audit history can be operated without changing mobile code.
 
----
+## Architecture actually implemented
 
-### Task 1: Admin application shell and dependency integration
+`apps/admin` is a dependency-free static web application built with HTML, CSS and native ES modules. It uses Supabase Auth/Data API/Storage with only the public project URL and publishable key in the browser. Authorization and sensitive mutations are enforced in Supabase RLS and narrowly scoped RPCs. This avoids introducing a second framework/toolchain into the existing pnpm monorepo while keeping CI frozen-lockfile compatible.
 
-**Files:**
-- Create: `apps/admin/package.json`
-- Create: `apps/admin/tsconfig.json`
-- Create: `apps/admin/next.config.ts`
-- Create: `apps/admin/src/app/layout.tsx`
-- Create: `apps/admin/src/app/page.tsx`
-- Create: `apps/admin/src/app/globals.css`
-- Create: `apps/admin/src/lib/navigation.ts`
-- Modify: `package.json`
+## Global constraints
 
-**Interfaces:**
-- Produces: workspace package `@magina-aventura/admin` with `dev`, `build`, `typecheck`, `test` scripts.
-- Produces: `ADMIN_NAV_ITEMS` navigation contract used by authenticated layout.
+- [x] No direct work on `main`; implementation remains on `feat/admin-v1`.
+- [x] No secret/service-role credential is shipped to browser code.
+- [x] Admin/public tables use explicit grants and RLS.
+- [x] Authorization is stored in database role tables, not editable user metadata.
+- [x] Route CMS reuses canonical route/checkpoint/discovery entities.
+- [x] Sensitive mutations are audited.
+- [x] Olives are append-only ledger transactions.
+- [x] QR redemption is atomic and one-time.
+- [x] Private messages are not exposed as a general administrator inbox.
 
-- [ ] Write a Vitest test asserting required navigation modules and unique hrefs.
-- [ ] Run Admin test and confirm RED because navigation module does not exist.
-- [ ] Create pinned package/config files and minimal layout/navigation.
-- [ ] Run test and typecheck; confirm GREEN.
-- [ ] Commit `feat(admin): add admin application shell`.
+## 1 · Admin shell, Auth and RBAC
 
-### Task 2: Supabase SSR session and RBAC foundation
+- [x] Protected login with Supabase email/password Auth.
+- [x] Session stored in `sessionStorage`.
+- [x] Refresh-token retry after access-token expiry.
+- [x] Logout clears local session and attempts remote revocation.
+- [x] Roles: `super_admin`, `admin`, `route_manager`, `moderator`, `partner`.
+- [x] Capability-aware navigation/actions.
+- [x] Database capability checks and role-scoped RLS.
+- [x] Partner/almazara scoping.
+- [x] Prevent revocation of the final Super Admin.
+- [x] Node tests for navigation/roles and shell module wiring.
 
-**Files:**
-- Create: `apps/admin/src/lib/supabase/server.ts`
-- Create: `apps/admin/src/lib/supabase/client.ts`
-- Create: `apps/admin/src/lib/auth/roles.ts`
-- Create: `apps/admin/src/lib/auth/roles.test.ts`
-- Create: `apps/admin/src/lib/auth/require-admin.ts`
-- Create: `supabase/migrations/202609160001_admin_roles.sql`
-- Create: `supabase/tests/admin_roles_rls.test.sql`
+## 2 · Route CMS and map content
 
-**Interfaces:**
-- Produces: `AdminRole = 'super_admin' | 'admin' | 'route_manager' | 'moderator' | 'partner'`.
-- Produces: `can(role, capability): boolean` and `requireAdmin(capability)`.
-- Database produces: `admin_roles`, `user_admin_roles`, helper authorization function and RLS policies.
+- [x] Route list/create/edit lifecycle.
+- [x] Draft → review → published → archived state machine.
+- [x] Versioned route content and geometry.
+- [x] Published-route edits return the route to review rather than silently mutating production content.
+- [x] GPX import and PostGIS LineString persistence.
+- [x] Checkpoint management with radius/required/active fields.
+- [x] Discovery management for flora, fauna, heritage, olive, tradition and landscape.
+- [x] XP/olive rewards on route content.
+- [x] Visual route editor for placing checkpoints/discoveries on the trace.
+- [x] Route hero/gallery/safety/discovery media links.
+- [x] PMTiles/offline-map asset metadata per geometry version.
+- [x] Publication validation and audit history.
 
-- [ ] Write failing role/capability unit tests.
-- [ ] Write failing pgTAP tests proving ordinary authenticated users cannot read/write admin role tables and route managers cannot grant roles.
-- [ ] Add role migration with explicit Data API grants and RLS.
-- [ ] Implement role capability matrix and server guard.
-- [ ] Run unit/database tests; confirm GREEN.
-- [ ] Commit `feat(admin): add secure role foundation`.
+## 3 · Multimedia
 
-### Task 3: Audit log foundation
+- [x] Private Supabase Storage `media` bucket.
+- [x] Upload workflow.
+- [x] Metadata: title, MIME, size, alt text and tags.
+- [x] Reuse of media across routes.
+- [x] Archive workflow instead of destructive removal by default.
+- [x] Filename normalization/transliteration tests.
 
-**Files:**
-- Create: `supabase/migrations/202609160002_admin_audit.sql`
-- Create: `supabase/tests/admin_audit.test.sql`
-- Create: `apps/admin/src/lib/audit/types.ts`
-- Create: `apps/admin/src/app/(protected)/audit/page.tsx`
+## 4 · Users, community and moderation
 
-**Interfaces:**
-- Database produces append-only `admin_audit_log`.
-- Produces action names such as `route.publish`, `role.assign`, `moderation.resolve`, `reward.redeem`.
+- [x] Safe user list without passwords/Auth secrets.
+- [x] Per-user operational overview.
+- [x] Moderation states: active / warned / suspended.
+- [x] Suspend/warn/reactivate actions.
+- [x] Public community moderation.
+- [x] Public channel chat with global/route/municipality scope.
+- [x] Message reporting and moderation.
+- [x] Suspended-user posting protection.
+- [x] Report resolution/dismissal.
+- [x] No general reader for private conversations.
 
-- [ ] Write pgTAP tests proving normal users cannot insert/read audit rows and admin clients cannot update/delete existing rows.
-- [ ] Add table, indexes, explicit grants and RLS.
-- [ ] Add read-only audit page for allowed admins.
-- [ ] Run tests/typecheck; confirm GREEN.
-- [ ] Commit `feat(admin): add immutable audit log`.
+## 5 · Gamification and olives
 
-### Task 4: Route CMS
+- [x] Levels.
+- [x] Badges.
+- [x] Challenges.
+- [x] Seasons and XP/olive multipliers.
+- [x] Discovery collections and completion rewards.
+- [x] Append-only `olive_transactions` ledger.
+- [x] Audited administrative olive adjustments.
+- [x] Direct Data API INSERT/UPDATE/DELETE revoked from the olive ledger for authenticated clients.
 
-**Files:**
-- Create: `apps/admin/src/app/(protected)/routes/page.tsx`
-- Create: `apps/admin/src/app/(protected)/routes/new/page.tsx`
-- Create: `apps/admin/src/app/(protected)/routes/[id]/page.tsx`
-- Create: `apps/admin/src/features/routes/actions.ts`
-- Create: `apps/admin/src/features/routes/route-form.tsx`
-- Create: `apps/admin/src/features/routes/validation.ts`
-- Create: `apps/admin/src/features/routes/validation.test.ts`
-- Create: `supabase/migrations/202609160003_admin_route_policies.sql`
-- Create: `supabase/tests/admin_route_policies.test.sql`
+## 6 · Almazaras, rewards and QR
 
-**Interfaces:**
-- Reuses existing `routes`, `route_versions`, `route_geometries`, `checkpoints`, `discoveries`.
-- Produces server actions `createRouteDraft`, `updateRouteDraft`, `publishRoute`, `archiveRoute`.
+- [x] Partner/almazara catalogue.
+- [x] Reward creation and stock.
+- [x] Olive price and per-user limit.
+- [x] Valid-from / valid-until policy.
+- [x] Reward activation/deactivation.
+- [x] Advanced reward editor loaded in the Admin shell.
+- [x] Reservation consumes stock and olives atomically.
+- [x] Reservation cancellation/expiry restores stock and olives.
+- [x] Configurable reservation duration.
+- [x] Opaque QR token with persisted hash only.
+- [x] One-time redemption.
+- [x] Partner-scoped redemption.
+- [x] Manual token validation.
+- [x] Camera/image QR reading when `BarcodeDetector` is available.
 
-- [ ] Write failing validation tests for title/slug/status/difficulty/rewards.
-- [ ] Write failing pgTAP tests for route-manager CRUD and public published-only access.
-- [ ] Add admin route policies without weakening public policies.
-- [ ] Implement list/create/edit/publish/archive actions with audit writes.
-- [ ] Implement route form and status controls.
-- [ ] Run tests/typecheck; confirm GREEN.
-- [ ] Commit `feat(admin): add route cms`.
+## 7 · Notifications, safety and configuration
 
-### Task 5: GPX, checkpoints, discoveries and multimedia
+- [x] Notification drafts and publication lifecycle.
+- [x] Audiences: all, route followers, municipality followers and administrative role.
+- [x] Device registration/topic subscription schema.
+- [x] Delivery fan-out queue.
+- [x] Service-role-only delivery claim/complete boundary.
+- [x] Raw push tokens hidden from Admin UI.
+- [x] Route safety incident creation/resolution.
+- [x] Auditable JSON settings/feature flags.
+- [x] Public/private setting visibility.
+- [x] Maintenance/community/rewards/weather/checkpoint/reservation settings.
 
-**Files:**
-- Create: `apps/admin/src/features/routes/gpx-import.tsx`
-- Create: `apps/admin/src/features/routes/map-content-editor.tsx`
-- Create: `apps/admin/src/features/media/media-library.tsx`
-- Create: `apps/admin/src/features/media/actions.ts`
-- Create: `supabase/migrations/202609160004_admin_media.sql`
-- Create: `supabase/tests/admin_media.test.sql`
+## 8 · Dashboard, audit and exports
 
-**Interfaces:**
-- Consumes existing `@magina-aventura/route-import` package.
-- Produces `media_assets` metadata and Storage `media` bucket permissions.
-- Produces route media association records.
+- [x] Dashboard KPIs for users, routes, moderation, chat, rewards, redemptions and olives.
+- [x] Read-only immutable Admin audit log.
+- [x] Audit events for privileged operations.
+- [x] Direct authenticated INSERT/UPDATE/DELETE revoked from audit log.
+- [x] CSV helper/export support for operational data.
 
-- [ ] Write failing tests for accepted GPX/import output and media authorization.
-- [ ] Add media metadata/storage policies with RLS and explicit grants.
-- [ ] Implement GPX import into route geometry version.
-- [ ] Implement checkpoint/discovery CRUD with coordinate/radius validation.
-- [ ] Implement media upload/select/archive workflow.
-- [ ] Run tests/typecheck/database tests; confirm GREEN.
-- [ ] Commit `feat(admin): add map content and media management`.
+## 9 · Security and hosting hardening
 
-### Task 6: Users, community and moderation
+- [x] CSP / frame denial / nosniff headers for static hosting.
+- [x] Restrictive camera Permissions-Policy.
+- [x] Runtime config generated from deployment environment.
+- [x] Config generator rejects secret/service-role-looking keys.
+- [x] RLS on exposed administrative tables.
+- [x] Fixed search path in privileged database functions.
+- [x] Service-only notification dispatcher RPCs are not executable by `anon`/`authenticated`.
+- [x] Private media bucket.
+- [x] Security pgTAP coverage for immutable audit/olive ledgers.
 
-**Files:**
-- Create: `apps/admin/src/app/(protected)/users/page.tsx`
-- Create: `apps/admin/src/app/(protected)/moderation/page.tsx`
-- Create: `apps/admin/src/features/moderation/actions.ts`
-- Create: `supabase/migrations/202609160005_moderation_admin.sql`
-- Create: `supabase/tests/moderation_admin.test.sql`
+## 10 · CI and release closure
 
-**Interfaces:**
-- Produces moderation cases/actions that can attach to community content when those tables are present.
-- Produces user administrative state (`active`, `warned`, `suspended`).
+- [x] Root TypeScript typecheck.
+- [x] Existing package/mobile unit tests remain green in verified runs.
+- [x] Admin `.mjs` syntax check.
+- [x] Admin Node test suite.
+- [x] Expo Android prebuild validation.
+- [x] Pure-package boundary validation.
+- [x] Local Supabase start/reset from an empty database.
+- [x] pgTAP database contract suite has passed on the feature branch before final hardening.
+- [ ] Latest head: full GitHub Actions run green after immutable-ledger hardening and reward-shell wiring.
+- [ ] Final PR review: no unresolved review threads/findings.
+- [ ] Mark PR #8 ready for review once latest CI is green.
 
-- [ ] Write failing moderation state-transition tests.
-- [ ] Add moderation tables/RLS and audit requirements.
-- [ ] Implement user list and safe operational details without auth secrets.
-- [ ] Implement report resolve/hide/restore/warn/suspend actions.
-- [ ] Verify no general private-message reader is exposed.
-- [ ] Run tests/typecheck; confirm GREEN.
-- [ ] Commit `feat(admin): add user and moderation console`.
+## 11 · Live environment boundary
 
-### Task 7: Gamification and olives ledger
+These steps require account/environment choices and are intentionally not performed implicitly by the feature branch:
 
-**Files:**
-- Create: `supabase/migrations/202609160006_gamification_admin.sql`
-- Create: `supabase/tests/gamification_ledger.test.sql`
-- Create: `apps/admin/src/app/(protected)/gamification/page.tsx`
-- Create: `apps/admin/src/features/gamification/actions.ts`
-- Create: `apps/admin/src/features/gamification/ledger.ts`
-- Create: `apps/admin/src/features/gamification/ledger.test.ts`
+- [ ] Select/create the production or staging Supabase project.
+- [ ] Apply migrations to that project.
+- [ ] Create the first Auth account and bootstrap one `super_admin` row.
+- [ ] Configure `SUPABASE_URL` + publishable key in hosting.
+- [ ] Deploy `apps/admin` behind the chosen Admin hostname.
+- [ ] Smoke-test login, route edit/publish, media upload, suspension, QR redemption and notification publication against the live project.
+- [ ] Merge PR #8 into `main` only after explicit approval.
 
-**Interfaces:**
-- Produces levels, badges, challenges and `olive_transactions` append-only ledger.
-- Produces `appendOliveAdjustment(userId, amount, reason)` server mutation with audit event.
+## Definition of nearly closed
 
-- [ ] Write failing tests for ledger balance and invalid zero/unreasoned adjustments.
-- [ ] Add schema/RLS ensuring users can read their own ledger while privileged writes are controlled.
-- [ ] Implement gamification CRUD and audited administrative adjustments.
-- [ ] Run unit/database tests; confirm GREEN.
-- [ ] Commit `feat(admin): add gamification and olive ledger`.
-
-### Task 8: Partners, rewards and QR redemption
-
-**Files:**
-- Create: `supabase/migrations/202609160007_rewards_redemption.sql`
-- Create: `supabase/tests/rewards_redemption.test.sql`
-- Create: `apps/admin/src/app/(protected)/rewards/page.tsx`
-- Create: `apps/admin/src/app/(protected)/redemptions/page.tsx`
-- Create: `apps/admin/src/features/rewards/actions.ts`
-- Create: `apps/admin/src/features/rewards/state.ts`
-- Create: `apps/admin/src/features/rewards/state.test.ts`
-
-**Interfaces:**
-- Produces partners, rewards, reward stock and redemptions.
-- Redemption states: `reserved | redeemed | expired | cancelled`.
-- Produces one-time opaque token redemption operation.
-
-- [ ] Write failing state-transition tests and pgTAP double-redemption test.
-- [ ] Add reward/redemption schema, RLS and atomic redeem function.
-- [ ] Implement reward/stock management and partner-scoped access.
-- [ ] Implement redemption validation/confirmation UI.
-- [ ] Run tests; verify a token cannot be redeemed twice.
-- [ ] Commit `feat(admin): add rewards and qr redemption`.
-
-### Task 9: Notifications, safety and dashboard
-
-**Files:**
-- Create: `supabase/migrations/202609160008_notifications_safety.sql`
-- Create: `apps/admin/src/app/(protected)/notifications/page.tsx`
-- Create: `apps/admin/src/app/(protected)/safety/page.tsx`
-- Create: `apps/admin/src/app/(protected)/dashboard/page.tsx`
-- Create: `apps/admin/src/features/dashboard/queries.ts`
-
-**Interfaces:**
-- Produces notification records/audiences and route safety incidents.
-- Dashboard consumes aggregate counts only; it does not bypass row-level authorization.
-
-- [ ] Write failing database tests for notification/safety authorization.
-- [ ] Add schema/RLS.
-- [ ] Implement notification draft/publish and route open/close actions with audit events.
-- [ ] Implement dashboard KPIs for routes, users, unresolved reports, active rewards and redemptions.
-- [ ] Run tests/typecheck; confirm GREEN.
-- [ ] Commit `feat(admin): add notifications safety and dashboard`.
-
-### Task 10: CI, security review and pull request
-
-**Files:**
-- Modify: `.github/workflows/ci.yml` only if admin build is not already covered by recursive scripts.
-- Modify: `README.md` or admin README with environment variable/setup instructions.
-
-**Interfaces:**
-- Final branch must pass workspace typecheck/tests, Next build and Supabase reset/pgTAP suite.
-
-- [ ] Run/observe full CI on PR.
-- [ ] Inspect Supabase advisors/security output where available.
-- [ ] Confirm no secret/service-role value is referenced by client modules.
-- [ ] Confirm all new public tables have explicit grants and RLS.
-- [ ] Confirm route-public read policies remain published-only.
-- [ ] Confirm audit rows are immutable and QR token reuse fails.
-- [ ] Fix all CI/security findings.
-- [ ] Open PR from `feat/admin-v1` to `main` with module checklist and migration summary.
+The feature is considered **nearly closed** when the latest feature-branch head passes the complete CI matrix and PR #8 has no unresolved code/security findings. Live Supabase provisioning, first-account bootstrap, hosting smoke test and merge remain the only environment/approval-dependent steps.

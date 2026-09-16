@@ -1,36 +1,124 @@
+import type { ActivityEngineState } from '@magina-aventura/activity-engine';
+import type { LocationSample } from '@magina-aventura/contracts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { activityRuntime } from '../../src/activity/activity-runtime';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
-import { colors, radius, spacing } from '../../src/theme/tokens';
+import { colors, radius, shadow, spacing } from '../../src/theme/tokens';
 
 export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const [engineState, setEngineState] = useState<ActivityEngineState | null>(null);
+  const [track, setTrack] = useState<LocationSample[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  if (!route) {
-    return null;
+  useEffect(() => {
+    if (!route) return;
+    let active = true;
+
+    async function load() {
+      try {
+        const recovered = activityRuntime.current() ?? (await activityRuntime.recover(route));
+        if (!active) return;
+        setEngineState(recovered);
+        setTrack(await activityRuntime.loadTrack());
+        if (!recovered) setErrorMessage('No hay una aventura activa. Iníciala desde Preparación.');
+      } catch (error) {
+        if (active) setErrorMessage(error instanceof Error ? error.message : 'No se pudo recuperar la aventura.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void load();
+    const timer = setInterval(() => {
+      if (!active) return;
+      void (async () => {
+        try {
+          const refreshed = await activityRuntime.refresh();
+          if (!active || !refreshed) return;
+          setEngineState(refreshed);
+          setTrack(await activityRuntime.loadTrack());
+        } catch {
+          // Keep the last durable state visible. The next refresh may recover.
+        }
+      })();
+    }, 2000);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [route?.id]);
+
+  const presentation = useMemo(
+    () => (route ? presentActiveAdventure(route, engineState) : null),
+    [route, engineState],
+  );
+
+  if (!route || !presentation) return null;
+
+  const currentPoint = engineState?.snapshot.lastValidSample ?? track.at(-1) ?? null;
+  const isPaused = engineState?.session.state === 'PAUSED';
+  const hasActivity = Boolean(engineState);
+
+  async function togglePause() {
+    if (!engineState) return;
+    setErrorMessage(null);
+    try {
+      const next = isPaused ? await activityRuntime.resume() : await activityRuntime.pause();
+      setEngineState(next);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo cambiar el estado del GPS.');
+    }
   }
 
-  const presentation = presentActiveAdventure(route);
+  async function finishAdventure() {
+    if (!engineState) return;
+    setErrorMessage(null);
+    try {
+      const finished = await activityRuntime.finish();
+      setEngineState(finished);
+      router.replace({ pathname: '/adventure-summary/[slug]', params: { slug: route.slug } });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo finalizar la aventura.');
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
 
-      <View style={styles.map}>
-        <View style={styles.gridOne} />
-        <View style={styles.gridTwo} />
-        <View style={styles.routeLineA} />
-        <View style={styles.routeLineB} />
-        <View style={styles.userRadius} />
-        <View style={styles.userDot} />
-        <View style={styles.mapModeBadge}>
-          <Text style={styles.mapModeText}>VISTA DEMO</Text>
+      <View style={styles.trackingCanvas}>
+        <View style={styles.canvasGridHorizontal} />
+        <View style={styles.canvasGridVertical} />
+        <View style={styles.positionRadius} />
+        <View style={styles.positionDot} />
+        <View style={styles.gpsBadge}>
+          <Text style={styles.gpsBadgeText}>
+            {hasActivity ? (isPaused ? 'GPS PAUSADO' : 'GPS REAL · OFFLINE') : 'SIN ACTIVIDAD'}
+          </Text>
+        </View>
+        <View style={styles.positionCard}>
+          <Text style={styles.positionCardLabel}>POSICIÓN ACTUAL</Text>
+          <Text style={styles.positionCardValue}>
+            {currentPoint
+              ? `${currentPoint.latitude.toFixed(5)}, ${currentPoint.longitude.toFixed(5)}`
+              : 'Esperando una posición GPS válida…'}
+          </Text>
+          <Text style={styles.positionCardMeta}>
+            {currentPoint
+              ? `${track.length} puntos guardados · precisión ±${Math.round(currentPoint.accuracyMeters)} m`
+              : 'Sal al exterior y mantén la ubicación activada.'}
+          </Text>
         </View>
       </View>
 
@@ -45,115 +133,90 @@ export default function ActiveAdventureScreen() {
           </View>
         </View>
         <View style={styles.metrics}>
-          <View>
-            <Text style={styles.metricValue}>{presentation.distance}</Text>
-            <Text style={styles.metricLabel}>Distancia</Text>
-          </View>
-          <View>
-            <Text style={styles.metricValue}>{presentation.elapsed}</Text>
-            <Text style={styles.metricLabel}>Tiempo</Text>
-          </View>
-          <View>
-            <Text style={styles.metricValue}>{presentation.elevation}</Text>
-            <Text style={styles.metricLabel}>Desnivel</Text>
-          </View>
+          <Metric value={presentation.distance} label="Distancia" />
+          <Metric value={presentation.elapsed} label="Tiempo" />
+          <Metric value={presentation.elevation} label="Desnivel" />
         </View>
       </View>
 
-      <Pressable style={styles.exitButton} onPress={() => router.back()}>
-        <Text style={styles.exitButtonText}>×</Text>
-      </Pressable>
-
       <View style={styles.bottomCard}>
         <Text style={styles.bottomEyebrow}>{presentation.modeLabel}</Text>
-        <Text style={styles.bottomTitle}>Estado de la aventura</Text>
-        <View style={styles.objectiveRow}>
-          <View style={styles.objectiveIcon}>
-            <Text style={styles.objectiveIconText}>⌖</Text>
-          </View>
-          <View style={styles.objectiveCopy}>
-            <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
-            <Text style={styles.objectiveDistance}>{presentation.objectiveMeta}</Text>
-          </View>
-        </View>
+        <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
+        <Text style={styles.objectiveMeta}>{presentation.objectiveMeta}</Text>
 
-        <View style={styles.rewardPreview}>
-          <Text style={styles.rewardPreviewLabel}>RECOMPENSA DE LA RUTA</Text>
-          <Text style={styles.rewardPreviewValue}>{presentation.rewardPreview}</Text>
-        </View>
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-        <View style={styles.actionRow}>
-          <Pressable style={styles.actionButton} onPress={() => router.back()}>
-            <Text style={styles.actionButtonText}>← Preparación</Text>
+        {!hasActivity && !loading ? (
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() => router.replace({ pathname: '/routes/[slug]/prepare', params: { slug: route.slug } })}
+          >
+            <Text style={styles.primaryButtonText}>Volver a Preparación</Text>
           </Pressable>
-          <View style={styles.disabledPrimaryButton}>
-            <Text style={styles.disabledPrimaryText}>GPS pendiente</Text>
-          </View>
-          <View style={styles.disabledButton}>
-            <Text style={styles.disabledButtonText}>SOS · demo</Text>
-          </View>
-        </View>
-
-        <Pressable
-          style={styles.summaryButton}
-          onPress={() =>
-            router.push({
-              pathname: '/adventure-summary/[slug]',
-              params: { slug: route.slug },
-            })
-          }
-        >
-          <Text style={styles.summaryButtonText}>Ver resumen demo</Text>
-          <Text style={styles.summaryButtonArrow}>→</Text>
-        </Pressable>
+        ) : (
+          <>
+            <View style={styles.actionRow}>
+              <Pressable style={styles.secondaryButton} onPress={() => void togglePause()}>
+                <Text style={styles.secondaryButtonText}>{isPaused ? 'Reanudar' : 'Pausar'}</Text>
+              </Pressable>
+              <Pressable style={styles.finishButton} onPress={() => void finishAdventure()}>
+                <Text style={styles.finishButtonText}>Finalizar</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.persistNote}>
+              Puedes bloquear la pantalla. Android seguirá guardando posiciones en SQLite mientras el servicio esté activo.
+            </Text>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
+function Metric({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.limestone },
-  map: { flex: 1, overflow: 'hidden', backgroundColor: colors.limestone },
-  gridOne: { position: 'absolute', left: 0, right: 0, top: '44%', height: 1, backgroundColor: colors.border },
-  gridTwo: { position: 'absolute', top: 0, bottom: 0, left: '48%', width: 1, backgroundColor: colors.border },
-  routeLineA: { position: 'absolute', width: 280, height: 8, borderRadius: radius.pill, backgroundColor: colors.olive700, left: -10, top: '54%', transform: [{ rotate: '-22deg' }] },
-  routeLineB: { position: 'absolute', width: 230, height: 8, borderRadius: radius.pill, backgroundColor: colors.olive700, right: -55, top: '42%', transform: [{ rotate: '27deg' }] },
-  userRadius: { position: 'absolute', width: 150, height: 150, borderRadius: 75, borderWidth: 2, borderColor: colors.sky, backgroundColor: 'rgba(143,184,200,0.13)', left: '50%', top: '50%', marginLeft: -75, marginTop: -75 },
-  userDot: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: colors.olive900, borderWidth: 5, borderColor: colors.white, left: '50%', top: '50%', marginLeft: -12, marginTop: -12 },
-  mapModeBadge: { position: 'absolute', top: 210, left: spacing[20], borderRadius: radius.pill, backgroundColor: colors.ink, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
-  mapModeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  topHud: { position: 'absolute', top: spacing[12], left: spacing[16], right: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border },
+  trackingCanvas: { flex: 1, overflow: 'hidden', backgroundColor: colors.limestone },
+  canvasGridHorizontal: { position: 'absolute', left: 0, right: 0, top: '50%', height: 1, backgroundColor: colors.border },
+  canvasGridVertical: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: colors.border },
+  positionRadius: { position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderColor: colors.sky, backgroundColor: 'rgba(127,179,217,0.12)', left: '50%', top: '51%', marginLeft: -90, marginTop: -90 },
+  positionDot: { position: 'absolute', width: 26, height: 26, borderRadius: 13, backgroundColor: colors.aoveGold, borderWidth: 5, borderColor: colors.white, left: '50%', top: '51%', marginLeft: -13, marginTop: -13 },
+  gpsBadge: { position: 'absolute', top: 214, left: spacing[20], borderRadius: radius.pill, backgroundColor: colors.olive900, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
+  gpsBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  positionCard: { position: 'absolute', left: spacing[20], right: spacing[20], top: '61%', borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  positionCardLabel: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  positionCardValue: { color: colors.ink, fontSize: 14, fontWeight: '900', marginTop: spacing[6] },
+  positionCardMeta: { color: colors.muted, fontSize: 11, marginTop: spacing[4] },
+  topHud: { position: 'absolute', top: spacing[12], left: spacing[16], right: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border, ...shadow.card },
   topHudHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[12] },
   routeCopy: { flex: 1 },
   routeName: { color: colors.ink, fontSize: 17, fontWeight: '900' },
   routePlace: { color: colors.muted, fontSize: 11, marginTop: 2 },
   progressBadge: { borderRadius: radius.pill, backgroundColor: colors.olive900, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
   progressText: { color: colors.white, fontSize: 12, fontWeight: '900' },
-  metrics: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing[16], paddingTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border },
+  metrics: { flexDirection: 'row', marginTop: spacing[16], paddingTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border },
+  metric: { flex: 1 },
   metricValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   metricLabel: { color: colors.muted, fontSize: 10, marginTop: 2 },
-  exitButton: { position: 'absolute', top: 154, right: spacing[20], width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  exitButtonText: { color: colors.ink, fontSize: 26, fontWeight: '700' },
-  bottomCard: { position: 'absolute', left: spacing[16], right: spacing[16], bottom: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[20], borderWidth: 1, borderColor: colors.border },
+  bottomCard: { position: 'absolute', left: spacing[16], right: spacing[16], bottom: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[20], borderWidth: 1, borderColor: colors.border, ...shadow.card },
   bottomEyebrow: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
-  bottomTitle: { color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: spacing[8] },
-  objectiveRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing[12] },
-  objectiveIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.limestone, alignItems: 'center', justifyContent: 'center', marginRight: spacing[12] },
-  objectiveIconText: { color: colors.olive700, fontSize: 24, fontWeight: '900' },
-  objectiveCopy: { flex: 1 },
-  objectiveName: { color: colors.ink, fontSize: 16, fontWeight: '900' },
-  objectiveDistance: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 3 },
-  rewardPreview: { marginTop: spacing[16], paddingTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border },
-  rewardPreviewLabel: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  rewardPreviewValue: { color: colors.olive900, fontSize: 14, fontWeight: '900', marginTop: spacing[4] },
-  actionRow: { flexDirection: 'row', gap: spacing[8], marginTop: spacing[16] },
-  actionButton: { flex: 1.2, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[8] },
-  actionButtonText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
-  disabledPrimaryButton: { flex: 1.2, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.olive900, opacity: 0.52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing[8] },
-  disabledPrimaryText: { color: colors.white, fontSize: 11, fontWeight: '900', textAlign: 'center' },
-  disabledButton: { flex: 1, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, opacity: 0.62, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[8] },
-  disabledButtonText: { color: colors.muted, fontSize: 11, fontWeight: '800', textAlign: 'center' },
-  summaryButton: { minHeight: 48, marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
-  summaryButtonArrow: { color: colors.aoveGold, fontSize: 20, fontWeight: '900' },
+  objectiveName: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: spacing[8] },
+  objectiveMeta: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  errorText: { color: colors.earth, fontSize: 11, fontWeight: '800', marginTop: spacing[12] },
+  actionRow: { flexDirection: 'row', gap: spacing[10], marginTop: spacing[16] },
+  secondaryButton: { flex: 1, minHeight: 50, borderRadius: radius.md, backgroundColor: colors.warmBackground, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  secondaryButtonText: { color: colors.ink, fontSize: 13, fontWeight: '900' },
+  finishButton: { flex: 1, minHeight: 50, borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center' },
+  finishButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
+  primaryButton: { minHeight: 52, marginTop: spacing[16], borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center' },
+  primaryButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
+  persistNote: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: spacing[12] },
 });

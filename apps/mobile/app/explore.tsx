@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   searchGlyph: { color: colors.olive900, fontSize: 23, marginRight: spacing[8] },
   searchInput: { flex: 1, color: colors.ink, fontSize: 13 },
   filters: { gap: spacing[8], paddingVertical: spacing[16] },
-  filter: { borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, paddingHorizontal: spacing[14], paddingVertical: spacing[8] },
+  filter: { borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
   filterActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
   filterText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
   filterTextActive: { color: colors.white },

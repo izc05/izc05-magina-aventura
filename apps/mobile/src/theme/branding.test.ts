@@ -13,15 +13,16 @@ describe('Mágina Aventura branding contract', () => {
     });
   });
 
-  it('uses the approved brand copy and bottom navigation', () => {
+  it('uses the approved mobile copy and primary navigation', () => {
     expect(brand.name).toBe('Mágina Aventura');
     expect(brand.location).toBe('Sierra Mágina · Jaén');
     expect(brand.claim).toBe('Camina. Descubre. Conquista Mágina.');
+    expect(brand.supportingClaim).toBe('Más que rutas, vivencias que dejan huella.');
     expect(brand.bottomNavigation).toEqual([
-      'Rutas',
-      'Retos',
-      'Colecciones',
-      'Ranking',
+      'Inicio',
+      'Explorar',
+      'Mapa',
+      'Comunidad',
       'Perfil',
     ]);
   });

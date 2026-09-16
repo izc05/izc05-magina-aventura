@@ -1,31 +1,47 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppHeader } from '../src/components/branding/AppHeader';
+import { BottomNav } from '../src/components/navigation/BottomNav';
+import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
+import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
+import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
 import { developmentRoutes } from '../src/features/routes/fixtures';
-import { difficultyLabel, durationLabel } from '../src/features/routes/route-utils';
+import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
-const navItems = [
-  ['⌂', 'Rutas'],
-  ['◇', 'Retos'],
-  ['▦', 'Colecciones'],
-  ['△', 'Ranking'],
-  ['○', 'Perfil'],
-] as const;
 
 export default function RoutesHomeScreen() {
   const route = developmentRoutes[0];
+  const [ready, setReady] = useState(false);
 
+  useEffect(() => {
+    let mounted = true;
+
+    void expoOnboardingStorage
+      .hasSeen()
+      .then((seen) => {
+        if (!mounted) return;
+        if (!seen) {
+          router.replace('/onboarding');
+          return;
+        }
+        setReady(true);
+      })
+      .catch(() => {
+        if (mounted) setReady(true);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!ready) return <LaunchScreen />;
   if (!route) return null;
 
   return (
@@ -36,36 +52,41 @@ export default function RoutesHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.eyebrow}>SIERRA MÁGINA · JAÉN</Text>
-            <Text style={styles.brand}>Mágina Aventura</Text>
-          </View>
-          <View style={styles.profileBadge}>
-            <Text style={styles.profileInitial}>M</Text>
-          </View>
-        </View>
+        <AppHeader />
 
         <View style={styles.hero}>
-          <View style={styles.sun} />
-          <View style={styles.mountainBack} />
-          <View style={styles.mountainFront} />
+          <View style={styles.heroSkyGlow} />
+          <View style={styles.heroSun} />
+          <View style={styles.heroMountainBack} />
+          <View style={styles.heroMountainMid} />
+          <View style={styles.heroMountainFront} />
+          <View style={styles.heroPath} />
           <View style={styles.heroCopy}>
-            <Text style={styles.heroKicker}>TU PRÓXIMA AVENTURA</Text>
+            <Text style={styles.heroKicker}>SIERRA MÁGINA TE ESPERA</Text>
             <Text style={styles.heroTitle}>Camina. Descubre.{`\n`}Conquista Mágina.</Text>
             <Text style={styles.heroBody}>
-              Rutas reales, retos y descubrimientos que solo se desbloquean caminando.
+              Rutas reales, patrimonio y naturaleza convertidos en una aventura que progresa contigo.
             </Text>
           </View>
         </View>
 
+        <View style={styles.valueStrip}>
+          <ValueItem kind="route" title="Rutas reales" />
+          <ValueItem kind="heritage" title="Patrimonio vivo" />
+          <ValueItem kind="nature" title="Naturaleza única" />
+        </View>
+
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>⌕</Text>
+          <SearchGlyph />
           <TextInput
-            placeholder="Buscar rutas, pueblos o dificultad"
+            placeholder="Buscar rutas, municipios, lugares…"
             placeholderTextColor={colors.muted}
             style={styles.searchInput}
           />
+          <View style={styles.filterButton}>
+            <View style={styles.filterLineWide} />
+            <View style={styles.filterLineNarrow} />
+          </View>
         </View>
 
         <ScrollView
@@ -78,73 +99,34 @@ export default function RoutesHomeScreen() {
               key={filter}
               style={[styles.filterChip, index === 0 && styles.filterChipActive]}
             >
-              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>
-                {filter}
-              </Text>
+              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>{filter}</Text>
             </View>
           ))}
         </ScrollView>
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Rutas destacadas</Text>
-            <Text style={styles.sectionSubtitle}>Empieza por Bedmar y Garcíez</Text>
+            <Text style={styles.sectionTitle}>Ruta destacada</Text>
+            <Text style={styles.sectionSubtitle}>Empieza a descubrir Sierra Mágina</Text>
           </View>
-          <Text style={styles.sectionAction}>Ver todas</Text>
+          <Text style={styles.sectionAction}>Ver todas  →</Text>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Abrir ${route.title}`}
-          style={styles.routeCard}
+        <FeaturedRouteCard
+          route={route}
           onPress={() =>
             router.push({
               pathname: '/routes/[slug]',
               params: { slug: route.slug },
             })
           }
-        >
-          <View style={styles.routeVisual}>
-            <View style={styles.routeGlow} />
-            <View style={styles.routeMountainBack} />
-            <View style={styles.routeMountainFront} />
-            <View style={styles.difficultyBadge}>
-              <Text style={styles.difficultyText}>{difficultyLabel(route.difficulty)}</Text>
-            </View>
-            {route.developmentFixture ? (
-              <View style={styles.developmentBadge}>
-                <Text style={styles.developmentText}>DATOS DE DESARROLLO</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.routeContent}>
-            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
-            <Text style={styles.routeTitle}>{route.title}</Text>
-
-            <View style={styles.metricsRow}>
-              <Metric value={`${route.distanceKm.toFixed(1)} km`} label="Distancia" />
-              <Metric value={`+${route.elevationGainM} m`} label="Desnivel" />
-              <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
-            </View>
-
-            <View style={styles.rewardRow}>
-              <View style={styles.rewardCopy}>
-                <Text style={styles.rewardLabel}>RECOMPENSAS DE AVENTURA</Text>
-                <Text style={styles.rewardValue}>
-                  {route.rewardPreview.discoveries} descubrimientos · +{route.rewardPreview.xp} XP · +{route.rewardPreview.olives} 🫒
-                </Text>
-              </View>
-              <View style={styles.arrowButton}>
-                <Text style={styles.arrow}>→</Text>
-              </View>
-            </View>
-          </View>
-        </Pressable>
+        />
 
         <View style={styles.challengeCard}>
           <View style={styles.challengeIcon}>
-            <Text style={styles.challengeIconText}>◇</Text>
+            <View style={styles.challengeMedal} />
+            <View style={styles.challengeRibbonLeft} />
+            <View style={styles.challengeRibbonRight} />
           </View>
           <View style={styles.challengeCopy}>
             <Text style={styles.challengeEyebrow}>PRÓXIMAMENTE</Text>
@@ -154,107 +136,351 @@ export default function RoutesHomeScreen() {
             </Text>
           </View>
         </View>
+
+        <View style={styles.brandFooter}>
+          <Text style={styles.brandFooterClaim}>{brand.supportingClaim}</Text>
+          <View style={styles.brandFooterLine} />
+        </View>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        {navItems.map(([icon, label], index) => (
-          <View key={label} style={styles.navItem}>
-            <Text style={[styles.navIcon, index === 0 && styles.navActive]}>{icon}</Text>
-            <Text style={[styles.navLabel, index === 0 && styles.navActive]}>{label}</Text>
-          </View>
-        ))}
+      <View style={styles.bottomNavWrap}>
+        <BottomNav active="Rutas" />
       </View>
     </SafeAreaView>
   );
 }
 
-function Metric({ value, label }: { value: string; label: string }) {
+function ValueItem({ kind, title }: { kind: 'route' | 'heritage' | 'nature'; title: string }) {
   return (
-    <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View style={styles.valueItem}>
+      <View style={styles.valueIcon}>
+        {kind === 'route' ? <RouteValueGlyph /> : null}
+        {kind === 'heritage' ? <HeritageValueGlyph /> : null}
+        {kind === 'nature' ? <NatureValueGlyph /> : null}
+      </View>
+      <Text style={styles.valueTitle}>{title}</Text>
+    </View>
+  );
+}
+
+function RouteValueGlyph() {
+  return (
+    <View style={styles.valueGlyphBox}>
+      <View style={styles.valueMountain} />
+      <View style={styles.valuePath} />
+    </View>
+  );
+}
+
+function HeritageValueGlyph() {
+  return (
+    <View style={styles.valueGlyphBox}>
+      <View style={styles.templeRoof} />
+      <View style={styles.templeColumns}>
+        <View style={styles.templeColumn} />
+        <View style={styles.templeColumn} />
+        <View style={styles.templeColumn} />
+      </View>
+      <View style={styles.templeBase} />
+    </View>
+  );
+}
+
+function NatureValueGlyph() {
+  return (
+    <View style={styles.valueGlyphBox}>
+      <View style={styles.leafStem} />
+      <View style={styles.leafLeft} />
+      <View style={styles.leafRight} />
+    </View>
+  );
+}
+
+function SearchGlyph() {
+  return (
+    <View style={styles.searchGlyph}>
+      <View style={styles.searchCircle} />
+      <View style={styles.searchHandle} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.warmBackground },
-  content: { paddingHorizontal: spacing[20], paddingBottom: 116 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing[12],
-    paddingBottom: spacing[20],
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.warmBackground,
   },
-  eyebrow: { color: colors.olive700, fontSize: 11, fontWeight: '800', letterSpacing: 1.6 },
-  brand: { color: colors.ink, fontSize: typography.title, fontWeight: '800', marginTop: 2 },
-  profileBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
+  content: {
+    paddingHorizontal: spacing[20],
+    paddingBottom: 126,
+  },
+  hero: {
+    height: 292,
+    overflow: 'hidden',
+    borderRadius: radius.xl,
+    backgroundColor: colors.sky,
+    padding: spacing[24],
+    justifyContent: 'flex-end',
+    ...shadow.card,
+  },
+  heroSkyGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#BFDCE9',
+    opacity: 0.54,
+  },
+  heroSun: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#F0D274',
+    right: 34,
+    top: 28,
+    opacity: 0.92,
+  },
+  heroMountainBack: {
+    position: 'absolute',
+    width: 330,
+    height: 165,
+    borderRadius: 70,
+    backgroundColor: '#789489',
+    right: -120,
+    bottom: 20,
+    transform: [{ rotate: '-17deg' }],
+  },
+  heroMountainMid: {
+    position: 'absolute',
+    width: 325,
+    height: 155,
+    borderRadius: 66,
+    backgroundColor: colors.olive500,
+    left: -120,
+    bottom: -5,
+    transform: [{ rotate: '17deg' }],
+  },
+  heroMountainFront: {
+    position: 'absolute',
+    width: 340,
+    height: 140,
+    borderRadius: 60,
     backgroundColor: colors.olive900,
+    right: -118,
+    bottom: -70,
+    transform: [{ rotate: '8deg' }],
+  },
+  heroPath: {
+    position: 'absolute',
+    width: 68,
+    height: 185,
+    borderRadius: 40,
+    backgroundColor: colors.limestone,
+    left: '48%',
+    bottom: -108,
+    transform: [{ rotate: '19deg' }],
+    opacity: 0.96,
+  },
+  heroCopy: {
+    maxWidth: 305,
+  },
+  heroKicker: {
+    color: colors.aoveGold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.7,
+    marginBottom: spacing[8],
+  },
+  heroTitle: {
+    color: colors.white,
+    fontSize: typography.display,
+    fontWeight: '900',
+    lineHeight: 35,
+    letterSpacing: -0.7,
+  },
+  heroBody: {
+    color: colors.limestone,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: spacing[12],
+    maxWidth: 285,
+  },
+  valueStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing[8],
+    paddingVertical: spacing[20],
+  },
+  valueItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  valueIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.oliveWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileInitial: { color: colors.white, fontSize: 18, fontWeight: '800' },
-  hero: {
-    height: 280,
-    overflow: 'hidden',
-    borderRadius: radius.lg,
+  valueTitle: {
+    marginTop: spacing[8],
+    color: colors.ink,
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  valueGlyphBox: {
+    width: 25,
+    height: 25,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valueMountain: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 16,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: colors.olive900,
+    bottom: 2,
+  },
+  valuePath: {
+    position: 'absolute',
+    width: 3,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+    bottom: 1,
+    transform: [{ rotate: '23deg' }],
+  },
+  templeRoof: {
+    position: 'absolute',
+    top: 2,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 11,
+    borderRightWidth: 11,
+    borderBottomWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: colors.olive900,
+  },
+  templeColumns: {
+    position: 'absolute',
+    top: 10,
+    flexDirection: 'row',
+    gap: 3,
+  },
+  templeColumn: {
+    width: 3,
+    height: 10,
     backgroundColor: colors.olive900,
-    padding: spacing[24],
-    justifyContent: 'flex-end',
   },
-  sun: {
+  templeBase: {
     position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.aoveGold,
-    opacity: 0.9,
-    right: 28,
-    top: 30,
+    bottom: 2,
+    width: 23,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.olive900,
   },
-  mountainBack: {
+  leafStem: {
     position: 'absolute',
-    width: 340,
-    height: 170,
+    width: 3,
+    height: 22,
+    borderRadius: 2,
+    backgroundColor: colors.olive900,
+    transform: [{ rotate: '-18deg' }],
+  },
+  leafLeft: {
+    position: 'absolute',
+    width: 13,
+    height: 6,
+    borderRadius: 7,
     backgroundColor: colors.olive700,
-    transform: [{ rotate: '20deg' }],
-    right: -120,
-    bottom: -75,
-    borderRadius: 48,
+    left: 1,
+    top: 8,
+    transform: [{ rotate: '28deg' }],
   },
-  mountainFront: {
+  leafRight: {
     position: 'absolute',
-    width: 300,
-    height: 130,
-    backgroundColor: colors.olive500,
-    opacity: 0.82,
-    transform: [{ rotate: '-12deg' }],
-    left: -100,
-    bottom: -65,
-    borderRadius: 44,
+    width: 14,
+    height: 6,
+    borderRadius: 7,
+    backgroundColor: colors.olive900,
+    right: 0,
+    top: 5,
+    transform: [{ rotate: '-25deg' }],
   },
-  heroCopy: { maxWidth: 300 },
-  heroKicker: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.7, marginBottom: spacing[8] },
-  heroTitle: { color: colors.white, fontSize: typography.display, fontWeight: '900', lineHeight: 35 },
-  heroBody: { color: colors.limestone, fontSize: 14, lineHeight: 20, marginTop: spacing[12], maxWidth: 270 },
   searchBox: {
-    height: 54,
+    height: 56,
     borderRadius: radius.md,
     backgroundColor: colors.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[16],
-    marginTop: spacing[20],
+    paddingLeft: spacing[16],
+    paddingRight: spacing[8],
     borderWidth: 1,
     borderColor: colors.border,
   },
-  searchIcon: { color: colors.olive900, fontSize: 24, marginRight: spacing[8] },
-  searchInput: { flex: 1, color: colors.ink, fontSize: 15 },
-  filters: { gap: spacing[8], paddingVertical: spacing[16] },
+  searchGlyph: {
+    width: 24,
+    height: 24,
+    marginRight: spacing[8],
+  },
+  searchCircle: {
+    position: 'absolute',
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.olive900,
+    left: 2,
+    top: 2,
+  },
+  searchHandle: {
+    position: 'absolute',
+    width: 8,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: colors.olive900,
+    left: 13,
+    top: 15,
+    transform: [{ rotate: '45deg' }],
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.ink,
+    fontSize: 14,
+  },
+  filterButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.warmBackground,
+  },
+  filterLineWide: {
+    width: 17,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: colors.olive900,
+    marginBottom: 5,
+  },
+  filterLineNarrow: {
+    width: 9,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: colors.olive900,
+  },
+  filters: {
+    gap: spacing[8],
+    paddingVertical: spacing[16],
+  },
   filterChip: {
     borderRadius: radius.pill,
     paddingHorizontal: spacing[16],
@@ -263,98 +489,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  filterChipActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
-  filterText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
-  filterTextActive: { color: colors.white },
+  filterChipActive: {
+    backgroundColor: colors.olive900,
+    borderColor: colors.olive900,
+  },
+  filterText: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filterTextActive: {
+    color: colors.white,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginTop: spacing[8],
+    marginTop: spacing[4],
     marginBottom: spacing[12],
   },
-  sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
-  sectionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  sectionAction: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
-  routeCard: { overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.white, ...shadow.card },
-  routeVisual: { height: 188, backgroundColor: colors.sky, overflow: 'hidden' },
-  routeGlow: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.aoveGold,
-    opacity: 0.75,
-    right: 28,
-    top: 26,
+  sectionTitle: {
+    color: colors.ink,
+    fontSize: typography.section,
+    fontWeight: '900',
   },
-  routeMountainBack: {
-    position: 'absolute',
-    width: 300,
-    height: 150,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '13deg' }],
-    left: -60,
-    bottom: -90,
-    borderRadius: 40,
+  sectionSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 3,
   },
-  routeMountainFront: {
-    position: 'absolute',
-    width: 270,
-    height: 140,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-14deg' }],
-    right: -70,
-    bottom: -85,
-    borderRadius: 40,
+  sectionAction: {
+    color: colors.olive700,
+    fontSize: 11,
+    fontWeight: '900',
   },
-  difficultyBadge: {
-    position: 'absolute',
-    top: spacing[16],
-    left: spacing[16],
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing[12],
-    paddingVertical: spacing[8],
-  },
-  difficultyText: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
-  developmentBadge: {
-    position: 'absolute',
-    right: spacing[12],
-    bottom: spacing[12],
-    borderRadius: radius.pill,
-    backgroundColor: colors.ink,
-    paddingHorizontal: spacing[8],
-    paddingVertical: spacing[4],
-  },
-  developmentText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
-  routeContent: { padding: spacing[20] },
-  municipality: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  routeTitle: { color: colors.ink, fontSize: 23, fontWeight: '900', marginTop: spacing[4] },
-  metricsRow: { flexDirection: 'row', gap: spacing[12], marginTop: spacing[20] },
-  metric: { flex: 1 },
-  metricValue: { color: colors.ink, fontSize: typography.metric, fontWeight: '900' },
-  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
-  rewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[20],
-    paddingTop: spacing[16],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  rewardCopy: { flex: 1, paddingRight: spacing[12] },
-  rewardLabel: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
-  rewardValue: { color: colors.ink, fontSize: 13, fontWeight: '700', marginTop: spacing[4] },
-  arrowButton: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.pill,
-    backgroundColor: colors.olive900,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrow: { color: colors.white, fontSize: 20, fontWeight: '800' },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,
@@ -363,37 +531,84 @@ const styles = StyleSheet.create({
     marginTop: spacing[20],
   },
   challengeIcon: {
-    width: 48,
-    height: 48,
+    width: 50,
+    height: 50,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.aoveGold,
     marginRight: spacing[16],
+    position: 'relative',
   },
-  challengeIconText: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
-  challengeCopy: { flex: 1 },
-  challengeEyebrow: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
-  challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: 2 },
-  challengeBody: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: spacing[4] },
-  bottomNav: {
+  challengeMedal: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    borderWidth: 3,
+    borderColor: colors.olive900,
+    marginTop: -6,
+  },
+  challengeRibbonLeft: {
+    position: 'absolute',
+    width: 4,
+    height: 12,
+    backgroundColor: colors.olive900,
+    bottom: 8,
+    left: 19,
+    transform: [{ rotate: '18deg' }],
+  },
+  challengeRibbonRight: {
+    position: 'absolute',
+    width: 4,
+    height: 12,
+    backgroundColor: colors.olive900,
+    bottom: 8,
+    right: 19,
+    transform: [{ rotate: '-18deg' }],
+  },
+  challengeCopy: {
+    flex: 1,
+  },
+  challengeEyebrow: {
+    color: colors.earth,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  challengeTitle: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  challengeBody: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: spacing[4],
+  },
+  brandFooter: {
+    alignItems: 'center',
+    paddingTop: spacing[32],
+    paddingBottom: spacing[8],
+  },
+  brandFooterClaim: {
+    color: colors.olive700,
+    fontSize: 14,
+    fontWeight: '700',
+    fontStyle: 'italic',
+  },
+  brandFooterLine: {
+    width: 42,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.aoveGold,
+    marginTop: spacing[8],
+  },
+  bottomNavWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    minHeight: 82,
-    paddingTop: spacing[12],
-    paddingBottom: spacing[20],
-    paddingHorizontal: spacing[12],
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
   },
-  navItem: { flex: 1, alignItems: 'center', gap: 3 },
-  navIcon: { color: colors.muted, fontSize: 19, fontWeight: '800' },
-  navLabel: { color: colors.muted, fontSize: 10, fontWeight: '700' },
-  navActive: { color: colors.olive900 },
 });

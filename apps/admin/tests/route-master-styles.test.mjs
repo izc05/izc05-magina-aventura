@@ -38,3 +38,16 @@ test('sources validation panel has dedicated cards, gate states and responsive l
   }
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.route-sources-layout[\s\S]*grid-template-columns:\s*1fr/);
 });
+
+test('track map panel has dedicated import and editor styles that collapse on mobile', async () => {
+  const css = await readFile(stylesUrl, 'utf8');
+  for (const selector of [
+    '.route-track-panel',
+    '.route-track-panel-heading',
+    '.route-track-import-form',
+    '.route-master-track-editor'
+  ]) {
+    assert.match(css, new RegExp(selector.replaceAll('.', '\\.')));
+  }
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.route-track-import-form[\s\S]*grid-template-columns:\s*1fr/);
+});

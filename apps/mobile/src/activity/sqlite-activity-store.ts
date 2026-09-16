@@ -24,9 +24,7 @@ type SessionRow = {
   sync_state: ActivitySession['syncState'];
 };
 
-type SnapshotRow = {
-  payload_json: string;
-};
+type SnapshotRow = { payload_json: string };
 
 type SampleRow = {
   sequence: number;
@@ -77,16 +75,8 @@ async function writeSession(
 ): Promise<void> {
   await db.runAsync(
     `INSERT INTO activity_sessions (
-      activity_id,
-      route_id,
-      route_slug,
-      geometry_version,
-      state,
-      started_at,
-      paused_at,
-      finished_at,
-      last_processed_sequence,
-      sync_state
+      activity_id, route_id, route_slug, geometry_version, state, started_at,
+      paused_at, finished_at, last_processed_sequence, sync_state
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(activity_id) DO UPDATE SET
       route_id = excluded.route_id,
@@ -117,10 +107,7 @@ async function writeSnapshot(
 ): Promise<void> {
   await db.runAsync(
     `INSERT INTO activity_snapshots (
-      activity_id,
-      last_processed_sequence,
-      payload_json,
-      created_at
+      activity_id, last_processed_sequence, payload_json, created_at
     ) VALUES (?, ?, ?, ?)
     ON CONFLICT(activity_id, last_processed_sequence) DO UPDATE SET
       payload_json = excluded.payload_json,
@@ -139,17 +126,8 @@ async function writeSample(
 ): Promise<void> {
   await db.runAsync(
     `INSERT OR IGNORE INTO activity_samples (
-      activity_id,
-      sequence,
-      timestamp,
-      latitude,
-      longitude,
-      accuracy_m,
-      altitude_m,
-      speed_mps,
-      heading_deg,
-      valid_for_metrics,
-      rejection_reason
+      activity_id, sequence, timestamp, latitude, longitude, accuracy_m,
+      altitude_m, speed_mps, heading_deg, valid_for_metrics, rejection_reason
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     activityId,
     sample.sequence,
@@ -247,7 +225,10 @@ export class SQLiteActivityStore implements ActivityStore {
   ): Promise<void> {
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
-      await writeSession(txn, session);
+      await writeSession(txn, {
+        ...session,
+        lastProcessedSequence: snapshot.lastProcessedSequence,
+      });
       await writeSnapshot(txn, snapshot);
     });
   }
@@ -267,15 +248,11 @@ export class SQLiteActivityStore implements ActivityStore {
 
       if (snapshot) {
         await writeSnapshot(txn, snapshot);
-      }
-
-      if (samples.length > 0) {
-        const highestSequence = Math.max(...samples.map((sample) => sample.sequence));
         await txn.runAsync(
           `UPDATE activity_sessions
-           SET last_processed_sequence = MAX(last_processed_sequence, ?)
+           SET last_processed_sequence = ?
            WHERE activity_id = ?`,
-          highestSequence,
+          snapshot.lastProcessedSequence,
           activityId,
         );
       }
@@ -315,7 +292,10 @@ export class SQLiteActivityStore implements ActivityStore {
     );
 
     return {
-      session: sessionFromRow(sessionRow),
+      session: {
+        ...sessionFromRow(sessionRow),
+        lastProcessedSequence: snapshot.lastProcessedSequence,
+      },
       snapshot,
       samplesAfterSnapshot: sampleRows.map(sampleFromRow),
     };
@@ -327,7 +307,10 @@ export class SQLiteActivityStore implements ActivityStore {
   ): Promise<void> {
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
-      await writeSession(txn, session);
+      await writeSession(txn, {
+        ...session,
+        lastProcessedSequence: snapshot.lastProcessedSequence,
+      });
       await writeSnapshot(txn, snapshot);
     });
   }
@@ -342,7 +325,6 @@ export class SQLiteActivityStore implements ActivityStore {
        ORDER BY sequence ASC`,
       activityId,
     );
-
     return rows.map(sampleFromRow);
   }
 }

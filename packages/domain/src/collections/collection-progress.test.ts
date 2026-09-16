@@ -84,4 +84,35 @@ describe('projectCollectionProgress', () => {
       });
     }
   });
+
+  it('keeps the earliest unlock per discovery and sorts history newest-first with a stable tie break', () => {
+    const result = projectCollectionProgress(catalog, [
+      unlock('flora-1', '2026-09-16T06:05:00.000Z'),
+      unlock('flora-1', '2026-09-16T06:00:00.000Z'),
+      unlock('heritage-1', '2026-09-16T06:10:00.000Z'),
+      unlock('fauna-1', '2026-09-16T06:10:00.000Z'),
+      unlock('unknown-1', '2026-09-16T06:20:00.000Z'),
+    ]);
+
+    expect(result.history).toEqual([
+      {
+        discoveryId: 'fauna-1',
+        category: 'fauna',
+        rarityCode: 'local-common',
+        discoveredAt: '2026-09-16T06:10:00.000Z',
+      },
+      {
+        discoveryId: 'heritage-1',
+        category: 'heritage',
+        rarityCode: 'singular',
+        discoveredAt: '2026-09-16T06:10:00.000Z',
+      },
+      {
+        discoveryId: 'flora-1',
+        category: 'flora',
+        rarityCode: 'local-common',
+        discoveredAt: '2026-09-16T06:00:00.000Z',
+      },
+    ]);
+  });
 });

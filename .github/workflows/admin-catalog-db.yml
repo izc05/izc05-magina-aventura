@@ -1,0 +1,51 @@
+name: Admin Catalog DB
+
+on:
+  pull_request:
+    branches:
+      - feat/admin-v1
+    paths:
+      - 'supabase/**'
+      - 'data/catalog/**'
+      - 'apps/admin/src/core/catalog-import.mjs'
+      - 'apps/admin/src/core/route-catalog-panel.mjs'
+      - 'apps/admin/tests/catalog-import.test.mjs'
+      - 'apps/admin/tests/route-catalog-panel.test.mjs'
+      - '.github/workflows/admin-catalog-db.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+
+      - name: Focused catalog unit tests
+        run: node --test apps/admin/tests/catalog-import.test.mjs apps/admin/tests/route-catalog-panel.test.mjs
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase database
+        run: supabase db start
+
+      - name: Reset local Supabase database
+        run: supabase db reset
+
+      - name: Database contract tests
+        run: supabase test db
+
+      - name: Stop local Supabase database
+        if: always()
+        run: |
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup
+          fi

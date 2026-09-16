@@ -158,7 +158,9 @@ footer{flex-wrap:wrap}
 .photo-credits a{text-decoration:underline;text-decoration-color:rgba(185,214,123,.3);text-underline-offset:3px}
 .photo-credits a:hover{color:var(--lime)}
 @media (max-width:900px){
-  .brand span{display:none}
+  .brand span{display:grid;gap:2px}
+  .brand strong{font-size:13px;white-space:nowrap}
+  .brand small{display:none}
   .brand-icon{width:40px;height:40px}
   .hero-brand-lockup{
     gap:11px;
@@ -189,6 +191,9 @@ footer{flex-wrap:wrap}
   .photo-credits summary{font-size:10px}
 }
 @media (max-width:390px){
+  .brand{gap:8px}
+  .brand strong{font-size:12px}
+  .brand-icon{width:37px;height:37px}
   .hero-brand-lockup strong{font-size:18px}
   .hero-brand-lockup small{font-size:6px;letter-spacing:.17em}
 }

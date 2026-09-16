@@ -6,7 +6,8 @@ import {
   routeReadinessPresentation,
   routeMasterTabModels,
   routeMasterHeaderHtml,
-  routeMasterShellHtml
+  routeMasterShellHtml,
+  routeListRowHtml
 } from '../src/core/route-master-view.mjs';
 
 const snapshot = {
@@ -16,6 +17,7 @@ const snapshot = {
     slug: 'sendero-las-vinas',
     title: 'Sendero Las Viñas',
     municipality: 'Bedmar y Garcíez',
+    municipality_name: 'Bedmar y Garcíez',
     status: 'review'
   },
   content: {
@@ -105,5 +107,18 @@ test('route master shell renders tabs and practical summary without exposing UUI
   assert.match(html, /450 XP/);
   assert.match(html, /30 aceitunas/);
   assert.match(html, /Inicio Las Viñas/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+});
+
+test('route list row opens by slug and never exposes the technical UUID', () => {
+  const html = routeListRowHtml({
+    ...snapshot.route,
+    version: snapshot.content
+  });
+  assert.match(html, /Sendero Las Viñas/);
+  assert.match(html, /MAG-BED-001/);
+  assert.match(html, /Bedmar y Garcíez/);
+  assert.match(html, /data-route-open="sendero-las-vinas"/);
+  assert.match(html, />Abrir ficha</);
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });

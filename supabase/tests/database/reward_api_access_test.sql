@@ -96,7 +96,7 @@ select ok(
   'authenticated partner operators can confirm redemption'
 );
 select ok(
-  has_function_privilege('authenticated', 'public.cancel_reward_reservation(uuid)', 'EXECUTE'),
+  has_function_privilege('authenticated', 'public.cancel_reward_reservation(uuid,text)', 'EXECUTE'),
   'authenticated users can cancel own reservations'
 );
 select ok(
@@ -112,7 +112,7 @@ select ok(
   'anonymous clients cannot validate redemption tokens'
 );
 select ok(
-  not has_function_privilege('anon', 'public.cancel_reward_reservation(uuid)', 'EXECUTE'),
+  not has_function_privilege('anon', 'public.cancel_reward_reservation(uuid,text)', 'EXECUTE'),
   'anonymous clients cannot cancel reservations'
 );
 

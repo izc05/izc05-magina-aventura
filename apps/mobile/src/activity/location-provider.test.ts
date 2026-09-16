@@ -110,4 +110,23 @@ describe('LocationProvider permissions', () => {
     );
     expect(starts).toBe(0);
   });
+
+  it('stops native updates only when background tracking is active', async () => {
+    let started = true;
+    let stops = 0;
+    const provider = createLocationProvider(
+      fakeAdapter({
+        hasStartedBackgroundUpdates: async () => started,
+        stopBackgroundUpdates: async () => {
+          stops += 1;
+          started = false;
+        },
+      }),
+    );
+
+    await provider.stop();
+    await provider.stop();
+
+    expect(stops).toBe(1);
+  });
 });

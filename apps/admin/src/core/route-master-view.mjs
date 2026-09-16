@@ -150,6 +150,36 @@ function summaryPanelHtml(snapshot) {
   </section>`;
 }
 
+function trackPanelHtml(snapshot) {
+  const track = snapshot.track_source ?? null;
+  const geometry = snapshot.geometry ?? null;
+  const geometryLabel = geometry?.version ? `Geometría v${esc(geometry.version)}` : 'Sin geometría';
+  const provenance = track
+    ? `${esc(String(track.format ?? '').toUpperCase())} · ${esc(track.original_filename ?? 'archivo sin nombre')} · ${esc(track.source_kind ?? 'sin procedencia')}`
+    : 'Todavía no hay procedencia registrada para el track actual.';
+
+  return `<section class="route-master-panel route-track-panel" data-route-master-panel="track">
+    <div class="route-track-panel-heading">
+      <div>
+        <p class="route-panel-kicker">Navegación y geografía</p>
+        <h3>Track / Mapa</h3>
+        <p class="muted">${geometryLabel} · ${provenance}</p>
+      </div>
+      <span class="status">${esc(String(snapshot.validation?.track_status ?? 'missing'))}</span>
+    </div>
+
+    <form class="form two route-track-import-form" data-route-track-import-form>
+      <div class="field"><label>Archivo GPX o KML</label><input name="file" type="file" accept=".gpx,.kml,application/gpx+xml,application/vnd.google-earth.kml+xml,application/xml,text/xml" required></div>
+      <div class="field"><label>Procedencia</label><select name="source_kind"><option value="official">Oficial</option><option value="map">Mapa/cartografía</option><option value="field">Trabajo de campo</option><option value="other">Otra</option></select></div>
+      <div class="field span-2"><label>URL de origen</label><input name="source_url" type="url" placeholder="https://…"></div>
+      <div class="field span-2"><label>Notas del track</label><textarea name="notes" placeholder="Origen, fecha, autor o comprobaciones realizadas"></textarea></div>
+      <button type="submit" class="btn primary span-2">Importar y versionar track</button>
+    </form>
+
+    <div class="route-master-track-editor visual-route-workspace empty-workspace" data-route-master-track-editor>Cargando editor visual…</div>
+  </section>`;
+}
+
 function readinessItem(ok, label, detail = '') {
   return `<li class="route-gate-item ${ok ? 'is-ready' : 'is-pending'}"><span aria-hidden="true">${ok ? '✓' : '!'}</span><div><strong>${esc(label)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div></li>`;
 }
@@ -253,9 +283,11 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
   const tabs = routeMasterTabModels(snapshot);
   const panel = validTab === 'summary'
     ? summaryPanelHtml(snapshot)
-    : validTab === 'sources'
-      ? sourcesValidationPanelHtml(snapshot)
-      : placeholderPanelHtml(validTab, snapshot);
+    : validTab === 'track'
+      ? trackPanelHtml(snapshot)
+      : validTab === 'sources'
+        ? sourcesValidationPanelHtml(snapshot)
+        : placeholderPanelHtml(validTab, snapshot);
 
   return `<section class="route-master card">
     ${routeMasterHeaderHtml(snapshot)}

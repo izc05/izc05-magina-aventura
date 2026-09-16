@@ -110,8 +110,8 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
 
-      await activityRuntime.start(route);
-      router.replace({ pathname: '/adventure/[slug]', params: { slug: route.slug } });
+      await activityRuntime.start(route!);
+      router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');
     } finally {

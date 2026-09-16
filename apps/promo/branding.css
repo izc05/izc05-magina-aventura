@@ -1,8 +1,8 @@
 .brand-icon{
   width:42px;
   height:42px;
-  border-radius:11px;
-  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 1px rgba(255,255,255,.1);
   flex:0 0 auto;
 }
 .brand span{display:grid;gap:3px;line-height:1}
@@ -19,39 +19,47 @@
   opacity:.72;
 }
 .hero-brand-lockup{
+  position:relative;
   display:inline-flex;
   align-items:center;
-  gap:13px;
+  gap:14px;
   width:max-content;
   max-width:100%;
-  margin:0 0 22px;
-  padding:8px 15px 8px 8px;
-  border:1px solid rgba(255,255,255,.18);
-  border-radius:18px;
-  background:rgba(5,12,8,.34);
-  box-shadow:0 15px 55px rgba(0,0,0,.18);
-  backdrop-filter:blur(14px);
+  margin:0 0 24px;
+  padding:4px 0 4px 18px;
+}
+.hero-brand-lockup::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:8px;
+  bottom:8px;
+  width:2px;
+  border-radius:99px;
+  background:linear-gradient(#d4af37,#b9d67b);
+  box-shadow:0 0 18px rgba(212,175,55,.35);
 }
 .hero-brand-icon{
-  width:56px;
-  height:56px;
-  border-radius:14px;
-  box-shadow:0 8px 25px rgba(0,0,0,.2);
+  width:58px;
+  height:58px;
+  border-radius:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,.26),0 0 0 1px rgba(255,255,255,.14),0 0 38px rgba(127,154,81,.18);
   flex:0 0 auto;
 }
 .hero-brand-lockup span{display:grid;gap:5px;min-width:0}
 .hero-brand-lockup strong{
-  font:700 25px/1 Georgia,"Times New Roman",serif;
-  letter-spacing:-.025em;
+  font:700 27px/1 Georgia,"Times New Roman",serif;
+  letter-spacing:-.028em;
   color:#fff;
   white-space:nowrap;
+  text-shadow:0 3px 18px rgba(0,0,0,.28);
 }
 .hero-brand-lockup small{
   font-size:8px;
   line-height:1;
-  letter-spacing:.27em;
+  letter-spacing:.3em;
   font-weight:750;
-  color:rgba(255,255,255,.67);
+  color:rgba(255,255,255,.7);
   white-space:nowrap;
 }
 .story-sequence{
@@ -65,12 +73,20 @@
   width:min(610px,42vw);
   opacity:0;
   padding:25px 28px 27px;
-  border:1px solid rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.13);
   border-radius:24px;
-  background:linear-gradient(135deg,rgba(5,12,8,.68),rgba(5,12,8,.3));
+  background:linear-gradient(135deg,rgba(5,12,8,.68),rgba(5,12,8,.26));
   box-shadow:0 22px 80px rgba(0,0,0,.26);
   backdrop-filter:blur(15px);
   will-change:opacity,transform;
+}
+.story-step:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(120deg,rgba(255,255,255,.06),transparent 36%);
 }
 .story-left{left:clamp(24px,7vw,112px);bottom:clamp(100px,14vh,175px)}
 .story-right{right:clamp(24px,7vw,112px);bottom:clamp(100px,14vh,175px);text-align:right}
@@ -106,7 +122,8 @@
   margin-top:18px;
   margin-left:0;
   border-radius:99px;
-  background:#d4af37;
+  background:linear-gradient(90deg,#d4af37,#b9d67b);
+  box-shadow:0 0 18px rgba(212,175,55,.24);
 }
 .story-right.is-current h2::after{margin-left:auto}
 .story-cta{margin-top:19px;pointer-events:auto}
@@ -114,23 +131,22 @@
   width:72px;
   height:72px;
   margin-bottom:22px;
-  border-radius:18px;
-  box-shadow:0 14px 40px rgba(0,0,0,.28);
+  border-radius:19px;
+  box-shadow:0 14px 40px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.12);
 }
 .footer-icon{border-radius:12px}
 @media (max-width:900px){
   .brand span{display:none}
   .brand-icon{width:40px;height:40px}
   .hero-brand-lockup{
-    gap:10px;
-    margin-bottom:14px;
-    padding:6px 11px 6px 6px;
-    border-radius:15px;
-    background:rgba(5,12,8,.28);
+    gap:11px;
+    margin-bottom:16px;
+    padding-left:14px;
   }
-  .hero-brand-icon{width:46px;height:46px;border-radius:12px}
-  .hero-brand-lockup strong{font-size:19px}
-  .hero-brand-lockup small{font-size:6.5px;letter-spacing:.2em}
+  .hero-brand-lockup::before{top:6px;bottom:6px}
+  .hero-brand-icon{width:48px;height:48px;border-radius:13px}
+  .hero-brand-lockup strong{font-size:20px}
+  .hero-brand-lockup small{font-size:6.5px;letter-spacing:.22em}
   .hero-copy{bottom:84px}
   .hero-copy h1{font-size:clamp(43px,12vw,68px)}
   .story-step,.story-left,.story-right{
@@ -149,8 +165,8 @@
   .download-icon{width:62px;height:62px;border-radius:16px}
 }
 @media (max-width:390px){
-  .hero-brand-lockup strong{font-size:17px}
-  .hero-brand-lockup small{font-size:6px;letter-spacing:.16em}
+  .hero-brand-lockup strong{font-size:18px}
+  .hero-brand-lockup small{font-size:6px;letter-spacing:.17em}
 }
 @media (max-height:720px) and (min-width:901px){
   .hero-brand-lockup{margin-bottom:15px}

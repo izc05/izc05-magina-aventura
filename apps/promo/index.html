@@ -9,7 +9,6 @@
   <link rel="icon" href="assets/magina-aventura-icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="branding.css" />
-  <link rel="stylesheet" href="scene-fix.css" />
 </head>
 <body>
   <header class="topbar" data-topbar>
@@ -28,17 +27,18 @@
     <section id="inicio" class="cinematic" data-cinematic aria-label="Presentación cinematográfica de Mágina Aventura">
       <div class="cinematic-sticky">
         <div class="frames" aria-hidden="true">
-          <div class="frame is-active" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-position:center 44%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-position:center 46%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-position:center 49%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-position:center 46%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-position:center 50%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-position:center 54%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-position:center 46%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-position:center 50%"></div>
-          <div class="frame" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-position:center 54%"></div>
+          <div class="frame is-active" data-scene-frame="1" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-x:50%;--scene-y:42%;--scene-zoom:1.05"></div>
+          <div class="frame" data-scene-frame="2" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-x:48%;--scene-y:46%;--scene-zoom:1.08"></div>
+          <div class="frame" data-scene-frame="3" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-x:52%;--scene-y:50%;--scene-zoom:1.11"></div>
+          <div class="frame" data-scene-frame="4" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-x:48%;--scene-y:44%;--scene-zoom:1.06"></div>
+          <div class="frame" data-scene-frame="5" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-x:50%;--scene-y:50%;--scene-zoom:1.10"></div>
+          <div class="frame" data-scene-frame="6" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-x:53%;--scene-y:55%;--scene-zoom:1.14"></div>
+          <div class="frame" data-scene-frame="7" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-x:47%;--scene-y:44%;--scene-zoom:1.05"></div>
+          <div class="frame" data-scene-frame="8" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-x:51%;--scene-y:50%;--scene-zoom:1.11"></div>
+          <div class="frame" data-scene-frame="9" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-x:54%;--scene-y:56%;--scene-zoom:1.17"></div>
         </div>
         <div class="cinema-vignette"></div>
+        <div class="cinematic-progress" aria-hidden="true"><span data-progress-bar></span></div>
 
         <div class="hero-copy" data-hero-copy>
           <div class="hero-brand-lockup" aria-label="Mágina Aventura — Sierra Mágina, Jaén">
@@ -97,13 +97,13 @@
       </div>
       <div class="phone-stage reveal" aria-hidden="true">
         <div class="phone-glow"></div>
-        <div class="scene-crop" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-position:center 50%"></div>
+        <div class="scene-crop" style="--scene-image:url('assets/scenes/scene-09.webp');--scene-x:51%;--scene-y:50%"></div>
       </div>
     </section>
 
     <section id="perfil" class="feature feature-dark">
       <div class="profile-visual reveal" aria-hidden="true">
-        <div class="scene-crop" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-position:center 50%"></div>
+        <div class="scene-crop" style="--scene-image:url('assets/scenes/scene-06.webp');--scene-x:50%;--scene-y:50%"></div>
         <div class="profile-card card-a"><strong>24</strong><span>rutas</span></div>
         <div class="profile-card card-b"><strong>58 km</strong><span>recorridos</span></div>
         <div class="profile-card card-c"><strong>+ XP</strong><span>progreso</span></div>
@@ -121,7 +121,7 @@
     </section>
 
     <section id="descarga" class="download-section">
-      <div class="download-bg scene-crop" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-position:center 48%" aria-hidden="true"></div>
+      <div class="download-bg scene-crop" style="--scene-image:url('assets/scenes/scene-01.webp');--scene-x:50%;--scene-y:48%" aria-hidden="true"></div>
       <div class="download-overlay"></div>
       <div class="download-content reveal">
         <img class="download-icon" src="assets/magina-aventura-icon.svg" alt="" width="72" height="72" />

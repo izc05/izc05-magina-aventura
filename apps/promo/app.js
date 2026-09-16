@@ -15,6 +15,7 @@
   const frames = [...document.querySelectorAll('.frame')];
   const heroCopy = document.querySelector('[data-hero-copy]');
   const storySteps = [...document.querySelectorAll('[data-story-step]')];
+  const progressBar = document.querySelector('[data-progress-bar]');
   const topbar = document.querySelector('[data-topbar]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const compactViewport = window.matchMedia('(max-width: 900px)');
@@ -34,25 +35,37 @@
 
     frames.forEach((frame, index) => {
       const distance = Math.abs(index - exactFrame);
-      const alpha = clamp(1 - distance);
+      const alpha = clamp(1 - distance * 0.9);
+      const authoredZoom = Number.parseFloat(frame.style.getPropertyValue('--scene-zoom')) || 1.06;
+      const phase = frames.length > 1 ? index / (frames.length - 1) : 0;
+      const localProgress = progress - phase;
+
       frame.style.opacity = alpha.toFixed(3);
+      frame.classList.toggle('is-active', index === frameIndex || alpha > 0.34);
 
       if (!reduceMotion) {
-        const zoom = 1.06 + progress * 0.30 + Math.max(0, index - 5) * 0.018;
-        frame.style.transform = `scale(${zoom.toFixed(3)}) translate3d(0,0,0)`;
+        const maxShift = compactViewport.matches ? 14 : 26;
+        const shiftY = clamp(localProgress * -maxShift, -maxShift, maxShift);
+        const zoom = authoredZoom + progress * 0.07 + alpha * 0.012;
+        frame.style.setProperty('--scroll-shift-y', `${shiftY.toFixed(2)}px`);
+        frame.style.setProperty('--scroll-scale', zoom.toFixed(3));
       }
-
-      frame.classList.toggle('is-active', index === frameIndex || alpha > 0.25);
     });
 
     const heroFade = clamp(1 - progress / 0.22);
-    heroCopy.style.opacity = heroFade.toFixed(3);
-    heroCopy.style.pointerEvents = heroFade > 0.15 ? 'auto' : 'none';
+    if (heroCopy) {
+      heroCopy.style.opacity = heroFade.toFixed(3);
+      heroCopy.style.pointerEvents = heroFade > 0.15 ? 'auto' : 'none';
 
-    if (!reduceMotion) {
-      heroCopy.style.transform = compactViewport.matches
-        ? `translate3d(0, ${Math.round(progress * -22)}px, 0)`
-        : `translateY(calc(-42% + ${progress * -42}px))`;
+      if (!reduceMotion) {
+        heroCopy.style.transform = compactViewport.matches
+          ? `translate3d(0, ${Math.round(progress * -22)}px, 0)`
+          : `translateY(calc(-42% + ${progress * -42}px))`;
+      }
+    }
+
+    if (progressBar) {
+      progressBar.style.transform = `scaleY(${Math.max(0.03, progress).toFixed(3)})`;
     }
 
     if (storySteps.length) {
@@ -91,13 +104,17 @@
   compactViewport.addEventListener?.('change', requestRender);
   render();
 
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) entry.target.classList.add('is-visible');
-    }
-  }, { threshold: 0.16 });
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) entry.target.classList.add('is-visible');
+      }
+    }, { threshold: 0.16 });
 
-  document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+    document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+  } else {
+    document.querySelectorAll('.reveal').forEach((element) => element.classList.add('is-visible'));
+  }
 
   document.querySelectorAll('[data-apk-link]').forEach((link) => {
     link.addEventListener('click', (event) => {

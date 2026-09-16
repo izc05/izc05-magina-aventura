@@ -76,7 +76,68 @@ function flash(text, type = 'success') {
   if (target) target.innerHTML = `<p class="${type}">${esc(text)}</p>`;
 }
 
-function renderMasterStage(stage, list, snapshot, activeTab = 'summary') {
+function setFormBusy(form, busy) {
+  form.querySelectorAll('button,input,select,textarea').forEach((control) => {
+    control.disabled = busy;
+  });
+}
+
+async function reloadRouteMaster(stage, list, route, activeTab = 'summary') {
+  const snapshot = await rpc('admin_route_master_snapshot', { target_route_id: route.id });
+  Object.assign(route, snapshot?.route ?? {});
+  renderRouteMaster(stage, list, route, snapshot, activeTab);
+  return snapshot;
+}
+
+function bindRouteMasterForms(stage, list, route) {
+  const sourceForm = stage.querySelector('[data-route-source-form]');
+  sourceForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const values = new FormData(sourceForm);
+    setFormBusy(sourceForm, true);
+    try {
+      await rpc('admin_add_route_source', {
+        target_route_id: route.id,
+        source_label: String(values.get('label') ?? '').trim(),
+        source_url: String(values.get('url') ?? '').trim(),
+        source_type: String(values.get('source_type') ?? 'other'),
+        source_official: values.get('official') === 'on',
+        source_checked_at: null,
+        source_notes: String(values.get('notes') ?? '').trim()
+      });
+      flash('Fuente añadida a la ficha de la ruta.');
+      await reloadRouteMaster(stage, list, route, 'sources');
+    } catch (error) {
+      flash(`No se pudo añadir la fuente: ${error.message}`, 'error');
+      setFormBusy(sourceForm, false);
+    }
+  });
+
+  const validationForm = stage.querySelector('[data-route-validation-form]');
+  validationForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const values = new FormData(validationForm);
+    setFormBusy(validationForm, true);
+    try {
+      await rpc('admin_update_route_validation', {
+        target_route_id: route.id,
+        editorial_status: String(values.get('editorial_status') ?? 'pending'),
+        track_status: String(values.get('track_status') ?? 'missing'),
+        field_status: String(values.get('field_status') ?? 'not_checked'),
+        media_status: String(values.get('media_status') ?? 'missing'),
+        safety_status: String(values.get('safety_status') ?? 'pending'),
+        validation_notes: String(values.get('notes') ?? '').trim()
+      });
+      flash('Validación guardada y gate de publicación recalculado.');
+      await reloadRouteMaster(stage, list, route, 'sources');
+    } catch (error) {
+      flash(`No se pudo guardar la validación: ${error.message}`, 'error');
+      setFormBusy(validationForm, false);
+    }
+  });
+}
+
+function renderRouteMaster(stage, list, route, snapshot, activeTab = 'summary') {
   stage.innerHTML = `<div class="route-master-toolbar"><button type="button" class="btn secondary" data-route-back>← Volver a rutas</button></div>${routeMasterShellHtml(snapshot, activeTab)}`;
 
   stage.querySelector('[data-route-back]')?.addEventListener('click', () => {
@@ -85,12 +146,13 @@ function renderMasterStage(stage, list, snapshot, activeTab = 'summary') {
   });
 
   stage.querySelectorAll('[data-route-master-tab]').forEach((button) => {
-    button.addEventListener('click', () => renderMasterStage(stage, list, snapshot, button.dataset.routeMasterTab));
+    button.addEventListener('click', () => renderRouteMaster(stage, list, route, snapshot, button.dataset.routeMasterTab));
   });
+
+  bindRouteMasterForms(stage, list, route);
 }
 
 async function openRouteMaster(route, list) {
-  const snapshot = await rpc('admin_route_master_snapshot', { target_route_id: route.id });
   const existing = list.parentElement?.querySelector('.route-master-stage');
   existing?.remove();
 
@@ -98,7 +160,14 @@ async function openRouteMaster(route, list) {
   stage.className = 'route-master-stage';
   list.insertAdjacentElement('afterend', stage);
   list.hidden = true;
-  renderMasterStage(stage, list, snapshot, 'summary');
+
+  try {
+    await reloadRouteMaster(stage, list, route, 'summary');
+  } catch (error) {
+    stage.remove();
+    list.hidden = false;
+    throw error;
+  }
 }
 
 function bind(rows, roles) {

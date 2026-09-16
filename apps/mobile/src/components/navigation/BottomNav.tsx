@@ -34,41 +34,41 @@ export function BottomNav({ active, onSelect }: BottomNavProps) {
 }
 
 function NavGlyph({ item, color }: { item: BottomNavigationItem; color: string }) {
-  if (item === 'Rutas') {
+  if (item === 'Inicio') {
     return (
       <View style={styles.glyphBox}>
-        <View style={[styles.routePeakLeft, { borderBottomColor: color }]} />
-        <View style={[styles.routePeakRight, { borderBottomColor: color }]} />
-        <View style={[styles.routePath, { backgroundColor: color }]} />
+        <View style={[styles.homeRoof, { borderBottomColor: color }]} />
+        <View style={[styles.homeBody, { borderColor: color }]} />
+        <View style={[styles.homeDoor, { backgroundColor: color }]} />
       </View>
     );
   }
 
-  if (item === 'Retos') {
+  if (item === 'Explorar') {
     return (
       <View style={styles.glyphBox}>
-        <View style={[styles.medal, { borderColor: color }]} />
-        <View style={[styles.ribbonLeft, { backgroundColor: color }]} />
-        <View style={[styles.ribbonRight, { backgroundColor: color }]} />
+        <View style={[styles.searchCircle, { borderColor: color }]} />
+        <View style={[styles.searchHandle, { backgroundColor: color }]} />
       </View>
     );
   }
 
-  if (item === 'Colecciones') {
+  if (item === 'Mapa') {
     return (
       <View style={styles.glyphBox}>
-        <View style={[styles.collectionBack, { borderColor: color }]} />
-        <View style={[styles.collectionFront, { borderColor: color }]} />
+        <View style={[styles.mapPanelLeft, { borderColor: color }]} />
+        <View style={[styles.mapPanelCenter, { borderColor: color }]} />
+        <View style={[styles.mapPanelRight, { borderColor: color }]} />
       </View>
     );
   }
 
-  if (item === 'Ranking') {
+  if (item === 'Comunidad') {
     return (
-      <View style={[styles.glyphBox, styles.bars]}>
-        <View style={[styles.bar, { height: 9, backgroundColor: color }]} />
-        <View style={[styles.bar, { height: 15, backgroundColor: color }]} />
-        <View style={[styles.bar, { height: 21, backgroundColor: color }]} />
+      <View style={styles.glyphBox}>
+        <View style={[styles.communityHeadLeft, { borderColor: color }]} />
+        <View style={[styles.communityHeadRight, { borderColor: color }]} />
+        <View style={[styles.communityBody, { borderColor: color }]} />
       </View>
     );
   }
@@ -113,87 +113,105 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  routePeakLeft: {
+  homeRoof: {
     position: 'absolute',
-    left: 2,
-    bottom: 3,
+    top: 1,
     width: 0,
     height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderBottomWidth: 13,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 9,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },
-  routePeakRight: {
+  homeBody: {
     position: 'absolute',
-    right: 0,
-    bottom: 3,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 7,
-    borderRightWidth: 7,
-    borderBottomWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  routePath: {
-    position: 'absolute',
-    width: 4,
-    height: 13,
-    borderRadius: 4,
-    bottom: 0,
-    transform: [{ rotate: '28deg' }],
-  },
-  medal: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    marginTop: -4,
-  },
-  ribbonLeft: {
-    position: 'absolute',
-    width: 3,
-    height: 8,
-    bottom: 0,
-    left: 9,
-    transform: [{ rotate: '18deg' }],
-  },
-  ribbonRight: {
-    position: 'absolute',
-    width: 3,
-    height: 8,
-    bottom: 0,
-    right: 9,
-    transform: [{ rotate: '-18deg' }],
-  },
-  collectionBack: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderWidth: 1.7,
-    borderRadius: 3,
-    top: 2,
-    left: 4,
-  },
-  collectionFront: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderWidth: 1.7,
-    borderRadius: 3,
     bottom: 1,
-    right: 3,
+    width: 17,
+    height: 13,
+    borderWidth: 1.8,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
   },
-  bars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 3,
-  },
-  bar: {
+  homeDoor: {
+    position: 'absolute',
+    bottom: 1,
     width: 4,
+    height: 8,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+  },
+  searchCircle: {
+    position: 'absolute',
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    borderWidth: 1.8,
+    left: 3,
+    top: 2,
+  },
+  searchHandle: {
+    position: 'absolute',
+    width: 9,
+    height: 2,
     borderRadius: 2,
+    right: 2,
+    bottom: 4,
+    transform: [{ rotate: '45deg' }],
+  },
+  mapPanelLeft: {
+    position: 'absolute',
+    left: 1,
+    width: 9,
+    height: 20,
+    borderWidth: 1.6,
+    borderRightWidth: 0,
+    transform: [{ skewY: '-12deg' }],
+  },
+  mapPanelCenter: {
+    position: 'absolute',
+    width: 9,
+    height: 20,
+    borderWidth: 1.6,
+    transform: [{ skewY: '12deg' }],
+  },
+  mapPanelRight: {
+    position: 'absolute',
+    right: 1,
+    width: 9,
+    height: 20,
+    borderWidth: 1.6,
+    borderLeftWidth: 0,
+    transform: [{ skewY: '-12deg' }],
+  },
+  communityHeadLeft: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.6,
+    left: 4,
+    top: 2,
+  },
+  communityHeadRight: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.6,
+    right: 4,
+    top: 2,
+  },
+  communityBody: {
+    position: 'absolute',
+    width: 24,
+    height: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 1.6,
+    borderBottomWidth: 0,
+    bottom: 1,
   },
   profileHead: {
     width: 10,

@@ -87,7 +87,7 @@ select is(
 );
 
 select is(
-  (select count(*) from public.community_photos where route_id = '00000000-0000-4000-8000-000000000002'),
+  (select count(id) from public.community_photos where route_id = '00000000-0000-4000-8000-000000000002'),
   1::bigint,
   'RLS hides pending photos from anonymous base-table reads'
 );

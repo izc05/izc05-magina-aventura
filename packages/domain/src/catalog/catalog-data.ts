@@ -1,5 +1,6 @@
 import type {
   Adventure,
+  CatalogFact,
   CatalogSnapshot,
   CatalogSource,
   Restriction,
@@ -40,6 +41,11 @@ export const catalogSources: CatalogSource[] = [
     `${VENTANA_BASE}/adelfal-de-cuadros/`,
   ),
   officialSource(
+    'junta-cano-del-aguadero',
+    'Sendero señalizado Caño del Aguadero',
+    `${VENTANA_BASE}/ca%C3%B1o-del-aguadero/255035`,
+  ),
+  officialSource(
     'junta-castillo-de-albanchez',
     'Sendero señalizado Castillo de Albanchez',
     `${VENTANA_BASE}/castillo-de-albanchez/255035`,
@@ -48,6 +54,16 @@ export const catalogSources: CatalogSource[] = [
     'junta-castillo-de-mata-bejid',
     'Sendero señalizado Castillo de Mata Bejid',
     `${VENTANA_BASE}/castillo-de-mata-bejid/255035`,
+  ),
+  officialSource(
+    'junta-el-peralejo',
+    'Sendero señalizado El Peralejo',
+    `${VENTANA_BASE}/el-peralejo/255035`,
+  ),
+  officialSource(
+    'junta-fuenmayor',
+    'Sendero señalizado Fuenmayor',
+    `${VENTANA_BASE}/fuenmayor/null`,
   ),
   officialSource(
     'junta-gibralberca',
@@ -70,6 +86,21 @@ export const catalogSources: CatalogSource[] = [
     `${VENTANA_BASE}/las-vi%C3%B1as/255035`,
   ),
   officialSource(
+    'junta-pinar-de-canava',
+    'Sendero señalizado Pinar de Cánava',
+    `${VENTANA_BASE}/pinar-de-c%C3%A1nava/255035`,
+  ),
+  officialSource(
+    'junta-puerto-de-la-mata',
+    'Sendero señalizado Puerto de la Mata',
+    `${VENTANA_BASE}/puerto-de-la-mata/255035`,
+  ),
+  officialSource(
+    'junta-sierra-de-la-cruz',
+    'Sendero señalizado Sierra de la Cruz',
+    `${VENTANA_BASE}/sierra-de-la-cruz/255035`,
+  ),
+  officialSource(
     'junta-hoyo-de-la-laguna',
     'Sendero señalizado Subida al Hoyo de la Laguna',
     `${VENTANA_BASE}/subida-al-hoyo-de-la-laguna/`,
@@ -78,6 +109,11 @@ export const catalogSources: CatalogSource[] = [
     'junta-pico-magina-miramundos',
     'Sendero señalizado Subida a Pico Mágina y Miramundos',
     `${VENTANA_BASE}/subida-a-pico-m%C3%81gina-y-miramundos/255035`,
+  ),
+  officialSource(
+    'junta-umbria-de-los-corzos',
+    'Sendero señalizado Umbría de los Corzos',
+    `${VENTANA_BASE}/umbr%C3%ADa-de-los-corzos/255035`,
   ),
   officialSource(
     'junta-veredon-mojon-blanco',
@@ -125,6 +161,7 @@ interface OfficialDraftInput {
   distanceKm?: number | null;
   durationMinutes?: number | null;
   difficulty?: SimpleDifficulty | null;
+  familyFactors?: CatalogFact[];
 }
 
 const createOfficialDraft = (input: OfficialDraftInput): Adventure => {
@@ -166,7 +203,7 @@ const createOfficialDraft = (input: OfficialDraftInput): Adventure => {
       editorialSuitability: 'review_required',
       minimumAge: null,
       strollerViability: 'unknown',
-      factors: [],
+      factors: input.familyFactors ?? [],
     },
     accessibilityFacts: [],
     stableSafetyCharacteristics: [],
@@ -186,7 +223,18 @@ export const catalogAdventures: Adventure[] = [
     durationMinutes: 20,
     difficulty: 'easy',
   }),
-  createOfficialDraft({ id: 'ma-junta-002', slug: 'cano-del-aguadero', name: 'Caño del Aguadero', municipalityId: 'bedmar-y-garciez', municipalityLabel: 'Bedmar y Garcíez' }),
+  createOfficialDraft({
+    id: 'ma-junta-002',
+    slug: 'cano-del-aguadero',
+    name: 'Caño del Aguadero',
+    municipalityId: 'bedmar-y-garciez',
+    municipalityLabel: 'Bedmar y Garcíez',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-cano-del-aguadero'],
+    shape: 'linear',
+    distanceKm: 14.306,
+    durationMinutes: 300,
+    difficulty: 'hard',
+  }),
   createOfficialDraft({
     id: 'ma-junta-003',
     slug: 'castillo-de-albanchez',
@@ -211,8 +259,38 @@ export const catalogAdventures: Adventure[] = [
     durationMinutes: 75,
     difficulty: 'easy',
   }),
-  createOfficialDraft({ id: 'ma-junta-005', slug: 'el-peralejo', name: 'El Peralejo', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
-  createOfficialDraft({ id: 'ma-junta-006', slug: 'fuenmayor', name: 'Fuenmayor', municipalityId: 'torres', municipalityLabel: 'Torres' }),
+  createOfficialDraft({
+    id: 'ma-junta-005',
+    slug: 'el-peralejo',
+    name: 'El Peralejo',
+    municipalityId: 'cambil',
+    municipalityLabel: 'Cambil',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-el-peralejo'],
+    shape: 'circular',
+    distanceKm: 2.268,
+    durationMinutes: 60,
+    difficulty: 'easy',
+    familyFactors: [
+      {
+        code: 'official_family_friendly',
+        text: 'La ficha oficial describe el sendero como corto, con poco desnivel y muy adecuado para ir con niños.',
+        sourceIds: ['junta-el-peralejo'],
+        verificationState: 'official_verified',
+      },
+    ],
+  }),
+  createOfficialDraft({
+    id: 'ma-junta-006',
+    slug: 'fuenmayor',
+    name: 'Fuenmayor',
+    municipalityId: 'torres',
+    municipalityLabel: 'Torres',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-fuenmayor'],
+    shape: 'linear',
+    distanceKm: 6.405,
+    durationMinutes: 140,
+    difficulty: 'moderate',
+  }),
   createOfficialDraft({
     id: 'ma-junta-007',
     slug: 'gibralberca',
@@ -261,9 +339,42 @@ export const catalogAdventures: Adventure[] = [
     durationMinutes: 180,
     difficulty: 'moderate',
   }),
-  createOfficialDraft({ id: 'ma-junta-011', slug: 'pinar-de-canava', name: 'Pinar de Cánava', municipalityId: 'jimena', municipalityLabel: 'Jimena' }),
-  createOfficialDraft({ id: 'ma-junta-012', slug: 'puerto-de-la-mata', name: 'Puerto de la Mata', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
-  createOfficialDraft({ id: 'ma-junta-013', slug: 'sierra-de-la-cruz', name: 'Sierra de la Cruz', municipalityId: 'jodar', municipalityLabel: 'Jódar' }),
+  createOfficialDraft({
+    id: 'ma-junta-011',
+    slug: 'pinar-de-canava',
+    name: 'Pinar de Cánava',
+    municipalityId: 'jimena',
+    municipalityLabel: 'Jimena',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-pinar-de-canava'],
+    shape: 'linear',
+    distanceKm: 2.35,
+    durationMinutes: 60,
+    difficulty: 'hard',
+  }),
+  createOfficialDraft({
+    id: 'ma-junta-012',
+    slug: 'puerto-de-la-mata',
+    name: 'Puerto de la Mata',
+    municipalityId: 'cambil',
+    municipalityLabel: 'Cambil',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-puerto-de-la-mata'],
+    shape: 'linear',
+    distanceKm: 13.17,
+    durationMinutes: 290,
+    difficulty: 'moderate',
+  }),
+  createOfficialDraft({
+    id: 'ma-junta-013',
+    slug: 'sierra-de-la-cruz',
+    name: 'Sierra de la Cruz',
+    municipalityId: 'jodar',
+    municipalityLabel: 'Jódar',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-sierra-de-la-cruz'],
+    shape: 'circular',
+    distanceKm: 7.292,
+    durationMinutes: 150,
+    difficulty: 'moderate',
+  }),
   createOfficialDraft({
     id: 'ma-junta-014',
     slug: 'subida-al-hoyo-de-la-laguna',
@@ -288,7 +399,18 @@ export const catalogAdventures: Adventure[] = [
     durationMinutes: 300,
     difficulty: 'hard',
   }),
-  createOfficialDraft({ id: 'ma-junta-016', slug: 'umbria-de-los-corzos', name: 'Umbría de los Corzos', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
+  createOfficialDraft({
+    id: 'ma-junta-016',
+    slug: 'umbria-de-los-corzos',
+    name: 'Umbría de los Corzos',
+    municipalityId: 'cambil',
+    municipalityLabel: 'Cambil',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-umbria-de-los-corzos'],
+    shape: 'linear',
+    distanceKm: 2.63,
+    durationMinutes: 60,
+    difficulty: 'easy',
+  }),
   createOfficialDraft({
     id: 'ma-junta-017',
     slug: 'veredon-mojon-blanco',
@@ -334,7 +456,7 @@ export const catalogRestrictions: Restriction[] = [
 ];
 
 const snapshot: CatalogSnapshot = {
-  generatedAt: '2026-09-16T18:45:00Z',
+  generatedAt: '2026-09-16T18:55:00Z',
   adventures: catalogAdventures,
   tracks: [],
   pois: [],

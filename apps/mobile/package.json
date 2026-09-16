@@ -4,6 +4,10 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
+    "prestart": "pnpm brand:assets",
+    "preandroid": "pnpm brand:assets",
+    "preios": "pnpm brand:assets",
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",

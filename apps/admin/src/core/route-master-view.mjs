@@ -55,6 +55,15 @@ function dateLabel(value) {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('es-ES');
 }
 
+const DISCOVERY_CATEGORIES = Object.freeze([
+  ['flora', 'Flora'],
+  ['fauna', 'Fauna'],
+  ['heritage', 'Patrimonio'],
+  ['olive', 'Olivar'],
+  ['tradition', 'Tradición'],
+  ['landscape', 'Paisaje']
+]);
+
 export function routeDisplayCode(route = {}) {
   const code = String(route.route_code ?? '').trim();
   if (code) return code;
@@ -269,6 +278,44 @@ function contentPanelHtml(snapshot) {
   </section>`;
 }
 
+function discoveryCategoryOptions(actual) {
+  return DISCOVERY_CATEGORIES
+    .map(([value, label]) => `<option value="${value}"${selected(actual, value)}>${label}</option>`)
+    .join('');
+}
+
+function discoveryCardHtml(discovery = {}, index = 0) {
+  return `<article class="route-discovery-card">
+    <form class="form two route-discovery-form" data-route-discovery-form data-discovery-index="${esc(index)}">
+      <div class="field span-2"><label>Nombre</label><input name="name" required maxlength="160" value="${esc(discovery.name ?? '')}"></div>
+      <div class="field"><label>Categoría</label><select name="category">${discoveryCategoryOptions(discovery.category)}</select></div>
+      <div class="field"><label>Radio GPS (m)</label><input name="trigger_radius_m" type="number" min="5" max="500" value="${esc(discovery.trigger_radius_m ?? 30)}" required></div>
+      <div class="field"><label>XP</label><input name="reward_xp" type="number" min="0" value="${esc(discovery.reward_xp ?? 0)}"></div>
+      <div class="field"><label>Aceitunas</label><input name="reward_olives" type="number" min="0" value="${esc(discovery.reward_olives ?? 0)}"></div>
+      <label class="check span-2"><input name="active" type="checkbox"${discovery.active !== false ? ' checked' : ''}> Activo</label>
+    </form>
+  </article>`;
+}
+
+function discoveriesPanelHtml(snapshot) {
+  const discoveries = Array.isArray(snapshot.discoveries) ? snapshot.discoveries : [];
+  const cards = discoveries.length
+    ? discoveries.map((discovery, index) => discoveryCardHtml(discovery, index)).join('')
+    : '<div class="empty route-discoveries-empty">Todavía no hay descubrimientos.</div>';
+
+  return `<section class="route-master-panel route-discoveries-panel" data-route-master-panel="discoveries">
+    <div class="route-panel-heading">
+      <div>
+        <p class="route-panel-kicker">Contenido geolocalizado</p>
+        <h3>Descubrimientos</h3>
+        <p class="muted">Edita aquí nombre, categoría, radio y recompensas. Añade y mueve puntos desde Track / Mapa.</p>
+      </div>
+      <span class="status">${esc(discoveries.length)} registrados</span>
+    </div>
+    <div class="route-discovery-list">${cards}</div>
+  </section>`;
+}
+
 function readinessItem(ok, label, detail = '') {
   return `<li class="route-gate-item ${ok ? 'is-ready' : 'is-pending'}"><span aria-hidden="true">${ok ? '✓' : '!'}</span><div><strong>${esc(label)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div></li>`;
 }
@@ -376,9 +423,11 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
       ? trackPanelHtml(snapshot)
       : validTab === 'content'
         ? contentPanelHtml(snapshot)
-        : validTab === 'sources'
-          ? sourcesValidationPanelHtml(snapshot)
-          : placeholderPanelHtml(validTab, snapshot);
+        : validTab === 'discoveries'
+          ? discoveriesPanelHtml(snapshot)
+          : validTab === 'sources'
+            ? sourcesValidationPanelHtml(snapshot)
+            : placeholderPanelHtml(validTab, snapshot);
 
   return `<section class="route-master card">
     ${routeMasterHeaderHtml(snapshot)}

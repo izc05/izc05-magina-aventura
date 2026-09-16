@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(16);
 
 select has_table('public', 'activities', 'activities exists');
 select has_table('public', 'activity_track_batches', 'activity_track_batches exists');
@@ -54,6 +54,30 @@ select ok(
 select ok(
   has_table_privilege('authenticated', 'public.activity_track_batches', 'INSERT'),
   'authenticated users may submit private track batches through RLS'
+);
+select ok(
+  exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.activities'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%FINISHED%'
+      and pg_get_constraintdef(oid) ilike '%VALIDATING%'
+      and pg_get_constraintdef(oid) ilike '%VERIFIED%'
+      and pg_get_constraintdef(oid) ilike '%REJECTED%'
+  ),
+  'server activity states include finished and validation outcomes'
+);
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'activities'
+      and policyname = 'owners can insert activities'
+      and coalesce(with_check, '') ilike '%FINISHED%'
+  ),
+  'authenticated upload policy only accepts finished activities'
 );
 
 select * from finish();

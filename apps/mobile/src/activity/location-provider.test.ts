@@ -73,4 +73,23 @@ describe('LocationProvider permissions', () => {
     );
     expect(starts).toBe(0);
   });
+
+  it('refuses tracking when device location services are disabled', async () => {
+    let starts = 0;
+    const provider = createLocationProvider(
+      fakeAdapter({
+        isServicesEnabled: async () => false,
+        getForegroundPermission: async () => 'granted',
+        getBackgroundPermission: async () => 'granted',
+        startBackgroundUpdates: async () => {
+          starts += 1;
+        },
+      }),
+    );
+
+    await expect(provider.start('activity-gps-off')).rejects.toThrow(
+      'Location services are disabled',
+    );
+    expect(starts).toBe(0);
+  });
 });

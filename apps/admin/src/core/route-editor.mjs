@@ -62,3 +62,16 @@ export function municipalityOptions(rows) {
     .map((row) => ({ value: String(row.id), label: String(row.name) }))
     .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
 }
+
+export function canPermanentlyDeleteRoute(route, roles = []) {
+  return Boolean(
+    route
+    && route.status !== 'published'
+    && Array.isArray(roles)
+    && roles.includes('super_admin')
+  );
+}
+
+export function confirmRouteDeletionInput(routeTitle, typedTitle) {
+  return String(routeTitle ?? '') === String(typedTitle ?? '') && String(routeTitle ?? '').length > 0;
+}

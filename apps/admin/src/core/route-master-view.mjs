@@ -64,6 +64,13 @@ const DISCOVERY_CATEGORIES = Object.freeze([
   ['landscape', 'Paisaje']
 ]);
 
+const MEDIA_KINDS = Object.freeze([
+  ['hero', 'Portada'],
+  ['gallery', 'Galería'],
+  ['safety', 'Seguridad'],
+  ['discovery', 'Descubrimiento']
+]);
+
 export function routeDisplayCode(route = {}) {
   const code = String(route.route_code ?? '').trim();
   if (code) return code;
@@ -316,6 +323,44 @@ function discoveriesPanelHtml(snapshot) {
   </section>`;
 }
 
+function mediaKindOptions(actual) {
+  return MEDIA_KINDS
+    .map(([value, label]) => `<option value="${value}"${selected(actual, value)}>${label}</option>`)
+    .join('');
+}
+
+function mediaCardHtml(media = {}, index = 0) {
+  return `<article class="route-media-card">
+    <form class="form two route-media-form" data-route-media-form data-media-index="${esc(index)}">
+      <div class="field span-2"><label>Título</label><input name="title" required maxlength="180" value="${esc(media.title ?? '')}"></div>
+      <div class="field span-2"><label>Texto alternativo</label><input name="alt_text" maxlength="500" value="${esc(media.alt_text ?? '')}" placeholder="Describe la imagen para accesibilidad"></div>
+      <div class="field"><label>Función en la ruta</label><select name="kind">${mediaKindOptions(media.kind)}</select></div>
+      <div class="field"><label>Orden</label><input name="sort_order" type="number" min="0" value="${esc(media.sort_order ?? 0)}"></div>
+      <div class="field"><label>Tipo</label><input value="${esc(media.mime_type ?? '—')}" readonly aria-label="Tipo de archivo"></div>
+      <label class="check"><input name="archived" type="checkbox"${media.archived ? ' checked' : ''}> Archivado</label>
+    </form>
+  </article>`;
+}
+
+function mediaPanelHtml(snapshot) {
+  const media = Array.isArray(snapshot.media) ? snapshot.media : [];
+  const cards = media.length
+    ? media.map((asset, index) => mediaCardHtml(asset, index)).join('')
+    : '<div class="empty route-media-empty">Esta ruta todavía no tiene archivos multimedia asociados.</div>';
+
+  return `<section class="route-master-panel route-media-panel" data-route-master-panel="media">
+    <div class="route-panel-heading">
+      <div>
+        <p class="route-panel-kicker">Biblioteca de la ruta</p>
+        <h3>Multimedia</h3>
+        <p class="muted">Gestiona únicamente los archivos asociados a esta ruta. La portada, galería, seguridad y descubrimientos se ordenan desde aquí.</p>
+      </div>
+      <span class="status">${esc(media.length)} archivos</span>
+    </div>
+    <div class="route-media-list">${cards}</div>
+  </section>`;
+}
+
 function readinessItem(ok, label, detail = '') {
   return `<li class="route-gate-item ${ok ? 'is-ready' : 'is-pending'}"><span aria-hidden="true">${ok ? '✓' : '!'}</span><div><strong>${esc(label)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div></li>`;
 }
@@ -425,9 +470,11 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
         ? contentPanelHtml(snapshot)
         : validTab === 'discoveries'
           ? discoveriesPanelHtml(snapshot)
-          : validTab === 'sources'
-            ? sourcesValidationPanelHtml(snapshot)
-            : placeholderPanelHtml(validTab, snapshot);
+          : validTab === 'media'
+            ? mediaPanelHtml(snapshot)
+            : validTab === 'sources'
+              ? sourcesValidationPanelHtml(snapshot)
+              : placeholderPanelHtml(validTab, snapshot);
 
   return `<section class="route-master card">
     ${routeMasterHeaderHtml(snapshot)}

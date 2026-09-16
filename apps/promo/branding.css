@@ -135,6 +135,28 @@
   box-shadow:0 14px 40px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.12);
 }
 .footer-icon{border-radius:12px}
+footer{flex-wrap:wrap}
+.photo-credits{
+  flex:0 0 100%;
+  margin-top:-4px;
+  padding-top:16px;
+  border-top:1px solid rgba(255,255,255,.06);
+  color:rgba(255,255,255,.48);
+  font-size:11px;
+  line-height:1.6;
+}
+.photo-credits summary{
+  width:max-content;
+  cursor:pointer;
+  color:rgba(255,255,255,.62);
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.photo-credits-body{max-width:980px;padding-top:10px}
+.photo-credits-body p{margin:4px 0}
+.photo-credits a{text-decoration:underline;text-decoration-color:rgba(185,214,123,.3);text-underline-offset:3px}
+.photo-credits a:hover{color:var(--lime)}
 @media (max-width:900px){
   .brand span{display:none}
   .brand-icon{width:40px;height:40px}
@@ -163,6 +185,8 @@
   .story-right.is-current h2::after{margin-left:0}
   .story-cta{width:100%}
   .download-icon{width:62px;height:62px;border-radius:16px}
+  .photo-credits{margin-top:4px;padding-top:14px}
+  .photo-credits summary{font-size:10px}
 }
 @media (max-width:390px){
   .hero-brand-lockup strong{font-size:18px}

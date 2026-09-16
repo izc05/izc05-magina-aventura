@@ -126,6 +126,19 @@ test('route master shell renders tabs and practical summary without exposing UUI
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });
 
+test('track map tab embeds import and visual editor without asking for route UUID', () => {
+  const html = routeMasterShellHtml(snapshot, 'track');
+  assert.match(html, /data-route-master-panel="track"/);
+  assert.match(html, /data-route-track-import-form/);
+  assert.match(html, /accept="\.gpx,\.kml/);
+  assert.match(html, /name="source_kind"/);
+  assert.match(html, /data-route-master-track-editor/);
+  assert.match(html, /las-vinas\.gpx/);
+  assert.match(html, /GPX/);
+  assert.doesNotMatch(html, /Ruta UUID/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+});
+
 test('sources validation tab renders publication gate, provenance and editable controls', () => {
   const html = routeMasterShellHtml(snapshot, 'sources');
   assert.match(html, /data-route-master-panel="sources"/);

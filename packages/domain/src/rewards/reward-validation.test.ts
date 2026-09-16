@@ -5,20 +5,24 @@ import {
   type RewardValidationCheck,
 } from './reward-validation';
 
-const allTrue = {
+const allTrue: Record<RewardValidationCheck, boolean> = {
   'activity-verification': true,
   'route-integrity': true,
   'location-integrity': true,
   'account-eligibility': true,
   'abuse-screen': true,
-} as const;
+};
 
 function baseInput() {
+  const evidence: Partial<Record<RewardValidationCheck, boolean>> = {
+    ...allTrue,
+  };
+
   return {
     userId: 'user-1',
     activityId: 'activity-1',
     verifiedAt: '2026-09-16T06:00:00.000Z',
-    evidence: { ...allTrue },
+    evidence,
     policy: {
       requiredChecks: [
         'activity-verification',
@@ -52,7 +56,7 @@ describe('evaluateRewardValidation', () => {
     ];
     input.evidence['activity-verification'] = false;
     input.evidence['route-integrity'] = false;
-    delete (input.evidence as Partial<typeof input.evidence>)['location-integrity'];
+    delete input.evidence['location-integrity'];
     input.evidence['abuse-screen'] = false;
 
     expect(evaluateRewardValidation(input)).toEqual({

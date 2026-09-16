@@ -6,15 +6,26 @@ on:
       - feat/admin-v1
     paths:
       - 'supabase/**'
+      - 'data/catalog/**'
+      - 'apps/admin/src/core/catalog-import.mjs'
+      - 'apps/admin/tests/catalog-import.test.mjs'
       - '.github/workflows/admin-catalog-db.yml'
   workflow_dispatch:
 
 jobs:
-  verify-database:
+  verify-catalog:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+
+      - name: Focused catalog unit tests
+        run: node --test apps/admin/tests/catalog-import.test.mjs
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1

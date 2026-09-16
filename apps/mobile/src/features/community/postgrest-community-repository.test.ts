@@ -27,7 +27,7 @@ describe('createPostgrestCommunityRepository', () => {
   });
 
   it('loads the four safe public community resources without requesting exact geometry', async () => {
-    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    const requests: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fetchFn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
       requests.push({ url, init });

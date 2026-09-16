@@ -7,7 +7,7 @@ Landing estática independiente para presentar Mágina Aventura sin acoplarla to
 - `index.html`: narrativa y secciones.
 - `styles.css`: diseño responsive y estados de scroll.
 - `app.js`: secuencia cinematográfica vinculada al scroll, reveals y CTA.
-- `assets/sequence/part-*.txt`: sprite WebP optimizado y dividido en fragmentos de transporte; `app.js` lo recompone en el navegador. Esto permite mantener los assets en la rama usando la API de GitHub sin perder la secuencia de 9 escenas.
+- `assets/cinematic-sequence.webp`: sprite WebP optimizado con 9 escenas consecutivas. El scroll hace crossfade y zoom entre ellas hasta acercarse al móvil.
 
 ## Probar en local
 

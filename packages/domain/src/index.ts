@@ -12,6 +12,7 @@ export * from './olive-tree/olive-tree-progression';
 export * from './rewards/digital-reward-purchase';
 export * from './rewards/olive-grants';
 export * from './rewards/physical-reward-delivery';
+export * from './rewards/physical-reward-release';
 export * from './rewards/physical-reward-reservation';
 export * from './rewards/redemption-credential';
 export * from './rewards/reward-catalog';

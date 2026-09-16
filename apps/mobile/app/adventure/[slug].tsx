@@ -93,6 +93,19 @@ export default function ActiveAdventureScreen() {
             <Text style={styles.disabledButtonText}>SOS · demo</Text>
           </View>
         </View>
+
+        <Pressable
+          style={styles.summaryButton}
+          onPress={() =>
+            router.push({
+              pathname: '/adventure-summary/[slug]',
+              params: { slug: route.slug },
+            })
+          }
+        >
+          <Text style={styles.summaryButtonText}>Ver resumen demo</Text>
+          <Text style={styles.summaryButtonArrow}>→</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -140,4 +153,7 @@ const styles = StyleSheet.create({
   disabledPrimaryText: { color: colors.white, fontSize: 11, fontWeight: '900', textAlign: 'center' },
   disabledButton: { flex: 1, minHeight: 44, borderRadius: radius.md, backgroundColor: colors.warmBackground, opacity: 0.62, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[8] },
   disabledButtonText: { color: colors.muted, fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  summaryButton: { minHeight: 48, marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  summaryButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
+  summaryButtonArrow: { color: colors.aoveGold, fontSize: 20, fontWeight: '900' },
 });

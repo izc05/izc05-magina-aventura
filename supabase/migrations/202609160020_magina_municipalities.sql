@@ -18,5 +18,4 @@ values
   ('torres','Torres',true)
 on conflict (slug) do update
 set name=excluded.name,
-    active=excluded.active,
-    updated_at=now();
+    active=excluded.active;

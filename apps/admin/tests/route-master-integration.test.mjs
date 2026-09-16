@@ -87,3 +87,21 @@ test('route master discovery cards save metadata through RLS-backed table update
   assert.match(text, /active:/);
   assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]discoveries['"]\)/);
 });
+
+test('route master media cards save asset metadata and selected-route relation without exposing route ids', async () => {
+  const text = await source();
+  assert.match(text, /querySelectorAll\(['"]\[data-route-media-form\]['"]\)/);
+  assert.match(text, /snapshot\.media/);
+  assert.match(text, /dataset\.mediaIndex/);
+  assert.match(text, /patch\(['"]media_assets['"]/);
+  assert.match(text, /title:/);
+  assert.match(text, /alt_text:/);
+  assert.match(text, /archived:/);
+  assert.match(text, /patch\(['"]route_media['"]/);
+  assert.match(text, /route_id=eq\.\$\{encodeURIComponent\(route\.id\)\}/);
+  assert.match(text, /media_id=eq\.\$\{encodeURIComponent\(media\.id\)\}/);
+  assert.match(text, /kind=eq\.\$\{encodeURIComponent\(media\.kind\)\}/);
+  assert.match(text, /kind:/);
+  assert.match(text, /sort_order:/);
+  assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]media['"]\)/);
+});

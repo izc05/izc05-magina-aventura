@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feat/integration-gps-visual-v1
+      - fix/android-candidate-arm64-v1
 
 jobs:
   verify:
@@ -92,16 +93,35 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Build Android GPS candidate APK
+      - name: Build Android GPS candidate APK (arm64)
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+          ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --no-daemon
 
-      - name: Upload Android GPS candidate APK
+      - name: Verify arm64-only APK
+        run: |
+          apk="apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$apk"
+          if unzip -l "$apk" | grep -Eq 'lib/(armeabi-v7a|x86|x86_64)/'; then
+            echo "Unexpected non-arm64 native libraries found in APK"
+            exit 1
+          fi
+          if ! unzip -l "$apk" | grep -q 'lib/arm64-v8a/'; then
+            echo "arm64-v8a native libraries missing from APK"
+            exit 1
+          fi
+          bytes=$(stat -c%s "$apk")
+          echo "APK bytes: $bytes"
+          if [ "$bytes" -ge 150000000 ]; then
+            echo "arm64 candidate is still unexpectedly large"
+            exit 1
+          fi
+
+      - name: Upload Android GPS candidate APK (arm64)
         uses: actions/upload-artifact@v4
         with:
-          name: magina-aventura-gps-v1-debug-${{ github.run_number }}
+          name: magina-aventura-gps-v1-arm64-debug-${{ github.run_number }}
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7

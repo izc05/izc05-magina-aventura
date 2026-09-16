@@ -5,6 +5,7 @@ on:
     branches:
       - feat/cinematic-promo-v1
       - feat/cinematic-promo-media-fallback-v1
+      - feat/cinematic-scroll-experience-v1
     paths:
       - 'apps/promo/**'
       - '.github/workflows/promo-pages.yml'

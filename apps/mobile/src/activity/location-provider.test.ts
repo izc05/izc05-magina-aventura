@@ -92,4 +92,22 @@ describe('LocationProvider permissions', () => {
     );
     expect(starts).toBe(0);
   });
+
+  it('refuses tracking when foreground permission is no longer granted', async () => {
+    let starts = 0;
+    const provider = createLocationProvider(
+      fakeAdapter({
+        getForegroundPermission: async () => 'denied',
+        getBackgroundPermission: async () => 'granted',
+        startBackgroundUpdates: async () => {
+          starts += 1;
+        },
+      }),
+    );
+
+    await expect(provider.start('activity-foreground-denied')).rejects.toThrow(
+      'Foreground location permission is required',
+    );
+    expect(starts).toBe(0);
+  });
 });

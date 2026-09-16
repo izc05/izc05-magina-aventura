@@ -2,7 +2,7 @@ import type { ExplorationObservation } from './types';
 
 export function explorationObservationKey(
   activityId: string,
-  observation: Pick<ExplorationObservation, 'kind' | 'targetId'>,
+  observation: ExplorationObservation,
 ): string {
   return `${activityId}:${observation.kind}:${observation.targetId}`;
 }

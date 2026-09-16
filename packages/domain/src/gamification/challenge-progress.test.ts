@@ -113,13 +113,13 @@ describe('projectActiveChallengeProgress', () => {
   ];
 
   it('projects weekly progress only from unique activities inside the configured window', () => {
-    const [projection] = projectActiveChallengeProgress(
+    const projection = projectActiveChallengeProgress(
       activities,
       [challenge('weekly-distance')],
       seasons,
       '2026-09-16T10:00:00.000Z',
       [],
-    );
+    )[0]!;
 
     expect(projection).toMatchObject({
       challengeId: 'weekly-distance',
@@ -132,7 +132,7 @@ describe('projectActiveChallengeProgress', () => {
   });
 
   it('supports exact daily challenge windows supplied by configuration', () => {
-    const [projection] = projectActiveChallengeProgress(
+    const projection = projectActiveChallengeProgress(
       activities,
       [
         challenge('daily-activities', {
@@ -146,14 +146,14 @@ describe('projectActiveChallengeProgress', () => {
       seasons,
       '2026-09-16T10:00:00.000Z',
       [],
-    );
+    )[0]!;
 
     expect(projection.current).toBe(1);
     expect(projection.completed).toBe(true);
   });
 
   it('restricts municipal challenges to their configured municipality', () => {
-    const [projection] = projectActiveChallengeProgress(
+    const projection = projectActiveChallengeProgress(
       activities,
       [
         challenge('bedmar-distance', {
@@ -165,7 +165,7 @@ describe('projectActiveChallengeProgress', () => {
       seasons,
       '2026-09-16T10:00:00.000Z',
       [],
-    );
+    )[0]!;
 
     expect(projection.current).toBe(5_000);
     expect(projection.completed).toBe(false);
@@ -173,7 +173,7 @@ describe('projectActiveChallengeProgress', () => {
   });
 
   it('binds season challenges to the matching active season', () => {
-    const [projection] = projectActiveChallengeProgress(
+    const projection = projectActiveChallengeProgress(
       activities,
       [
         challenge('autumn-discoveries', {
@@ -188,7 +188,7 @@ describe('projectActiveChallengeProgress', () => {
       seasons,
       '2026-09-16T10:00:00.000Z',
       [],
-    );
+    )[0]!;
 
     expect(projection.current).toBe(6);
     expect(projection.completed).toBe(true);

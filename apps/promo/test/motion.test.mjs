@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const appJs = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const cinematicCss = readFileSync(new URL('../cinematic.css', import.meta.url), 'utf8');
 
 test('drives the six cinematic scenes through deterministic motion helpers', () => {
   assert.match(appJs, /sceneState\(/);
@@ -26,4 +27,16 @@ test('preserves reduced-motion support for the layered sequence', () => {
 test('loads the cinematic renderer as a browser module', () => {
   assert.match(html, /<script\s+type="module"\s+src="app\.js"><\/script>/);
   assert.match(appJs, /from '\.\/cinematic\.js'/);
+});
+
+test('styles sticky cinematic scenes and depth layers from CSS variables', () => {
+  assert.match(cinematicCss, /\.cinematic-scene/);
+  assert.match(cinematicCss, /\.scene-layer/);
+  assert.match(cinematicCss, /var\(--layer-y/);
+  assert.match(cinematicCss, /var\(--layer-scale/);
+});
+
+test('defines compact and reduced-motion cinematic branches', () => {
+  assert.match(cinematicCss, /@media\s*\(max-width:\s*900px\)/);
+  assert.match(cinematicCss, /prefers-reduced-motion:\s*reduce/);
 });

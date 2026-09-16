@@ -148,6 +148,53 @@ test('track source choices match the source kinds accepted by the track RPC', ()
   assert.doesNotMatch(html, /<option value="other"/);
 });
 
+test('content tab renders complete V2 versioned form without route UUID', () => {
+  const richSnapshot = {
+    ...snapshot,
+    content: {
+      ...snapshot.content,
+      version: 4,
+      description: 'Ruta completa por el entorno de Cuadros',
+      safety_notes: ['Llevar agua', 'Evitar calor extremo'],
+      elevation_min_m: 560,
+      elevation_max_m: 920,
+      access_notes: 'Acceso desde Cuadros',
+      parking_notes: 'Área recreativa',
+      water_notes: 'Agua no garantizada',
+      shade_notes: 'Sombra parcial',
+      coverage_notes: 'Cobertura irregular',
+      recommended_seasons: ['autumn', 'winter', 'spring'],
+      editorial_sections: {
+        heritage: 'Torreón y santuario',
+        flora: 'Adelfal',
+        fauna: 'Fauna mediterránea',
+        olive_grove: 'Olivar tradicional',
+        landscape: 'Valle del Cuadros',
+        tradition: 'Usos tradicionales'
+      },
+      offline_available: true
+    }
+  };
+  const html = routeMasterShellHtml(richSnapshot, 'content');
+  assert.match(html, /data-route-master-panel="content"/);
+  assert.match(html, /data-route-content-form/);
+  assert.match(html, /Crear nueva versión/);
+  for (const name of [
+    'description','safety_notes','distance_km','elevation_gain_m','elevation_loss_m',
+    'elevation_min_m','elevation_max_m','duration_minutes','difficulty','route_kind',
+    'access_notes','parking_notes','water_notes','shade_notes','coverage_notes',
+    'recommended_seasons','heritage','flora','fauna','olive_grove','landscape','tradition',
+    'reward_xp','reward_olives','offline_available'
+  ]) {
+    assert.match(html, new RegExp(`name="${name}"`));
+  }
+  assert.match(html, /Ruta completa por el entorno de Cuadros/);
+  assert.match(html, /Torreón y santuario/);
+  assert.match(html, /versión actual 4/i);
+  assert.doesNotMatch(html, /Ruta UUID/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+});
+
 test('sources validation tab renders publication gate, provenance and editable controls', () => {
   const html = routeMasterShellHtml(snapshot, 'sources');
   assert.match(html, /data-route-master-panel="sources"/);

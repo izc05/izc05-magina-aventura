@@ -20,6 +20,7 @@ export interface NativeLocationAdapter {
 export interface LocationProvider {
   getPermissionState(): Promise<LocationPermissionState>;
   requestAdventurePermissions(): Promise<LocationPermissionState>;
+  start(activityId: string): Promise<void>;
 }
 
 function granted(status: LocationPermissionStatus): boolean {
@@ -60,6 +61,12 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
         backgroundGranted: granted(background),
         servicesEnabled,
       };
+    },
+
+    async start(activityId: string): Promise<void> {
+      const alreadyStarted = await adapter.hasStartedBackgroundUpdates();
+      if (alreadyStarted) return;
+      await adapter.startBackgroundUpdates(activityId);
     },
   };
 }

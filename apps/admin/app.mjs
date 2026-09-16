@@ -1,6 +1,7 @@
 import { ADMIN_NAV_ITEMS } from './src/core/navigation.mjs';
 import { canAny } from './src/core/roles.mjs';
 import { getSession, signIn, signOut, table, insert, patch, rpc, uploadMedia } from './src/core/api.mjs';
+import { municipalityOptions } from './src/core/route-editor.mjs';
 
 const app = document.querySelector('#app');
 let roles = [];
@@ -85,12 +86,23 @@ async function renderListSection(id) {
   if (!spec || !allowed(spec.capability)) return forbidden();
   const partnerFilter = roles.includes('partner') && partnerId && ['rewards','redemptions'].includes(id) ? `&partner_id=eq.${partnerId}` : '';
   const rows = await table(spec.table, `?select=${encodeURIComponent(spec.select)}${partnerFilter}&order=created_at.desc.nullslast` ).catch(async () => table(spec.table, `?select=${encodeURIComponent(spec.select)}${partnerFilter}`));
-  renderShell(`${actionPanel(id)}${rowsTable(rows)}`, spec.title);
+  const actionContext = {};
+  if (id === 'routes') {
+    const municipalityRows = await table('municipalities', '?select=id,name,active&active=eq.true&order=name.asc').catch(() => []);
+    actionContext.municipalities = municipalityOptions(municipalityRows);
+  }
+  renderShell(`${actionPanel(id, actionContext)}${rowsTable(rows)}`, spec.title);
   bindActions(id);
 }
 
-function actionPanel(id) {
-  if (id === 'routes') return `<section class="card"><h2>Nueva ruta</h2><form id="route-create" class="form two"><div class="field"><label>Municipality UUID</label><input name="municipality_id" required></div><div class="field"><label>Título</label><input name="title" required></div><div class="field"><label>Slug</label><input name="slug" required></div><div class="field"><label>Dificultad</label><select name="difficulty"><option>easy</option><option>moderate</option><option>hard</option></select></div><div class="field span-2"><label>Descripción</label><textarea name="description" required></textarea></div><div class="field"><label>Distancia km</label><input name="distance_km" type="number" step="0.001" min="0" required></div><div class="field"><label>Desnivel + m</label><input name="elevation_gain_m" type="number" min="0" required></div><div class="field"><label>Duración min</label><input name="duration_minutes" type="number" min="1" required></div><div class="field"><label>XP</label><input name="reward_xp" type="number" min="0" value="0"></div><div class="field"><label>Aceitunas</label><input name="reward_olives" type="number" min="0" value="0"></div><button class="btn primary span-2">Crear borrador</button></form></section>`;
+function actionPanel(id, context = {}) {
+  if (id === 'routes') {
+    const municipalities = context.municipalities ?? [];
+    const municipalityField = municipalities.length
+      ? `<div class="field"><label>Municipio</label><select name="municipality_id" required>${municipalities.map((item) => `<option value="${esc(item.value)}">${esc(item.label)}</option>`).join('')}</select></div>`
+      : `<div class="field"><label>Municipio UUID</label><input name="municipality_id" required placeholder="Añade primero un municipio activo"></div>`;
+    return `<section class="card"><h2>Nueva ruta</h2><form id="route-create" class="form two">${municipalityField}<div class="field"><label>Título</label><input name="title" required></div><div class="field"><label>Slug</label><input name="slug" required></div><div class="field"><label>Dificultad</label><select name="difficulty"><option>easy</option><option>moderate</option><option>hard</option></select></div><div class="field span-2"><label>Descripción</label><textarea name="description" required></textarea></div><div class="field"><label>Distancia km</label><input name="distance_km" type="number" step="0.001" min="0" required></div><div class="field"><label>Desnivel + m</label><input name="elevation_gain_m" type="number" min="0" required></div><div class="field"><label>Duración min</label><input name="duration_minutes" type="number" min="1" required></div><div class="field"><label>XP</label><input name="reward_xp" type="number" min="0" value="0"></div><div class="field"><label>Aceitunas</label><input name="reward_olives" type="number" min="0" value="0"></div><button class="btn primary span-2">Crear borrador</button></form></section>`;
+  }
   if (id === 'map') return simplePointForm('checkpoint-create','Nuevo checkpoint',[['route_id','Ruta UUID'],['name','Nombre'],['lat','Latitud'],['lng','Longitud'],['trigger_radius_m','Radio m']]);
   if (id === 'discoveries') return `<section class="card"><h2>Nuevo descubrimiento</h2><form id="discovery-create" class="form two">${field('route_id','Ruta UUID')}${field('name','Nombre')}${field('lat','Latitud')}${field('lng','Longitud')}${field('trigger_radius_m','Radio m')}${selectField('category','Categoría',['flora','fauna','heritage','olive','tradition','landscape'])}${field('reward_xp','XP','number','0')}${field('reward_olives','Aceitunas','number','0')}<button class="btn primary span-2">Guardar</button></form></section>`;
   if (id === 'media') return `<section class="card"><h2>Subir imagen / archivo</h2><form id="media-upload" class="form"><div class="field"><label>Título</label><input name="title" required></div><div class="field"><label>Archivo</label><input name="file" type="file" required></div><button class="btn primary">Subir</button></form></section>`;

@@ -58,7 +58,7 @@ jobs:
 
       - name: Verify pure package boundaries
         run: |
-          if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src; then
+          if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src packages/activity-engine/src; then
             echo "Infrastructure import detected in pure packages"
             exit 1
           fi

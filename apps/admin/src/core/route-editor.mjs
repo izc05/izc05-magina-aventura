@@ -54,3 +54,11 @@ export function polylinePoints(points, width, height, padding = 24) {
     .map(({ x, y }) => `${Number(x.toFixed(2))},${Number(y.toFixed(2))}`)
     .join(' ');
 }
+
+export function municipalityOptions(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((row) => row && row.active !== false && row.id && row.name)
+    .map((row) => ({ value: String(row.id), label: String(row.name) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
+}

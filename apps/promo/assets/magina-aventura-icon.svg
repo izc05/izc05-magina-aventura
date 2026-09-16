@@ -1,20 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
   <title id="title">Mágina Aventura</title>
-  <desc id="desc">Montañas, sendero, sol dorado y rama de olivo sobre fondo verde.</desc>
-  <rect width="512" height="512" rx="112" fill="#2F4A2E"/>
-  <circle cx="352" cy="150" r="74" fill="#D4AF37"/>
-  <path d="M62 324 188 142l70 93 53-66 110 155H62Z" fill="#FAF9F6"/>
-  <path d="m188 142 36 48 24-31 35 45 28-35 110 155H62l126-182Z" fill="#E7E1D6" opacity=".32"/>
-  <path d="m188 142 28 38 18-22 27 35 18-24 32 45-28-15-25 20-30-17-27 12-35-23-104 133 126-182Z" fill="#2F4A2E"/>
-  <path d="M205 214c64 35 91 63 75 90-12 20-47 21-64 43-21 27 15 57 66 64" fill="none" stroke="#FAF9F6" stroke-width="34" stroke-linecap="round"/>
-  <path d="M205 214c64 35 91 63 75 90-12 20-47 21-64 43-21 27 15 57 66 64" fill="none" stroke="#E7E1D6" stroke-width="10" stroke-linecap="round" opacity=".7"/>
-  <path d="M318 365c44-17 82-48 113-94" fill="none" stroke="#E7E1D6" stroke-width="12" stroke-linecap="round"/>
-  <ellipse cx="354" cy="344" rx="33" ry="13" fill="#E7E1D6" transform="rotate(-28 354 344)"/>
-  <ellipse cx="384" cy="319" rx="35" ry="13" fill="#FAF9F6" transform="rotate(22 384 319)"/>
-  <ellipse cx="411" cy="288" rx="34" ry="13" fill="#E7E1D6" transform="rotate(-37 411 288)"/>
-  <ellipse cx="332" cy="372" rx="28" ry="12" fill="#FAF9F6" transform="rotate(28 332 372)"/>
-  <circle cx="377" cy="366" r="18" fill="#171F19"/>
-  <circle cx="411" cy="346" r="17" fill="#171F19"/>
-  <circle cx="429" cy="321" r="14" fill="#171F19"/>
-  <path d="M80 402h352" stroke="#D4AF37" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+  <desc id="desc">Símbolo oficial de Mágina Aventura: Sierra Mágina, sendero blanco y sol dorado.</desc>
+  <defs>
+    <linearGradient id="mountain" x1="130" y1="250" x2="900" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D5132"/>
+      <stop offset="1" stop-color="#2F4A2E"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="625" y1="150" x2="790" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#E2B64A"/>
+    </linearGradient>
+  </defs>
+  <g data-brand-mark="mountain-path-sun">
+    <circle cx="708" cy="285" r="116" fill="url(#sun)"/>
+    <path d="M70 770 208 638 286 548 360 508 431 414 548 270 643 371 715 337 786 404 846 374 957 520 1010 770Z" fill="url(#mountain)"/>
+    <path d="M548 299 526 383 541 426 585 470 634 499 662 518 638 541 596 553 544 551 491 556 437 571 392 593 365 621 371 648 405 671 451 690 490 713 517 744 530 770" fill="none" stroke="#FAF9F6" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M714 365 752 406 779 389 824 436 855 474" fill="none" stroke="#FAF9F6" stroke-width="28" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M278 560 316 526 349 563 375 556 402 583" fill="none" stroke="#FAF9F6" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M70 770 Q305 742 504 766 T1010 770" fill="#21482C" opacity=".42"/>
+  </g>
 </svg>

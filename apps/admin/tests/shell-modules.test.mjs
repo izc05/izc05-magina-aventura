@@ -16,7 +16,8 @@ const REQUIRED_MODULES = [
   './notification-tools.mjs',
   './map-asset-tools.mjs',
   './reward-tools.mjs',
-  './audit-tools.mjs'
+  './audit-tools.mjs',
+  './safety-tools.mjs'
 ];
 
 test('admin shell loads every operational module', async () => {

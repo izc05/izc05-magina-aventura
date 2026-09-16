@@ -165,6 +165,13 @@ export function validateCatalog(
       'adventure',
       adventure.id,
     );
+    pushUnknownSources(
+      issues,
+      adventure.difficulty.sourceIds,
+      knownSourceIds,
+      'adventure',
+      adventure.id,
+    );
 
     if (adventure.trackId !== null && !knownTrackIds.has(adventure.trackId)) {
       issues.push({

@@ -21,6 +21,21 @@ test('authors nine cinematic frames with progressive scene metadata', () => {
   }
 });
 
+test('uses at least five distinct real Sierra Mágina photography sources in the cinematic sequence', () => {
+  const urls = [...html.matchAll(/https:\/\/commons\.wikimedia\.org\/wiki\/Special:Redirect\/file\/([^?'\")]+)/g)]
+    .map((match) => match[1]);
+  const unique = new Set(urls);
+  assert.ok(unique.size >= 5, `expected at least 5 unique Commons photo sources, found ${unique.size}`);
+});
+
+test('publishes visible photography credits and Creative Commons license information', () => {
+  assert.match(html, /data-photo-credits/);
+  assert.match(html, /Veinticuatro de Jahén/);
+  assert.match(html, /Azkoiti/);
+  assert.match(html, /CC BY-SA 4\.0/);
+  assert.match(html, /CC BY-SA 3\.0/);
+});
+
 test('uses scene assets directly from the main stylesheet without the temporary scene-fix layer', () => {
   assert.doesNotMatch(html, /scene-fix\.css/);
   assert.match(css, /background-image:var\(--scene-image/);

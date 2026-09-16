@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://izc05.github.io/izc05-magina-aventura/sitemap.xml

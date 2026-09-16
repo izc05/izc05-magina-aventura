@@ -1,0 +1,38 @@
+name: Admin Catalog DB
+
+on:
+  pull_request:
+    branches:
+      - feat/admin-v1
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/admin-catalog-db.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase database
+        run: supabase db start
+
+      - name: Reset local Supabase database
+        run: supabase db reset
+
+      - name: Database contract tests
+        run: supabase test db
+
+      - name: Stop local Supabase database
+        if: always()
+        run: |
+          if command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup
+          fi

@@ -5,7 +5,8 @@ import {
   routeDisplayCode,
   routeReadinessPresentation,
   routeMasterTabModels,
-  routeMasterHeaderHtml
+  routeMasterHeaderHtml,
+  routeMasterShellHtml
 } from '../src/core/route-master-view.mjs';
 
 const snapshot = {
@@ -23,13 +24,15 @@ const snapshot = {
     elevation_loss_m: 320,
     duration_minutes: 180,
     difficulty: 'moderate',
-    route_kind: 'circular'
+    route_kind: 'circular',
+    reward_xp: 450,
+    reward_olives: 30
   },
   geometry: { version: 2, coordinates: [[-3.4, 37.9], [-3.39, 37.91]] },
   validation: { editorial_status: 'verified', track_status: 'verified', safety_status: 'reviewed' },
-  access_points: [{ id: 'a1' }],
-  sources: [{ id: 's1', official: true }, { id: 's2', official: false }],
-  track_source: { format: 'gpx', source_kind: 'official' },
+  access_points: [{ id: 'a1', kind: 'start', name: 'Inicio Las Viñas' }],
+  sources: [{ id: 's1', official: true, label: 'Ayuntamiento' }, { id: 's2', official: false, label: 'Trabajo de campo' }],
+  track_source: { format: 'gpx', source_kind: 'official', original_filename: 'las-vinas.gpx' },
   checkpoints: [{ id: 'c1' }, { id: 'c2' }],
   discoveries: [{ id: 'd1' }],
   media: [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }],
@@ -88,5 +91,19 @@ test('route master header is human-facing and keeps UUID out of the visible HTML
   assert.match(html, /MAG-BED-001/);
   assert.match(html, /Pendiente de validación/);
   assert.match(html, /Falta revisión de seguridad/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+});
+
+test('route master shell renders tabs and practical summary without exposing UUID', () => {
+  const html = routeMasterShellHtml(snapshot, 'summary');
+  assert.match(html, /data-route-master-tab="summary"/);
+  assert.match(html, /data-route-master-tab="track"/);
+  assert.match(html, /7\.4 km/);
+  assert.match(html, /320 m/);
+  assert.match(html, /3 h/);
+  assert.match(html, /Circular/);
+  assert.match(html, /450 XP/);
+  assert.match(html, /30 aceitunas/);
+  assert.match(html, /Inicio Las Viñas/);
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });

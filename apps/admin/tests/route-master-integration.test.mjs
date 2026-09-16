@@ -54,3 +54,20 @@ test('route master track tab reuses visual editor and imports GPX KML with the i
   assert.match(adminText, /target_route_id:\s*route\.id/);
   assert.match(visualText, /export\s+async\s+function\s+mountRouteEditor/);
 });
+
+test('route master content form builds the V2 payload, versions it with the internal route id and refreshes content', async () => {
+  const text = await source();
+  assert.match(text, /\[data-route-content-form\]/);
+  assert.match(text, /admin_update_route_content_v2/);
+  assert.match(text, /content_payload/);
+  assert.match(text, /target_route_id:\s*route\.id/);
+  assert.match(text, /getAll\(['"]recommended_seasons['"]\)/);
+  assert.match(text, /editorial_sections/);
+  for (const field of [
+    'elevation_loss_m','elevation_min_m','elevation_max_m','route_kind','access_notes',
+    'parking_notes','water_notes','shade_notes','coverage_notes','reward_xp','reward_olives'
+  ]) {
+    assert.match(text, new RegExp(field));
+  }
+  assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]content['"]\)/);
+});

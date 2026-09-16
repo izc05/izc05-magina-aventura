@@ -37,15 +37,18 @@ alter table public.discovery_collection_items enable row level security;
 grant select on public.gamification_seasons, public.discovery_collections, public.discovery_collection_items to anon, authenticated;
 grant insert,update,delete on public.gamification_seasons, public.discovery_collections, public.discovery_collection_items to authenticated;
 
-create policy "read active seasons" on public.gamification_seasons for select to anon,authenticated using(active or private.admin_has_capability('gamification.manage',auth.uid()));
+create policy "read active seasons" on public.gamification_seasons for select to anon,authenticated using(active);
+create policy "gamification admins read all seasons" on public.gamification_seasons for select to authenticated using(private.admin_has_capability('gamification.manage',auth.uid()));
 create policy "manage seasons" on public.gamification_seasons for all to authenticated using(private.admin_has_capability('gamification.manage',auth.uid())) with check(private.admin_has_capability('gamification.manage',auth.uid()));
 
-create policy "read active collections" on public.discovery_collections for select to anon,authenticated using(active or private.admin_has_capability('gamification.manage',auth.uid()));
+create policy "read active collections" on public.discovery_collections for select to anon,authenticated using(active);
+create policy "gamification admins read all collections" on public.discovery_collections for select to authenticated using(private.admin_has_capability('gamification.manage',auth.uid()));
 create policy "manage collections" on public.discovery_collections for all to authenticated using(private.admin_has_capability('gamification.manage',auth.uid())) with check(private.admin_has_capability('gamification.manage',auth.uid()));
 
 create policy "read active collection items" on public.discovery_collection_items for select to anon,authenticated using(
-  exists(select 1 from public.discovery_collections c where c.id=collection_id and (c.active or private.admin_has_capability('gamification.manage',auth.uid())))
+  exists(select 1 from public.discovery_collections c where c.id=collection_id and c.active)
 );
+create policy "gamification admins read all collection items" on public.discovery_collection_items for select to authenticated using(private.admin_has_capability('gamification.manage',auth.uid()));
 create policy "manage collection items" on public.discovery_collection_items for all to authenticated using(private.admin_has_capability('gamification.manage',auth.uid())) with check(private.admin_has_capability('gamification.manage',auth.uid()));
 
 create trigger audit_gamification_seasons after insert or update or delete on public.gamification_seasons for each row execute function private.audit_row_change();

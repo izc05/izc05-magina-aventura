@@ -110,7 +110,10 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
 
-      await activityRuntime.start(route!);
+      const payload = await developmentRouteMapRepository.getMapPayload(route!.slug);
+      const routeLine = payload?.line.geometry.coordinates ?? [];
+
+      await activityRuntime.start(route!, routeLine);
       router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');
@@ -163,7 +166,7 @@ export default function PrepareRouteAdventureScreen() {
           <Text style={styles.infoEyebrow}>REGISTRO OFFLINE-FIRST</Text>
           <Text style={styles.infoTitle}>El GPS no depende de Internet</Text>
           <Text style={styles.infoBody}>
-            Los puntos se guardan primero en SQLite. Puedes perder cobertura y el recorrido seguirá registrándose. El mapa offline oficial se activará cuando esta ruta tenga su paquete GPX/cartográfico verificado.
+            Los puntos se guardan primero en SQLite. Puedes perder cobertura y el recorrido seguirá registrándose. Si existe un track oficial verificado, también se usa para progreso y avisos de salida de ruta; si no existe, la app no inventa geometría.
           </Text>
         </View>
 

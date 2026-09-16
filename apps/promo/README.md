@@ -6,11 +6,11 @@ Landing estática independiente para presentar Mágina Aventura sin acoplarla to
 
 - `index.html`: narrativa, logo oficial, nueve estados visuales de la secuencia y secciones.
 - `styles.css`: diseño responsive, escenas, progresión visual y estados de scroll.
-- `branding.css`: identidad visual, logo, titulares y tarjetas narrativas.
-- `app.js`: secuencia cinematográfica vinculada al scroll, parallax suave, reveals y CTA.
-- `assets/scenes/scene-01.webp`, `scene-06.webp` y `scene-09.webp`: escenas fuente actuales. Se reutilizan mediante nueve encuadres/zooms progresivos para dar continuidad sin depender de un sprite.
+- `branding.css`: identidad visual, logo, titulares, tarjetas narrativas y créditos fotográficos.
+- `app.js`: secuencia cinematográfica vinculada al scroll, parallax suave, precarga de escenas, reveals y CTA.
+- Fotografías reales de Sierra Mágina servidas mediante Wikimedia Commons con anchura limitada para la landing.
 - `assets/magina-aventura-logo.svg` y `assets/magina-aventura-icon.svg`: identidad oficial compartida con la app móvil.
-- `test/*.test.mjs`: contrato de branding, navegación, continuidad visual y movimiento móvil.
+- `test/*.test.mjs`: contrato de branding, navegación, continuidad visual, créditos y movimiento móvil.
 
 ## Probar en local
 
@@ -36,9 +36,19 @@ GitHub Pages necesita una activación inicial a nivel de repositorio. Hacer una 
 
 El CTA está preparado con `data-apk-link`; mientras `href="#"` muestra “APK próximamente”. Cuando exista el artefacto final, sustituir `href` por la URL del APK o de Google Play.
 
+## Fotografía y licencias
+
+La secuencia usa fotografía real de Sierra Mágina alojada en Wikimedia Commons. Los encuadres, zooms y superposiciones de la landing constituyen adaptaciones visuales; los créditos visibles también aparecen en el pie de la propia web.
+
+- Veinticuatro de Jahén: `Sierra Mágina 24J 01`, `Paisaje de olivar 24J 01`, `Paisaje de olivar 24J 05` y `Castillo Albanchez de Mágina 24J 01` — CC BY-SA 4.0.
+- Azkoiti: `Pico Mágina - Jaén-` — CC BY-SA 3.0.
+- Covi: `Vértice geodésico de pico Mágina` — CC BY-SA 4.0.
+
+Las URLs usan `Special:Redirect/file/...?...width=` para solicitar una versión adecuada a web sin descargar los originales de varios megabytes.
+
 ## Evolución visual
 
-La secuencia actual usa tres fotografías fuente y nueve estados de cámara. Esto permite probar el ritmo, el scroll y la composición. Cuando tengamos más imágenes finales de Sierra Mágina, cada estado puede sustituirse por una escena propia sin cambiar la lógica de la landing.
+La secuencia mantiene nueve estados de cámara, pero ya no depende de tres fondos repetidos: recorre olivar, patrimonio, macizo y cumbre con seis fotografías fuente. La lógica del scroll queda desacoplada de la lista concreta de imágenes, porque `app.js` precarga automáticamente las escenas declaradas en el HTML.
 
 ## Integración futura
 

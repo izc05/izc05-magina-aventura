@@ -3,20 +3,28 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const css = readFileSync(new URL('../branding.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+const branding = readFileSync(new URL('../branding.css', import.meta.url), 'utf8');
 
 test('uses the compact Mágina Aventura brand lockup instead of the large white logo card', () => {
   assert.match(html, /assets\/magina-aventura-icon\.svg/);
   assert.match(html, /class="hero-brand-lockup"/);
   assert.doesNotMatch(html, /hero-logo-panel/);
-  assert.match(css, /\.hero-brand-lockup/);
+  assert.match(branding, /\.hero-brand-lockup/);
 });
 
-test('uses valid independent cinematic scenes instead of the broken sprite', () => {
-  for (const scene of ['scene-01.webp', 'scene-06.webp', 'scene-09.webp']) {
-    assert.ok(html.includes(`assets/scenes/${scene}`), `missing cinematic scene: ${scene}`);
+test('authors nine cinematic frames with progressive scene metadata', () => {
+  const frames = html.match(/data-scene-frame="\d+"/g) ?? [];
+  assert.equal(frames.length, 9, `expected 9 cinematic frames, found ${frames.length}`);
+  for (const property of ['--scene-image', '--scene-x', '--scene-y', '--scene-zoom']) {
+    assert.ok(html.includes(property), `missing ${property} scene metadata`);
   }
-  assert.doesNotMatch(html, /cinematic-sequence\.webp/);
+});
+
+test('uses scene assets directly from the main stylesheet without the temporary scene-fix layer', () => {
+  assert.doesNotMatch(html, /scene-fix\.css/);
+  assert.match(css, /background-image:var\(--scene-image/);
+  assert.match(css, /background-position:var\(--scene-x/);
 });
 
 test('keeps the four cinematic story titles in semantic HTML', () => {

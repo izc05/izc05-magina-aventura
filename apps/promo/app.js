@@ -1,5 +1,15 @@
 (() => {
-  document.documentElement.style.setProperty('--sequence-image', 'url("assets/cinematic-sequence.webp")');
+  const sceneUrls = [
+    'assets/scenes/scene-01.webp',
+    'assets/scenes/scene-06.webp',
+    'assets/scenes/scene-09.webp',
+  ];
+
+  sceneUrls.forEach((src) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = src;
+  });
 
   const cinematic = document.querySelector('[data-cinematic]');
   const frames = [...document.querySelectorAll('.frame')];
@@ -28,7 +38,7 @@
       frame.style.opacity = alpha.toFixed(3);
 
       if (!reduceMotion) {
-        const zoom = 1.08 + progress * 0.22 + Math.max(0, index - 5) * 0.012;
+        const zoom = 1.06 + progress * 0.30 + Math.max(0, index - 5) * 0.018;
         frame.style.transform = `scale(${zoom.toFixed(3)}) translate3d(0,0,0)`;
       }
 

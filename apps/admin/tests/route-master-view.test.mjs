@@ -31,10 +31,26 @@ const snapshot = {
     reward_olives: 30
   },
   geometry: { version: 2, coordinates: [[-3.4, 37.9], [-3.39, 37.91]] },
-  validation: { editorial_status: 'verified', track_status: 'verified', safety_status: 'reviewed' },
+  validation: {
+    editorial_status: 'verified',
+    track_status: 'verified',
+    field_status: 'planned',
+    media_status: 'partial',
+    safety_status: 'pending',
+    notes: 'Revisar seguridad antes de publicar'
+  },
   access_points: [{ id: 'a1', kind: 'start', name: 'Inicio Las Viñas' }],
-  sources: [{ id: 's1', official: true, label: 'Ayuntamiento' }, { id: 's2', official: false, label: 'Trabajo de campo' }],
-  track_source: { format: 'gpx', source_kind: 'official', original_filename: 'las-vinas.gpx' },
+  sources: [
+    { id: 's1', official: true, label: 'Ayuntamiento', url: 'https://example.test/ayuntamiento', source_type: 'official', checked_at: '2026-09-16T10:00:00Z', notes: 'Ficha municipal' },
+    { id: 's2', official: false, label: 'Trabajo de campo', url: 'https://example.test/campo', source_type: 'field', checked_at: null, notes: '' }
+  ],
+  track_source: {
+    format: 'gpx',
+    source_kind: 'official',
+    original_filename: 'las-vinas.gpx',
+    source_url: 'https://example.test/las-vinas.gpx',
+    validated_at: '2026-09-16T11:00:00Z'
+  },
   checkpoints: [{ id: 'c1' }, { id: 'c2' }],
   discoveries: [{ id: 'd1' }],
   media: [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }],
@@ -107,6 +123,24 @@ test('route master shell renders tabs and practical summary without exposing UUI
   assert.match(html, /450 XP/);
   assert.match(html, /30 aceitunas/);
   assert.match(html, /Inicio Las Viñas/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+});
+
+test('sources validation tab renders publication gate, provenance and editable controls', () => {
+  const html = routeMasterShellHtml(snapshot, 'sources');
+  assert.match(html, /data-route-master-panel="sources"/);
+  assert.match(html, /Gate de publicación/);
+  assert.match(html, /Falta revisión de seguridad/);
+  assert.match(html, /Ayuntamiento/);
+  assert.match(html, /Trabajo de campo/);
+  assert.match(html, /Procedencia del track/);
+  assert.match(html, /GPX/);
+  assert.match(html, /data-route-source-form/);
+  assert.match(html, /name="source_type"/);
+  assert.match(html, /data-route-validation-form/);
+  for (const name of ['editorial_status','track_status','field_status','media_status','safety_status']) {
+    assert.match(html, new RegExp(`name="${name}"`));
+  }
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });
 

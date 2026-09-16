@@ -64,6 +64,11 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
     },
 
     async start(activityId: string): Promise<void> {
+      const background = await adapter.getBackgroundPermission();
+      if (!granted(background)) {
+        throw new Error('Background location permission is required');
+      }
+
       const alreadyStarted = await adapter.hasStartedBackgroundUpdates();
       if (alreadyStarted) return;
       await adapter.startBackgroundUpdates(activityId);

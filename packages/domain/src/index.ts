@@ -1,1 +1,4 @@
 export * from './routes/route-status';
+export * from './catalog/validate-catalog';
+export * from './catalog/operational-status';
+export * from './catalog/completeness';

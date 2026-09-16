@@ -28,6 +28,23 @@ function statusLabel(status) {
   })[status] ?? status ?? 'Sin estado';
 }
 
+function difficultyLabel(value) {
+  return ({ easy: 'Fácil', moderate: 'Moderada', hard: 'Difícil' })[value] ?? '—';
+}
+
+function routeKindLabel(value) {
+  return ({ circular: 'Circular', linear: 'Lineal', out_and_back: 'Ida y vuelta' })[value] ?? '—';
+}
+
+function durationLabel(minutes) {
+  const total = Number(minutes ?? 0);
+  if (!Number.isFinite(total) || total <= 0) return '—';
+  const hours = Math.floor(total / 60);
+  const remainder = total % 60;
+  if (!hours) return `${remainder} min`;
+  return remainder ? `${hours} h ${remainder} min` : `${hours} h`;
+}
+
 export function routeDisplayCode(route = {}) {
   const code = String(route.route_code ?? '').trim();
   if (code) return code;
@@ -86,4 +103,62 @@ export function routeMasterHeaderHtml(snapshot = {}) {
       ${reasons}
     </div>
   </header>`;
+}
+
+function summaryPanelHtml(snapshot) {
+  const content = snapshot.content ?? {};
+  const accessPoints = Array.isArray(snapshot.access_points) ? snapshot.access_points : [];
+  const start = accessPoints.find((point) => point.kind === 'start') ?? accessPoints[0];
+
+  return `<section class="route-master-panel" data-route-master-panel="summary">
+    <div class="route-master-metrics">
+      <div><span>Distancia</span><strong>${esc(content.distance_km ?? '—')} km</strong></div>
+      <div><span>Desnivel +</span><strong>${esc(content.elevation_gain_m ?? '—')} m</strong></div>
+      <div><span>Desnivel −</span><strong>${esc(content.elevation_loss_m ?? '—')} m</strong></div>
+      <div><span>Duración</span><strong>${esc(durationLabel(content.duration_minutes))}</strong></div>
+      <div><span>Dificultad</span><strong>${esc(difficultyLabel(content.difficulty))}</strong></div>
+      <div><span>Tipo</span><strong>${esc(routeKindLabel(content.route_kind))}</strong></div>
+    </div>
+    <div class="route-master-summary-grid">
+      <article class="route-master-summary-card">
+        <span>Punto de inicio</span>
+        <strong>${esc(start?.name ?? 'Pendiente')}</strong>
+      </article>
+      <article class="route-master-summary-card">
+        <span>Recompensa</span>
+        <strong>${esc(Number(content.reward_xp ?? 0))} XP · ${esc(Number(content.reward_olives ?? 0))} aceitunas</strong>
+      </article>
+      <article class="route-master-summary-card">
+        <span>Track</span>
+        <strong>${snapshot.track_source ? `${esc(String(snapshot.track_source.format ?? '').toUpperCase())} · ${esc(snapshot.track_source.source_kind ?? 'sin procedencia')}` : 'Pendiente'}</strong>
+      </article>
+      <article class="route-master-summary-card">
+        <span>Contenido asociado</span>
+        <strong>${countBadge(snapshot.discoveries)} descubrimientos · ${countBadge(snapshot.media)} archivos</strong>
+      </article>
+    </div>
+  </section>`;
+}
+
+function placeholderPanelHtml(activeTab, snapshot) {
+  const tab = ROUTE_MASTER_TABS.find((item) => item.id === activeTab) ?? ROUTE_MASTER_TABS[0];
+  const badges = routeMasterTabModels(snapshot);
+  const badge = badges.find((item) => item.id === tab.id)?.badge;
+  return `<section class="route-master-panel" data-route-master-panel="${esc(tab.id)}"><h3>${esc(tab.label)}</h3><p class="muted">${badge ? `${esc(badge)} · ` : ''}Gestión integrada en la Ficha Maestra.</p></section>`;
+}
+
+export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
+  const validTab = ROUTE_MASTER_TABS.some((tab) => tab.id === activeTab) ? activeTab : 'summary';
+  const tabs = routeMasterTabModels(snapshot);
+  const panel = validTab === 'summary'
+    ? summaryPanelHtml(snapshot)
+    : placeholderPanelHtml(validTab, snapshot);
+
+  return `<section class="route-master card">
+    ${routeMasterHeaderHtml(snapshot)}
+    <nav class="route-master-tabs" aria-label="Secciones de la ruta">
+      ${tabs.map((tab) => `<button type="button" class="route-master-tab${tab.id === validTab ? ' active' : ''}" data-route-master-tab="${esc(tab.id)}" aria-pressed="${tab.id === validTab ? 'true' : 'false'}"><span>${esc(tab.label)}</span>${tab.badge ? `<small>${esc(tab.badge)}</small>` : ''}</button>`).join('')}
+    </nav>
+    ${panel}
+  </section>`;
 }

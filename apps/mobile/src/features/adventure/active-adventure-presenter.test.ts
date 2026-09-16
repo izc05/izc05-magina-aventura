@@ -92,4 +92,21 @@ describe('active adventure presentation', () => {
     expect(presentation.objectiveTitle).toBe('En ruta');
     expect(presentation.objectiveMeta).toBe('Precisión GPS ±6 m');
   });
+
+  it('does not claim the user is on route when no verified route geometry is available', () => {
+    const route = developmentRoutes[0];
+    expect(route).toBeDefined();
+    if (!route) return;
+
+    const state = activeState(route.id, route.slug);
+    state.snapshot.distanceToRouteMeters = null;
+    state.snapshot.routeProgress = 0;
+    state.snapshot.maxRouteProgress = 0;
+
+    const presentation = presentActiveAdventure(route, state);
+
+    expect(presentation.progress).toBe('—');
+    expect(presentation.objectiveTitle).toBe('GPS activo');
+    expect(presentation.objectiveMeta).toBe('Track oficial no disponible · precisión ±6 m');
+  });
 });

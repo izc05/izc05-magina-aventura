@@ -240,6 +240,43 @@ function bindRouteMasterForms(stage, list, route, snapshot) {
     });
   });
 
+  const mediaList = Array.isArray(snapshot.media) ? snapshot.media : [];
+  stage.querySelectorAll('[data-route-media-form]').forEach((form) => {
+    if (!form.querySelector('[data-route-media-save]')) {
+      form.insertAdjacentHTML('beforeend', '<button type="submit" class="btn primary span-2" data-route-media-save>Guardar multimedia</button>');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const index = Number(form.dataset.mediaIndex);
+      const media = mediaList[index];
+      if (!Number.isInteger(index) || !media?.id || !media?.kind) {
+        flash('No se pudo identificar el archivo multimedia seleccionado.', 'error');
+        return;
+      }
+
+      const values = new FormData(form);
+      const nextKind = String(values.get('kind') ?? media.kind);
+      setFormBusy(form, true);
+      try {
+        await patch('route_media', `route_id=eq.${encodeURIComponent(route.id)}&media_id=eq.${encodeURIComponent(media.id)}&kind=eq.${encodeURIComponent(media.kind)}`, {
+          kind: nextKind,
+          sort_order: requiredNumber(values, 'sort_order')
+        });
+        await patch('media_assets', `id=eq.${encodeURIComponent(media.id)}`, {
+          title: String(values.get('title') ?? '').trim(),
+          alt_text: String(values.get('alt_text') ?? '').trim() || null,
+          archived: values.get('archived') === 'on'
+        });
+        flash('Multimedia de la ruta actualizada.');
+        await reloadRouteMaster(stage, list, route, 'media');
+      } catch (error) {
+        flash(`No se pudo guardar la multimedia: ${error.message}`, 'error');
+        setFormBusy(form, false);
+      }
+    });
+  });
+
   const trackForm = stage.querySelector('[data-route-track-import-form]');
   trackForm?.addEventListener('submit', async (event) => {
     event.preventDefault();

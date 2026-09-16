@@ -18,17 +18,42 @@
   margin:0;
   opacity:.72;
 }
-.hero-logo-panel{
-  width:min(410px,72vw);
-  margin:0 0 24px;
-  padding:7px 12px;
-  border:1px solid rgba(255,255,255,.42);
-  border-radius:20px;
-  background:rgba(250,249,246,.9);
-  box-shadow:0 18px 70px rgba(0,0,0,.22);
+.hero-brand-lockup{
+  display:inline-flex;
+  align-items:center;
+  gap:13px;
+  width:max-content;
+  max-width:100%;
+  margin:0 0 22px;
+  padding:8px 15px 8px 8px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;
+  background:rgba(5,12,8,.34);
+  box-shadow:0 15px 55px rgba(0,0,0,.18);
   backdrop-filter:blur(14px);
 }
-.hero-logo{width:100%;height:auto}
+.hero-brand-icon{
+  width:56px;
+  height:56px;
+  border-radius:14px;
+  box-shadow:0 8px 25px rgba(0,0,0,.2);
+  flex:0 0 auto;
+}
+.hero-brand-lockup span{display:grid;gap:5px;min-width:0}
+.hero-brand-lockup strong{
+  font:700 25px/1 Georgia,"Times New Roman",serif;
+  letter-spacing:-.025em;
+  color:#fff;
+  white-space:nowrap;
+}
+.hero-brand-lockup small{
+  font-size:8px;
+  line-height:1;
+  letter-spacing:.27em;
+  font-weight:750;
+  color:rgba(255,255,255,.67);
+  white-space:nowrap;
+}
 .story-sequence{
   position:absolute;
   inset:0;
@@ -96,7 +121,16 @@
 @media (max-width:900px){
   .brand span{display:none}
   .brand-icon{width:40px;height:40px}
-  .hero-logo-panel{width:min(350px,82vw);margin-bottom:17px;padding:5px 9px;border-radius:16px}
+  .hero-brand-lockup{
+    gap:10px;
+    margin-bottom:14px;
+    padding:6px 11px 6px 6px;
+    border-radius:15px;
+    background:rgba(5,12,8,.28);
+  }
+  .hero-brand-icon{width:46px;height:46px;border-radius:12px}
+  .hero-brand-lockup strong{font-size:19px}
+  .hero-brand-lockup small{font-size:6.5px;letter-spacing:.2em}
   .hero-copy{bottom:84px}
   .hero-copy h1{font-size:clamp(43px,12vw,68px)}
   .story-step,.story-left,.story-right{
@@ -114,8 +148,12 @@
   .story-cta{width:100%}
   .download-icon{width:62px;height:62px;border-radius:16px}
 }
+@media (max-width:390px){
+  .hero-brand-lockup strong{font-size:17px}
+  .hero-brand-lockup small{font-size:6px;letter-spacing:.16em}
+}
 @media (max-height:720px) and (min-width:901px){
-  .hero-logo-panel{width:330px;margin-bottom:15px}
+  .hero-brand-lockup{margin-bottom:15px}
   .hero-copy h1{font-size:clamp(46px,6.4vw,82px)}
   .hero-copy>p:not(.eyebrow){margin:18px 0 20px}
   .story-step{bottom:74px}

@@ -117,3 +117,17 @@ test('keeps exploration, profile and download destinations', () => {
     assert.match(html, new RegExp(`id="${id}"`));
   }
 });
+
+test('authors the six cinematic journey scenes in narrative order', () => {
+  const sceneNames = [...html.matchAll(/data-cinematic-scene="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(sceneNames, [
+    'awakening',
+    'path',
+    'discovery',
+    'app',
+    'progress',
+    'finale',
+  ]);
+  assert.ok((html.match(/data-scene-layer/g) ?? []).length >= 12);
+  assert.ok((html.match(/data-depth="0\.\d+"/g) ?? []).length >= 12);
+});

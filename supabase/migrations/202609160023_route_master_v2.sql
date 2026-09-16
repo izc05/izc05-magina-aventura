@@ -47,6 +47,7 @@ create table public.route_sources (
   updated_at timestamptz not null default now()
 );
 create index route_sources_route_idx on public.route_sources(route_id);
+create index route_sources_created_by_idx on public.route_sources(created_by) where created_by is not null;
 create index route_sources_official_idx on public.route_sources(route_id, official) where official;
 
 create table public.route_track_sources (
@@ -70,6 +71,7 @@ create table public.route_track_sources (
 );
 create index route_track_sources_route_idx on public.route_track_sources(route_id);
 create index route_track_sources_source_idx on public.route_track_sources(source_id) where source_id is not null;
+create index route_track_sources_validated_by_idx on public.route_track_sources(validated_by) where validated_by is not null;
 
 create table public.route_validation_status (
   route_id uuid primary key references public.routes(id) on delete cascade,
@@ -89,6 +91,7 @@ create table public.route_validation_status (
   updated_at timestamptz not null default now(),
   check ((verified_at is null and verified_by is null) or verified_at is not null)
 );
+create index route_validation_status_verified_by_idx on public.route_validation_status(verified_by) where verified_by is not null;
 
 alter table public.route_access_points enable row level security;
 alter table public.route_sources enable row level security;

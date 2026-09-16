@@ -5,6 +5,8 @@ export interface ActivityEngineConfig {
   offRouteBaseCorridorMeters: number;
   offRouteAccuracyMultiplier: number;
   offRouteSamplesToConfirm: number;
+  snapshotEveryAcceptedSamples: number;
+  snapshotEverySeconds: number;
 }
 
 export const defaultActivityEngineConfig: ActivityEngineConfig = {
@@ -14,4 +16,6 @@ export const defaultActivityEngineConfig: ActivityEngineConfig = {
   offRouteBaseCorridorMeters: 35,
   offRouteAccuracyMultiplier: 1.5,
   offRouteSamplesToConfirm: 3,
+  snapshotEveryAcceptedSamples: 10,
+  snapshotEverySeconds: 15,
 };

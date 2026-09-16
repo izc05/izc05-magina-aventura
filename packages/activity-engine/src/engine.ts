@@ -3,6 +3,7 @@ import type {
   ActivitySession,
   ActivitySnapshot,
   GeoJsonPosition,
+  LocationSample,
 } from '@magina-aventura/contracts';
 
 import {
@@ -22,6 +23,11 @@ export interface ActivityEngineState {
   session: ActivitySession;
   snapshot: ActivitySnapshot;
   offRouteEvidence: OffRouteEvidence;
+  shouldPersistSnapshot: boolean;
+  acceptedSamplesSinceSnapshot: number;
+  lastSnapshotAt: string;
+  acceptedSample: LocationSample | null;
+  rejectedSample: LocationSample | null;
 }
 
 export function createInitialEngineState(
@@ -50,6 +56,11 @@ export function createInitialEngineState(
       createdAt,
     },
     offRouteEvidence: createInitialOffRouteEvidence(),
+    shouldPersistSnapshot: false,
+    acceptedSamplesSinceSnapshot: 0,
+    lastSnapshotAt: createdAt,
+    acceptedSample: null,
+    rejectedSample: null,
   };
 }
 
@@ -81,7 +92,19 @@ function reduceLifecycleAction(
       currentSpeedMps: nextState === 'ACTIVE' ? state.snapshot.currentSpeedMps : null,
       paceSecondsPerKm: nextState === 'ACTIVE' ? state.snapshot.paceSecondsPerKm : null,
     },
+    shouldPersistSnapshot: true,
+    acceptedSamplesSinceSnapshot: 0,
+    lastSnapshotAt: action.at,
+    acceptedSample: null,
+    rejectedSample: null,
   };
+}
+
+function elapsedSince(earlier: string, later: string): number {
+  const earlierMs = Date.parse(earlier);
+  const laterMs = Date.parse(later);
+  if (!Number.isFinite(earlierMs) || !Number.isFinite(laterMs)) return 0;
+  return Math.max(0, (laterMs - earlierMs) / 1000);
 }
 
 export function reduceActivity(
@@ -95,7 +118,14 @@ export function reduceActivity(
   }
 
   const sample = action.sample;
-  if (sample.sequence <= state.session.lastProcessedSequence) return state;
+  if (sample.sequence <= state.session.lastProcessedSequence) {
+    return {
+      ...state,
+      shouldPersistSnapshot: false,
+      acceptedSample: null,
+      rejectedSample: null,
+    };
+  }
 
   let snapshot = updateActivityMetrics(
     state.snapshot,
@@ -127,6 +157,17 @@ export function reduceActivity(
     };
   }
 
+  const nextAcceptedCount = sample.validForMetrics
+    ? state.acceptedSamplesSinceSnapshot + 1
+    : state.acceptedSamplesSinceSnapshot;
+  const dueByCount =
+    sample.validForMetrics &&
+    nextAcceptedCount >= config.snapshotEveryAcceptedSamples;
+  const dueByTime =
+    sample.validForMetrics &&
+    elapsedSince(state.lastSnapshotAt, sample.timestamp) >= config.snapshotEverySeconds;
+  const shouldPersistSnapshot = dueByCount || dueByTime;
+
   return {
     session: {
       ...state.session,
@@ -134,5 +175,10 @@ export function reduceActivity(
     },
     snapshot,
     offRouteEvidence,
+    shouldPersistSnapshot,
+    acceptedSamplesSinceSnapshot: shouldPersistSnapshot ? 0 : nextAcceptedCount,
+    lastSnapshotAt: shouldPersistSnapshot ? sample.timestamp : state.lastSnapshotAt,
+    acceptedSample: sample.validForMetrics ? sample : null,
+    rejectedSample: sample.validForMetrics ? null : sample,
   };
 }

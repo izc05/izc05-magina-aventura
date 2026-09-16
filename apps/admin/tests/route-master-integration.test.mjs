@@ -71,3 +71,19 @@ test('route master content form builds the V2 payload, versions it with the inte
   }
   assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]content['"]\)/);
 });
+
+test('route master discovery cards save metadata through RLS-backed table update and refresh discoveries', async () => {
+  const text = await source();
+  assert.match(text, /import\s*\{[^}]*patch[^}]*\}\s*from\s*['"]\.\/src\/core\/api\.mjs['"]/s);
+  assert.match(text, /querySelectorAll\(['"]\[data-route-discovery-form\]['"]\)/);
+  assert.match(text, /snapshot\.discoveries/);
+  assert.match(text, /dataset\.discoveryIndex/);
+  assert.match(text, /patch\(['"]discoveries['"]/);
+  assert.match(text, /name:/);
+  assert.match(text, /category:/);
+  assert.match(text, /trigger_radius_m:/);
+  assert.match(text, /reward_xp:/);
+  assert.match(text, /reward_olives:/);
+  assert.match(text, /active:/);
+  assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]discoveries['"]\)/);
+});

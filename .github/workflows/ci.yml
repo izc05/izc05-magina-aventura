@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feat/integration-gps-visual-v1
 
 jobs:
   verify:

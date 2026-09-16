@@ -22,11 +22,12 @@ export default function ActiveAdventureScreen() {
 
   useEffect(() => {
     if (!route) return;
+    const currentRoute = route;
     let active = true;
 
     async function load() {
       try {
-        const recovered = activityRuntime.current() ?? (await activityRuntime.recover(route));
+        const recovered = activityRuntime.current() ?? (await activityRuntime.recover(currentRoute));
         if (!active) return;
         setEngineState(recovered);
         setTrack(await activityRuntime.loadTrack());
@@ -65,6 +66,7 @@ export default function ActiveAdventureScreen() {
   );
 
   if (!route || !presentation) return null;
+  const currentRoute = route;
 
   const currentPoint = engineState?.snapshot.lastValidSample ?? track.at(-1) ?? null;
   const isPaused = engineState?.session.state === 'PAUSED';
@@ -87,7 +89,7 @@ export default function ActiveAdventureScreen() {
     try {
       const finished = await activityRuntime.finish();
       setEngineState(finished);
-      router.replace({ pathname: '/adventure-summary/[slug]', params: { slug: route.slug } });
+      router.replace({ pathname: '/adventure-summary/[slug]', params: { slug: currentRoute.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo finalizar la aventura.');
     }
@@ -149,7 +151,7 @@ export default function ActiveAdventureScreen() {
         {!hasActivity && !loading ? (
           <Pressable
             style={styles.primaryButton}
-            onPress={() => router.replace({ pathname: '/routes/[slug]/prepare', params: { slug: route.slug } })}
+            onPress={() => router.replace({ pathname: '/routes/[slug]/prepare', params: { slug: currentRoute.slug } })}
           >
             <Text style={styles.primaryButtonText}>Volver a Preparación</Text>
           </Pressable>
@@ -193,7 +195,7 @@ const styles = StyleSheet.create({
   gpsBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   positionCard: { position: 'absolute', left: spacing[20], right: spacing[20], top: '61%', borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border, ...shadow.card },
   positionCardLabel: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  positionCardValue: { color: colors.ink, fontSize: 14, fontWeight: '900', marginTop: spacing[6] },
+  positionCardValue: { color: colors.ink, fontSize: 14, fontWeight: '900', marginTop: spacing[4] },
   positionCardMeta: { color: colors.muted, fontSize: 11, marginTop: spacing[4] },
   topHud: { position: 'absolute', top: spacing[12], left: spacing[16], right: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border, ...shadow.card },
   topHudHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[12] },

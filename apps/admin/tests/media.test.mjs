@@ -6,8 +6,8 @@ test('normalizeMediaTags trims, lowercases and deduplicates tags', () => {
   assert.deepEqual(normalizeMediaTags(' Ruta, OLIVAR, ruta ,  Patrimonio '), ['ruta','olivar','patrimonio']);
 });
 
-test('sanitizeMediaFilename strips unsafe filename characters', () => {
-  assert.equal(sanitizeMediaFilename('Mi foto (final) ñ.jpg'), 'Mi-foto-final-.jpg');
+test('sanitizeMediaFilename strips unsafe filename characters and transliterates accents', () => {
+  assert.equal(sanitizeMediaFilename('Mi foto (final) ñ.jpg'), 'Mi-foto-final-n.jpg');
 });
 
 test('buildMediaObjectKey keeps files under the media namespace', () => {

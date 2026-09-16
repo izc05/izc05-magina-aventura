@@ -8,52 +8,88 @@ import type {
 } from '@magina-aventura/contracts';
 
 const CHECKED_AT = '2026-09-16';
+const VENTANA_BASE =
+  'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content';
+
+const officialSource = (
+  id: string,
+  title: string,
+  url: string,
+  publishedAt: string | null = null,
+): CatalogSource => ({
+  id,
+  publisher: 'Junta de Andalucía · Ventana del Visitante',
+  sourceType: 'official_authority',
+  title,
+  url,
+  publishedAt,
+  checkedAt: CHECKED_AT,
+  licenseNote: null,
+  verificationState: 'official_verified',
+});
 
 export const catalogSources: CatalogSource[] = [
-  {
-    id: 'junta-sierra-magina-directory',
-    publisher: 'Junta de Andalucía · Ventana del Visitante',
-    sourceType: 'official_authority',
-    title: 'Sierra Mágina — equipamientos y senderos señalizados',
-    url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/es6160007-sierra-m%C3%81gina',
-    publishedAt: null,
-    checkedAt: CHECKED_AT,
-    licenseNote: null,
-    verificationState: 'official_verified',
-  },
-  {
-    id: 'junta-las-vinas',
-    publisher: 'Junta de Andalucía · Ventana del Visitante',
-    sourceType: 'official_authority',
-    title: 'Sendero señalizado Las Viñas',
-    url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/las-vi%C3%B1as/255035',
-    publishedAt: null,
-    checkedAt: CHECKED_AT,
-    licenseNote: null,
-    verificationState: 'official_verified',
-  },
-  {
-    id: 'junta-hoyalinos',
-    publisher: 'Junta de Andalucía · Ventana del Visitante',
-    sourceType: 'official_authority',
-    title: 'Sendero señalizado Hoyalinos',
-    url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/hoyalinos/255035',
-    publishedAt: null,
-    checkedAt: CHECKED_AT,
-    licenseNote: null,
-    verificationState: 'official_verified',
-  },
-  {
-    id: 'junta-cuadros-closure',
-    publisher: 'Junta de Andalucía · Ventana del Visitante',
-    sourceType: 'official_authority',
-    title: 'Área recreativa Cuadros — aviso de cierre temporal',
-    url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/cuadros/null',
-    publishedAt: '2026-02-24',
-    checkedAt: CHECKED_AT,
-    licenseNote: null,
-    verificationState: 'official_verified',
-  },
+  officialSource(
+    'junta-sierra-magina-directory',
+    'Sierra Mágina — equipamientos y senderos señalizados',
+    `${VENTANA_BASE}/es6160007-sierra-m%C3%81gina`,
+  ),
+  officialSource(
+    'junta-adelfal-de-cuadros',
+    'Sendero señalizado Adelfal de Cuadros',
+    `${VENTANA_BASE}/adelfal-de-cuadros/`,
+  ),
+  officialSource(
+    'junta-castillo-de-albanchez',
+    'Sendero señalizado Castillo de Albanchez',
+    `${VENTANA_BASE}/castillo-de-albanchez/255035`,
+  ),
+  officialSource(
+    'junta-castillo-de-mata-bejid',
+    'Sendero señalizado Castillo de Mata Bejid',
+    `${VENTANA_BASE}/castillo-de-mata-bejid/255035`,
+  ),
+  officialSource(
+    'junta-gibralberca',
+    'Sendero señalizado Gibralberca',
+    `${VENTANA_BASE}/gibralberca-1/255035`,
+  ),
+  officialSource(
+    'junta-hoyalinos',
+    'Sendero señalizado Hoyalinos',
+    `${VENTANA_BASE}/hoyalinos/255035`,
+  ),
+  officialSource(
+    'junta-cueva-de-la-graja',
+    'Sendero señalizado La Cueva de la Graja',
+    `${VENTANA_BASE}/la-cueva-de-la-graja/255035`,
+  ),
+  officialSource(
+    'junta-las-vinas',
+    'Sendero señalizado Las Viñas',
+    `${VENTANA_BASE}/las-vi%C3%B1as/255035`,
+  ),
+  officialSource(
+    'junta-hoyo-de-la-laguna',
+    'Sendero señalizado Subida al Hoyo de la Laguna',
+    `${VENTANA_BASE}/subida-al-hoyo-de-la-laguna/`,
+  ),
+  officialSource(
+    'junta-pico-magina-miramundos',
+    'Sendero señalizado Subida a Pico Mágina y Miramundos',
+    `${VENTANA_BASE}/subida-a-pico-m%C3%81gina-y-miramundos/255035`,
+  ),
+  officialSource(
+    'junta-veredon-mojon-blanco',
+    'Sendero señalizado Veredón-Mojón Blanco',
+    `${VENTANA_BASE}/vered%C3%93n-moj%C3%93n-blanco/255035`,
+  ),
+  officialSource(
+    'junta-cuadros-closure',
+    'Área recreativa Cuadros — aviso de cierre temporal',
+    `${VENTANA_BASE}/cuadros/null`,
+    '2026-02-24',
+  ),
 ];
 
 const emptyMetrics = () => ({
@@ -82,6 +118,7 @@ interface OfficialDraftInput {
   slug: string;
   name: string;
   municipalityId: string;
+  municipalityIds?: string[];
   municipalityLabel: string;
   sourceIds?: string[];
   shape?: RouteShape | null;
@@ -101,7 +138,7 @@ const createOfficialDraft = (input: OfficialDraftInput): Adventure => {
     summary: `Sendero señalizado oficial de Sierra Mágina en ${input.municipalityLabel}.`,
     description: `Entrada canónica en revisión para el sendero señalizado ${input.name}.`,
     activityTypes: ['hiking'],
-    municipalityIds: [input.municipalityId],
+    municipalityIds: input.municipalityIds ?? [input.municipalityId],
     shape: input.shape ?? null,
     publicationState: 'draft',
     verificationState: 'official_verified',
@@ -137,13 +174,57 @@ const createOfficialDraft = (input: OfficialDraftInput): Adventure => {
 };
 
 export const catalogAdventures: Adventure[] = [
-  createOfficialDraft({ id: 'ma-junta-001', slug: 'adelfal-de-cuadros', name: 'Adelfal de Cuadros', municipalityId: 'bedmar-y-garciez', municipalityLabel: 'Bedmar y Garcíez' }),
+  createOfficialDraft({
+    id: 'ma-junta-001',
+    slug: 'adelfal-de-cuadros',
+    name: 'Adelfal de Cuadros',
+    municipalityId: 'bedmar-y-garciez',
+    municipalityLabel: 'Bedmar y Garcíez',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-adelfal-de-cuadros'],
+    shape: 'linear',
+    distanceKm: 0.453,
+    durationMinutes: 20,
+    difficulty: 'easy',
+  }),
   createOfficialDraft({ id: 'ma-junta-002', slug: 'cano-del-aguadero', name: 'Caño del Aguadero', municipalityId: 'bedmar-y-garciez', municipalityLabel: 'Bedmar y Garcíez' }),
-  createOfficialDraft({ id: 'ma-junta-003', slug: 'castillo-de-albanchez', name: 'Castillo de Albanchez', municipalityId: 'albanchez-de-magina', municipalityLabel: 'Albanchez de Mágina' }),
-  createOfficialDraft({ id: 'ma-junta-004', slug: 'castillo-de-mata-bejid', name: 'Castillo de Mata Bejid', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
+  createOfficialDraft({
+    id: 'ma-junta-003',
+    slug: 'castillo-de-albanchez',
+    name: 'Castillo de Albanchez',
+    municipalityId: 'albanchez-de-magina',
+    municipalityLabel: 'Albanchez de Mágina',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-castillo-de-albanchez'],
+    shape: 'linear',
+    distanceKm: 0.206,
+    durationMinutes: 20,
+    difficulty: 'moderate',
+  }),
+  createOfficialDraft({
+    id: 'ma-junta-004',
+    slug: 'castillo-de-mata-bejid',
+    name: 'Castillo de Mata Bejid',
+    municipalityId: 'cambil',
+    municipalityLabel: 'Cambil',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-castillo-de-mata-bejid'],
+    shape: 'linear',
+    distanceKm: 3.55,
+    durationMinutes: 75,
+    difficulty: 'easy',
+  }),
   createOfficialDraft({ id: 'ma-junta-005', slug: 'el-peralejo', name: 'El Peralejo', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
   createOfficialDraft({ id: 'ma-junta-006', slug: 'fuenmayor', name: 'Fuenmayor', municipalityId: 'torres', municipalityLabel: 'Torres' }),
-  createOfficialDraft({ id: 'ma-junta-007', slug: 'gibralberca', name: 'Gibralberca', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
+  createOfficialDraft({
+    id: 'ma-junta-007',
+    slug: 'gibralberca',
+    name: 'Gibralberca',
+    municipalityId: 'cambil',
+    municipalityLabel: 'Cambil',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-gibralberca'],
+    shape: 'circular',
+    distanceKm: 5.653,
+    durationMinutes: 120,
+    difficulty: 'moderate',
+  }),
   createOfficialDraft({
     id: 'ma-junta-008',
     slug: 'hoyalinos',
@@ -156,7 +237,18 @@ export const catalogAdventures: Adventure[] = [
     durationMinutes: 60,
     difficulty: 'moderate',
   }),
-  createOfficialDraft({ id: 'ma-junta-009', slug: 'la-cueva-de-la-graja', name: 'La Cueva de la Graja', municipalityId: 'jimena', municipalityLabel: 'Jimena' }),
+  createOfficialDraft({
+    id: 'ma-junta-009',
+    slug: 'la-cueva-de-la-graja',
+    name: 'La Cueva de la Graja',
+    municipalityId: 'jimena',
+    municipalityLabel: 'Jimena',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-cueva-de-la-graja'],
+    shape: 'linear',
+    distanceKm: 0.575,
+    durationMinutes: 30,
+    difficulty: 'moderate',
+  }),
   createOfficialDraft({
     id: 'ma-junta-010',
     slug: 'las-vinas',
@@ -172,13 +264,60 @@ export const catalogAdventures: Adventure[] = [
   createOfficialDraft({ id: 'ma-junta-011', slug: 'pinar-de-canava', name: 'Pinar de Cánava', municipalityId: 'jimena', municipalityLabel: 'Jimena' }),
   createOfficialDraft({ id: 'ma-junta-012', slug: 'puerto-de-la-mata', name: 'Puerto de la Mata', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
   createOfficialDraft({ id: 'ma-junta-013', slug: 'sierra-de-la-cruz', name: 'Sierra de la Cruz', municipalityId: 'jodar', municipalityLabel: 'Jódar' }),
-  createOfficialDraft({ id: 'ma-junta-014', slug: 'subida-al-hoyo-de-la-laguna', name: 'Subida al Hoyo de la Laguna', municipalityId: 'belmez-de-la-moraleda', municipalityLabel: 'Bélmez de la Moraleda' }),
-  createOfficialDraft({ id: 'ma-junta-015', slug: 'subida-a-pico-magina-y-miramundos', name: 'Subida a Pico Mágina y Miramundos', municipalityId: 'huelma', municipalityLabel: 'Huelma' }),
+  createOfficialDraft({
+    id: 'ma-junta-014',
+    slug: 'subida-al-hoyo-de-la-laguna',
+    name: 'Subida al Hoyo de la Laguna',
+    municipalityId: 'belmez-de-la-moraleda',
+    municipalityLabel: 'Bélmez de la Moraleda',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-hoyo-de-la-laguna'],
+    shape: 'linear',
+    distanceKm: 5.475,
+    durationMinutes: 180,
+    difficulty: 'hard',
+  }),
+  createOfficialDraft({
+    id: 'ma-junta-015',
+    slug: 'subida-a-pico-magina-y-miramundos',
+    name: 'Subida a Pico Mágina y Miramundos',
+    municipalityId: 'huelma',
+    municipalityLabel: 'Huelma',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-pico-magina-miramundos'],
+    shape: 'linear',
+    distanceKm: 14.773,
+    durationMinutes: 300,
+    difficulty: 'hard',
+  }),
   createOfficialDraft({ id: 'ma-junta-016', slug: 'umbria-de-los-corzos', name: 'Umbría de los Corzos', municipalityId: 'cambil', municipalityLabel: 'Cambil' }),
-  createOfficialDraft({ id: 'ma-junta-017', slug: 'veredon-mojon-blanco', name: 'Veredón-Mojón Blanco', municipalityId: 'pegalajar', municipalityLabel: 'Pegalajar' }),
+  createOfficialDraft({
+    id: 'ma-junta-017',
+    slug: 'veredon-mojon-blanco',
+    name: 'Veredón-Mojón Blanco',
+    municipalityId: 'pegalajar',
+    municipalityIds: ['mancha-real', 'pegalajar', 'torres'],
+    municipalityLabel: 'Mancha Real, Pegalajar y Torres',
+    sourceIds: ['junta-sierra-magina-directory', 'junta-veredon-mojon-blanco'],
+    shape: 'linear',
+    distanceKm: 3.156,
+    durationMinutes: 90,
+    difficulty: 'moderate',
+  }),
 ];
 
 export const catalogRestrictions: Restriction[] = [
+  {
+    id: 'restriction-adelfal-de-cuadros-temporary-closure-2026',
+    scope: { type: 'adventure', adventureId: 'ma-junta-001' },
+    type: 'temporary_closure',
+    severity: 'blocking',
+    status: 'active',
+    startsAt: null,
+    endsAt: null,
+    sourceIds: ['junta-adelfal-de-cuadros', 'junta-cuadros-closure'],
+    publishedAt: '2026-02-24',
+    checkedAt: CHECKED_AT,
+    reason: 'La ficha oficial de Adelfal de Cuadros figura cerrada temporalmente y el entorno de Cuadros mantiene aviso oficial de cierre temporal.',
+  },
   {
     id: 'restriction-las-vinas-temporary-closure-2026',
     scope: { type: 'adventure', adventureId: 'ma-junta-010' },
@@ -195,7 +334,7 @@ export const catalogRestrictions: Restriction[] = [
 ];
 
 const snapshot: CatalogSnapshot = {
-  generatedAt: '2026-09-16T18:40:00Z',
+  generatedAt: '2026-09-16T18:45:00Z',
   adventures: catalogAdventures,
   tracks: [],
   pois: [],

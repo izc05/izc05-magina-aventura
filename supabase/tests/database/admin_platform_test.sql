@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(26);
 
 select has_table('public', 'admin_roles', 'admin_roles exists');
 select has_table('public', 'user_admin_roles', 'user_admin_roles exists');
@@ -22,6 +22,14 @@ select ok((select relrowsecurity from pg_class where oid = 'public.olive_transac
 select ok((select relrowsecurity from pg_class where oid = 'public.reward_redemptions'::regclass), 'RLS reward_redemptions');
 select has_function('public', 'admin_has_capability', array['text'], 'admin_has_capability exists');
 select has_function('public', 'redeem_reward_token', array['text'], 'redeem_reward_token exists');
+select has_function('public', 'admin_set_route_status', array['uuid','text'], 'admin_set_route_status exists');
+select has_function('public', 'admin_save_route_geometry', array['uuid','text'], 'admin_save_route_geometry exists');
+select has_function('public', 'cancel_reward_redemption', array['uuid'], 'cancel_reward_redemption exists');
+select has_function('public', 'expire_reward_redemptions', array[]::text[], 'expire_reward_redemptions exists');
+select has_function('public', 'admin_resolve_report', array['uuid','text','text'], 'admin_resolve_report exists');
+select has_function('public', 'admin_publish_notification', array['uuid'], 'admin_publish_notification exists');
+select has_function('public', 'admin_resolve_safety', array['uuid'], 'admin_resolve_safety exists');
+select has_function('public', 'admin_revoke_role', array['uuid','text'], 'admin_revoke_role exists');
 
 select * from finish();
 rollback;

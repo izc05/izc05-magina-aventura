@@ -33,6 +33,10 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: Generate approved brand raster assets
+        working-directory: apps/mobile
+        run: pnpm brand:assets
+
       - name: Verify Android Expo prebuild
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean

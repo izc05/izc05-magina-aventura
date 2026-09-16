@@ -43,7 +43,7 @@ function renderCinematic() {
         copy.style.opacity = state.active ? '1' : '0';
         copy.style.removeProperty('transform');
       } else {
-        const enter = clamp(state.local / 0.18);
+        const enter = index === 0 ? 1 : clamp(state.local / 0.18);
         const exit = isFinale ? 1 : 1 - clamp((state.local - 0.78) / 0.18);
         const copyAlpha = state.active ? Math.min(enter, exit) : state.visibility * 0.18;
         const y = (1 - enter) * 24 - (1 - exit) * 18;

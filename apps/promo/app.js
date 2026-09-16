@@ -1,25 +1,6 @@
 (() => {
-  const sequenceParts = Array.from({ length: 11 }, (_, index) => `assets/sequence/part-${String(index + 1).padStart(2, '0')}.txt`);
+  document.documentElement.style.setProperty('--sequence-image', 'url("assets/cinematic-sequence.webp")');
 
-  async function loadSequenceSprite() {
-    try {
-      const chunks = await Promise.all(sequenceParts.map(async (path) => {
-        const response = await fetch(path, { cache: 'force-cache' });
-        if (!response.ok) throw new Error(`No se pudo cargar ${path}`);
-        return response.text();
-      }));
-      const binary = atob(chunks.join(''));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      const objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
-      document.documentElement.style.setProperty('--sequence-image', `url("${objectUrl}")`);
-      document.documentElement.classList.add('sequence-ready');
-    } catch (error) {
-      console.warn('[Mágina Aventura] Secuencia cinematográfica no disponible.', error);
-    }
-  }
-
-  loadSequenceSprite();
   const cinematic = document.querySelector('[data-cinematic]');
   const frames = [...document.querySelectorAll('.frame')];
   const heroCopy = document.querySelector('[data-hero-copy]');

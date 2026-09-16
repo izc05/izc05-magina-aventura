@@ -11,6 +11,7 @@ import {
 } from '@magina-aventura/activity-engine';
 
 import type { ActivityStore, RecoveredActivity } from './activity-store';
+import { createActivitySyncQueue } from './activity-sync-queue';
 import type { BackgroundLocationInbox } from './background-location-inbox';
 import type {
   LocationPermissionState,
@@ -70,6 +71,10 @@ export function createActivityController(dependencies: ActivityControllerDepende
   let engineState: ActivityEngineState | null = null;
   let routeLine: readonly GeoJsonPosition[] = [];
   let initialized = false;
+  const syncQueue = createActivitySyncQueue({
+    store: dependencies.store,
+    now: dependencies.now,
+  });
 
   async function initializeStores(): Promise<void> {
     if (initialized) return;
@@ -272,6 +277,16 @@ export function createActivityController(dependencies: ActivityControllerDepende
         engineState.snapshot,
       );
       await dependencies.locationProvider.stop();
+
+      const track = await dependencies.store.loadTrack(engineState.session.activityId);
+      if (track.length > 0) {
+        await syncQueue.enqueue(
+          engineState.session.activityId,
+          track,
+          engineState.snapshot,
+        );
+      }
+
       return engineState;
     },
 

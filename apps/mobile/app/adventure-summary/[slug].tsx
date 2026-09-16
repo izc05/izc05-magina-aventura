@@ -36,6 +36,9 @@ export default function AdventureSummaryScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.notFound}>
           <Text style={styles.notFoundTitle}>Resumen no disponible</Text>
+          <Text style={styles.notFoundBody}>
+            No encontramos una actividad asociada a esta ruta en el dispositivo.
+          </Text>
           <Pressable style={styles.primaryButton} onPress={() => router.replace('/')}>
             <Text style={styles.primaryButtonText}>Volver al inicio</Text>
           </Pressable>
@@ -53,10 +56,14 @@ export default function AdventureSummaryScreen() {
         <View style={styles.hero}>
           <View style={styles.sun} />
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{isRealFinished ? 'ACTIVIDAD GPS FINALIZADA' : 'RESUMEN LOCAL'}</Text>
+            <Text style={styles.badgeText}>
+              {isRealFinished ? 'ACTIVIDAD GUARDADA' : 'RESUMEN LOCAL'}
+            </Text>
           </View>
           <Text style={styles.eyebrow}>MÁGINA AVENTURA</Text>
-          <Text style={styles.title}>Aventura completada</Text>
+          <Text style={styles.title}>
+            {isRealFinished ? 'Aventura completada' : 'Resumen disponible'}
+          </Text>
           <Text style={styles.routeTitle}>{route.title}</Text>
           <Text style={styles.place}>{route.municipalityName}</Text>
         </View>
@@ -68,24 +75,24 @@ export default function AdventureSummaryScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionEyebrow}>REGISTRO LOCAL</Text>
+          <Text style={styles.sectionEyebrow}>REGISTRO DE LA AVENTURA</Text>
           <Text style={styles.sectionTitle}>{trackCount} puntos GPS guardados</Text>
           <Text style={styles.sectionBody}>
-            La actividad se ha almacenado primero en el teléfono. Esta fase valida el tracking offline; la subida a Supabase y la concesión de recompensas se conectarán después de superar la prueba física.
+            El recorrido está guardado en este teléfono. Puedes terminar la aventura incluso sin cobertura y conservar sus datos hasta que la sincronización esté disponible.
           </Text>
         </View>
 
         <View style={styles.statusGrid}>
-          <StatusCard label="Estado" value={isRealFinished ? 'Finalizada' : 'No recuperada'} />
-          <StatusCard label="Guardado" value="SQLite local" />
+          <StatusCard label="Estado" value={isRealFinished ? 'Finalizada' : 'Recuperada'} />
+          <StatusCard label="Guardado" value="En este teléfono" />
           <StatusCard label="Recompensa" value="Pendiente" />
         </View>
 
         <View style={styles.rewardCard}>
-          <Text style={styles.rewardEyebrow}>RECOMPENSA OBJETIVO</Text>
+          <Text style={styles.rewardEyebrow}>RECOMPENSA PREVISTA</Text>
           <Text style={styles.rewardValue}>{presentation.rewardPreview}</Text>
           <Text style={styles.rewardBody}>
-            No se concede todavía. XP y aceitunas necesitarán validación de actividad en el backend para evitar duplicados o recorridos falsos.
+            La recompensa queda pendiente hasta que el recorrido pueda validarse. Así evitamos duplicados y mantenemos el progreso de cada aventura fiable.
           </Text>
         </View>
 
@@ -147,5 +154,6 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   primaryButtonArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },
   notFound: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },
-  notFoundTitle: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },
+  notFoundTitle: { color: colors.ink, fontSize: typography.title, fontWeight: '900', textAlign: 'center' },
+  notFoundBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: spacing[8] },
 });

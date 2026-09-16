@@ -9,8 +9,10 @@
   const compactViewport = window.matchMedia('(max-width: 900px)');
   let raf = 0;
 
+  const sceneProperty = compactViewport.matches ? '--scene-image-mobile' : '--scene-image';
   const sceneUrls = [...new Set(frames.map((frame) => {
-    const value = frame.style.getPropertyValue('--scene-image').trim();
+    const value = frame.style.getPropertyValue(sceneProperty).trim()
+      || frame.style.getPropertyValue('--scene-image').trim();
     const match = value.match(/^url\((['"]?)(.*?)\1\)$/);
     return match?.[2] ?? null;
   }).filter(Boolean))];

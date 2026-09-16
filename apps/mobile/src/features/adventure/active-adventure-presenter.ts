@@ -41,34 +41,48 @@ function stateLabel(state: ActivityEngineState): string {
 function objective(state: ActivityEngineState): { title: string; meta: string } {
   const { snapshot } = state;
   const distance = snapshot.distanceToRouteMeters;
+  const accuracy = snapshot.lastValidSample?.accuracyMeters;
+
+  if (distance === null) {
+    if (accuracy === undefined || accuracy === null) {
+      return {
+        title: 'Buscando señal',
+        meta: 'Esperando primera posición GPS válida',
+      };
+    }
+
+    return {
+      title: 'GPS activo',
+      meta: `Track oficial no disponible · precisión ±${Math.round(accuracy)} m`,
+    };
+  }
 
   if (snapshot.offRouteState === 'off_route') {
     return {
       title: 'Fuera de ruta',
-      meta: distance === null ? 'Busca de nuevo el trazado' : `A ${Math.round(distance)} m del trazado`,
+      meta: `A ${Math.round(distance)} m del trazado`,
     };
   }
 
   if (snapshot.offRouteState === 'recovering') {
     return {
       title: 'Volviendo a la ruta',
-      meta: distance === null ? 'Comprobando posición' : `A ${Math.round(distance)} m del trazado`,
+      meta: `A ${Math.round(distance)} m del trazado`,
     };
   }
 
   if (snapshot.offRouteState === 'uncertain') {
     return {
       title: 'Comprobando trazado',
-      meta: distance === null ? 'Esperando mejor precisión GPS' : `Separación ${Math.round(distance)} m`,
+      meta: `Separación ${Math.round(distance)} m`,
     };
   }
 
-  const accuracy = snapshot.lastValidSample?.accuracyMeters;
   return {
     title: 'En ruta',
     meta:
       accuracy === undefined || accuracy === null
-        ? 'Esperando primera posición GPS válida'
+        ? 'Esperando mejor precisión GPS'
         : `Precisión GPS ±${Math.round(accuracy)} m`,
   };
 }
@@ -95,12 +109,17 @@ export function presentActiveAdventure(
   }
 
   const currentObjective = objective(state);
+  const hasPositionWithoutVerifiedRoute =
+    state.snapshot.lastValidSample !== null &&
+    state.snapshot.distanceToRouteMeters === null;
 
   return {
     routeTitle: route.title,
     place: route.municipalityName,
     modeLabel: stateLabel(state),
-    progress: `${Math.round(Math.max(0, Math.min(1, state.snapshot.maxRouteProgress)) * 100)} %`,
+    progress: hasPositionWithoutVerifiedRoute
+      ? '—'
+      : `${Math.round(Math.max(0, Math.min(1, state.snapshot.maxRouteProgress)) * 100)} %`,
     distance: formatDistance(state.snapshot.validDistanceMeters),
     elapsed: formatElapsed(state.snapshot.totalElapsedSeconds),
     elevation: `+${Math.round(Math.max(0, state.snapshot.elevationGainMeters))} m`,

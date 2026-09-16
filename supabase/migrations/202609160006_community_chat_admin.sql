@@ -55,7 +55,12 @@ grant select, insert on public.community_chat_reports to authenticated;
 create policy "read active community chat channels"
 on public.community_chat_channels for select
 to anon, authenticated
-using (active or private.admin_has_capability('community.manage',auth.uid()));
+using (active);
+
+create policy "community admins read all channels"
+on public.community_chat_channels for select
+to authenticated
+using (private.admin_has_capability('community.manage',auth.uid()));
 
 create policy "community admins insert channels"
 on public.community_chat_channels for insert
@@ -77,13 +82,19 @@ create policy "read visible community chat messages"
 on public.community_chat_messages for select
 to anon, authenticated
 using (
-  private.admin_has_capability('community.manage',auth.uid())
-  or user_id=auth.uid()
-  or (
-    status='visible'
-    and exists(select 1 from public.community_chat_channels c where c.id=channel_id and c.active)
-  )
+  status='visible'
+  and exists(select 1 from public.community_chat_channels c where c.id=channel_id and c.active)
 );
+
+create policy "users read own community chat messages"
+on public.community_chat_messages for select
+to authenticated
+using (user_id=auth.uid());
+
+create policy "community admins read all messages"
+on public.community_chat_messages for select
+to authenticated
+using (private.admin_has_capability('community.manage',auth.uid()));
 
 create policy "read own or moderate chat reports"
 on public.community_chat_reports for select

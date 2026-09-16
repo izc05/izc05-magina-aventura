@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(20);
 
 select ok((select relrowsecurity from pg_class where oid='public.admin_audit_log'::regclass),'audit log has RLS');
 select ok((select relrowsecurity from pg_class where oid='public.olive_transactions'::regclass),'olive ledger has RLS');
@@ -18,6 +18,7 @@ select ok(has_function_privilege('service_role','public.claim_notification_deliv
 select ok(not has_function_privilege('authenticated','public.complete_notification_delivery(uuid,boolean,text,text)','EXECUTE'),'authenticated cannot complete push deliveries');
 select ok(has_function_privilege('service_role','public.complete_notification_delivery(uuid,boolean,text,text)','EXECUTE'),'service role can complete push deliveries');
 select is((select public from storage.buckets where id='media'),false,'media bucket remains private');
+select ok(exists(select 1 from pg_trigger where tgname='audit_route_geometries' and not tgisinternal),'route geometry mutations are audited');
 select ok(exists(select 1 from pg_trigger where tgname='audit_route_media' and not tgisinternal),'route media mutations are audited');
 select ok(exists(select 1 from pg_trigger where tgname='audit_gamification_levels' and not tgisinternal),'level mutations are audited');
 select ok(exists(select 1 from pg_trigger where tgname='audit_gamification_badges' and not tgisinternal),'badge mutations are audited');

@@ -51,3 +51,21 @@ test('track map panel has dedicated import and editor styles that collapse on mo
   }
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.route-track-import-form[\s\S]*grid-template-columns:\s*1fr/);
 });
+
+test('route content v2 editor has structured sections and collapses to one column on mobile', async () => {
+  const css = await readFile(stylesUrl, 'utf8');
+  for (const selector of [
+    '.route-content-panel',
+    '.route-content-heading',
+    '.route-content-form',
+    '.route-content-section',
+    '.route-content-grid',
+    '.route-editorial-grid',
+    '.route-season-options',
+    '.route-content-actions'
+  ]) {
+    assert.match(css, new RegExp(selector.replaceAll('.', '\\.')));
+  }
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.route-content-grid[\s\S]*grid-template-columns:\s*1fr/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.route-content-actions[\s\S]*flex-direction:\s*column/);
+});

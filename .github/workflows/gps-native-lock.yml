@@ -8,7 +8,7 @@ on:
       - .github/workflows/gps-native-lock.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-native-lock:
@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: feat/integration-gps-visual-v1
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -36,16 +38,11 @@ jobs:
           expo-task-manager@~56.0.15
           --lockfile-only
 
-      - name: Stage generated manifests
+      - name: Commit resolved manifests and remove helper workflow
         run: |
-          mkdir -p generated/apps/mobile
-          cp apps/mobile/package.json generated/apps/mobile/package.json
-          cp pnpm-lock.yaml generated/pnpm-lock.yaml
-
-      - name: Upload generated dependency files
-        uses: actions/upload-artifact@v4
-        with:
-          name: gps-native-dependency-lock
-          path: generated
-          if-no-files-found: error
-          retention-days: 1
+          rm .github/workflows/gps-native-lock.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/package.json pnpm-lock.yaml .github/workflows/gps-native-lock.yml
+          git commit -m "build: resolve Expo GPS native dependencies"
+          git push origin HEAD:feat/integration-gps-visual-v1

@@ -52,13 +52,14 @@ function safetyPanelHtml(snapshot = {}) {
   const cards = incidents.length
     ? incidents.map((incident, index) => safetyCardHtml(incident, index)).join('')
     : '<div class="empty route-safety-empty">No hay incidencias de seguridad registradas para esta ruta.</div>';
+  const slug = snapshot.route?.slug ?? '';
 
-  return `<section class="route-master-panel route-safety-panel" data-route-master-panel="safety">
+  return `<section class="route-master-panel route-safety-panel" data-route-master-panel="safety" data-route-safety-slug="${esc(slug)}">
     <div class="route-panel-heading">
       <div>
         <p class="route-panel-kicker">Estado operativo de la ruta</p>
         <h3>Seguridad</h3>
-        <p class="muted">${activeCount} ${activeCount === 1 ? 'incidencia activa' : 'incidencias activas'}. Los cierres pueden impedir que se inicien nuevas aventuras.</p>
+        <p class="muted" data-route-safety-summary>${activeCount} ${activeCount === 1 ? 'incidencia activa' : 'incidencias activas'}. Los cierres pueden impedir que se inicien nuevas aventuras.</p>
       </div>
     </div>
 

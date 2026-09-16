@@ -50,12 +50,14 @@ export interface CatalogFact {
 }
 
 export interface DifficultyFactors {
-  physicalDemand: 1 | 2 | 3 | 4 | 5;
-  technicalTerrain: 1 | 2 | 3 | 4 | 5;
-  navigationComplexity: 1 | 2 | 3 | 4 | 5;
-  exposure: 1 | 2 | 3 | 4 | 5;
-  remoteness: 1 | 2 | 3 | 4 | 5;
-  simpleLabel: SimpleDifficulty;
+  physicalDemand: 1 | 2 | 3 | 4 | 5 | null;
+  technicalTerrain: 1 | 2 | 3 | 4 | 5 | null;
+  navigationComplexity: 1 | 2 | 3 | 4 | 5 | null;
+  exposure: 1 | 2 | 3 | 4 | 5 | null;
+  remoteness: 1 | 2 | 3 | 4 | 5 | null;
+  simpleLabel: SimpleDifficulty | null;
+  sourceIds: string[];
+  verificationState: VerificationState;
 }
 
 export interface FamilyFactors {

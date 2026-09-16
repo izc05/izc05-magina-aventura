@@ -55,4 +55,22 @@ describe('LocationProvider permissions', () => {
 
     expect(startedActivities).toEqual(['activity-123']);
   });
+
+  it('refuses background tracking when background permission is denied', async () => {
+    let starts = 0;
+    const provider = createLocationProvider(
+      fakeAdapter({
+        getForegroundPermission: async () => 'granted',
+        getBackgroundPermission: async () => 'denied',
+        startBackgroundUpdates: async () => {
+          starts += 1;
+        },
+      }),
+    );
+
+    await expect(provider.start('activity-denied')).rejects.toThrow(
+      'Background location permission is required',
+    );
+    expect(starts).toBe(0);
+  });
 });

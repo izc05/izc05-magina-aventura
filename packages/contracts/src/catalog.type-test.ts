@@ -2,7 +2,7 @@ import type { Adventure, CatalogSnapshot, Restriction } from './catalog';
 
 const adventure = {
   id: 'ma-001',
-  slug: 'las-vinas-cuadros',
+  slug: 'las-vinas',
   name: 'Las Viñas',
   summary: 'Ruta de senderismo en el entorno de Cuadros.',
   description: 'Entrada canónica de catálogo.',
@@ -42,6 +42,24 @@ const adventure = {
   stableSafetyCharacteristics: [],
 } satisfies Adventure;
 
+const draftWithUnknownShape = {
+  ...adventure,
+  id: 'ma-002',
+  slug: 'draft-with-unknown-shape',
+  shape: null,
+  sourceIds: ['source-junta-directory'],
+  difficulty: {
+    physicalDemand: null,
+    technicalTerrain: null,
+    navigationComplexity: null,
+    exposure: null,
+    remoteness: null,
+    simpleLabel: null,
+    sourceIds: ['source-junta-directory'],
+    verificationState: 'official_verified',
+  },
+} satisfies Adventure;
+
 const restriction = {
   id: 'restriction-las-vinas-closure',
   scope: { type: 'adventure', adventureId: adventure.id },
@@ -58,7 +76,7 @@ const restriction = {
 
 const snapshot = {
   generatedAt: '2026-09-16T18:00:00Z',
-  adventures: [adventure],
+  adventures: [adventure, draftWithUnknownShape],
   tracks: [],
   pois: [],
   sources: [],

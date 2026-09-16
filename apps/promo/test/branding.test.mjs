@@ -36,14 +36,7 @@ test('keeps the compact official symbol for favicons and in-app mockups', () => 
 
 test('authors the six cinematic journey scenes in narrative order', () => {
   const sceneNames = [...html.matchAll(/data-cinematic-scene="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(sceneNames, [
-    'awakening',
-    'path',
-    'discovery',
-    'app',
-    'progress',
-    'finale',
-  ]);
+  assert.deepEqual(sceneNames, ['awakening','path','discovery','app','progress','finale']);
   assert.ok((html.match(/data-scene-layer/g) ?? []).length >= 12);
   assert.ok((html.match(/data-depth="0\.\d+"/g) ?? []).length >= 12);
 });
@@ -54,8 +47,21 @@ test('keeps external photography out of the new cinematic runtime markup', () =>
   assert.match(html, /Dirección visual y escenas originales para Mágina Aventura/);
 });
 
-test('renders exploration as a recognisable app preview inside the app scene', () => {
+test('keeps cinematic runtime imagery under the proprietary local asset tree', () => {
+  const runtimeUrls = [...html.matchAll(/--layer-image:url\('([^']+)'\)/g)].map((match) => match[1]);
+  assert.ok(runtimeUrls.length >= 12, `expected layered local runtime assets, found ${runtimeUrls.length}`);
+  assert.ok(runtimeUrls.every((url) => url.startsWith('assets/cinematic/')));
+  assert.doesNotMatch(html, /commons\.wikimedia\.org\/wiki\/Special:Redirect/);
+});
+
+test('embeds the existing product previews inside cinematic scenes four and five', () => {
   assert.match(html, /data-cinematic-scene="app"[\s\S]*class="phone-shell/);
+  assert.match(html, /data-cinematic-scene="progress"[\s\S]*class="profile-ui/);
+  assert.equal((html.match(/class="phone-shell/g) ?? []).length, 1);
+  assert.equal((html.match(/class="profile-ui/g) ?? []).length, 1);
+});
+
+test('renders exploration as a recognisable app preview inside the app scene', () => {
   assert.match(html, /class="phone-map/);
   assert.match(html, /Rutas cerca de ti/);
   assert.match(html, /Mapa/);
@@ -65,7 +71,6 @@ test('renders exploration as a recognisable app preview inside the app scene', (
 });
 
 test('shows profile capabilities inside the progress scene without fake totals', () => {
-  assert.match(html, /data-cinematic-scene="progress"[\s\S]*class="profile-ui/);
   assert.match(html, /Tu progreso/);
   assert.match(html, /Insignias/);
   assert.match(css, /\.profile-progress-bar/);
@@ -81,6 +86,7 @@ test('finishes with a premium but honest Android release panel', () => {
   assert.match(css, /\.download-device/);
   assert.match(css, /\.download-section::before/);
   assert.doesNotMatch(html, /href="https:\/\/play\.google\.com/);
+  assert.match(html, /data-cinematic-scene="finale"[\s\S]*href="#descarga"/);
 });
 
 test('keeps exploration, profile and download destinations', () => {

@@ -42,6 +42,15 @@ test('authors nine cinematic frames with progressive scene metadata', () => {
   }
 });
 
+test('keeps a local WebP fallback behind every cinematic frame', () => {
+  const fallbacks = html.match(/--scene-fallback:url\('assets\/scenes\/scene-(?:01|06|09)\.webp'\)/g) ?? [];
+  assert.equal(fallbacks.length, 9, `expected 9 local cinematic fallbacks, found ${fallbacks.length}`);
+  for (const asset of ['scene-01.webp', 'scene-06.webp', 'scene-09.webp']) {
+    assert.ok(html.includes(`assets/scenes/${asset}`), `missing local fallback ${asset}`);
+  }
+  assert.match(css, /background-image:var\(--scene-image\),var\(--scene-fallback\)/);
+});
+
 test('uses at least five distinct real Sierra Mágina photography sources in the cinematic sequence', () => {
   const urls = [...html.matchAll(/https:\/\/commons\.wikimedia\.org\/wiki\/Special:Redirect\/file\/([^?'\")]+)/g)]
     .map((match) => match[1]);

@@ -26,9 +26,17 @@ export interface CollectionProgressValue {
   percentage: number;
 }
 
+export interface CollectionHistoryEntry {
+  discoveryId: string;
+  category: DiscoveryCategory;
+  rarityCode: string;
+  discoveredAt: string;
+}
+
 export interface CollectionProgressProjection {
   overall: CollectionProgressValue;
   categories: Record<DiscoveryCategory, CollectionProgressValue>;
+  history: CollectionHistoryEntry[];
 }
 
 function percentage(unlocked: number, total: number): number {
@@ -55,11 +63,21 @@ export function projectCollectionProgress(
   const catalogById = new Map(
     catalog.map((discovery) => [discovery.id, discovery] as const),
   );
-  const unlockedIds = new Set(
-    unlocks
-      .map((unlock) => unlock.discoveryId)
-      .filter((discoveryId) => catalogById.has(discoveryId)),
-  );
+  const earliestUnlockById = new Map<string, DiscoveryUnlock>();
+
+  for (const unlock of unlocks) {
+    if (!catalogById.has(unlock.discoveryId)) continue;
+
+    const previous = earliestUnlockById.get(unlock.discoveryId);
+    if (
+      previous === undefined ||
+      Date.parse(unlock.discoveredAt) < Date.parse(previous.discoveredAt)
+    ) {
+      earliestUnlockById.set(unlock.discoveryId, unlock);
+    }
+  }
+
+  const unlockedIds = new Set(earliestUnlockById.keys());
 
   for (const discovery of catalog) {
     categories[discovery.category].total += 1;
@@ -79,5 +97,22 @@ export function projectCollectionProgress(
     percentage: percentage(unlockedIds.size, catalog.length),
   };
 
-  return { overall, categories };
+  const history: CollectionHistoryEntry[] = [...earliestUnlockById.entries()]
+    .map(([discoveryId, unlock]) => {
+      const discovery = catalogById.get(discoveryId)!;
+      return {
+        discoveryId,
+        category: discovery.category,
+        rarityCode: discovery.rarityCode,
+        discoveredAt: unlock.discoveredAt,
+      };
+    })
+    .sort((a, b) => {
+      const timeDifference = Date.parse(b.discoveredAt) - Date.parse(a.discoveredAt);
+      return timeDifference !== 0
+        ? timeDifference
+        : a.discoveryId.localeCompare(b.discoveryId);
+    });
+
+  return { overall, categories, history };
 }

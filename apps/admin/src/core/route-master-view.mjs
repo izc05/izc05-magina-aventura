@@ -76,11 +76,72 @@ function safetyPanelHtml(snapshot = {}) {
   </section>`;
 }
 
+function rewardDiscoveryRows(discoveries) {
+  if (!discoveries.length) {
+    return '<div class="empty">Esta ruta todavía no tiene descubrimientos con bonificación.</div>';
+  }
+
+  return `<div class="route-reward-discoveries">${discoveries.map((discovery) => `
+    <article class="route-reward-discovery-card">
+      <div><strong>${esc(discovery.name ?? 'Descubrimiento')}</strong><span>${discovery.active === false ? 'Inactivo' : 'Activo'}</span></div>
+      <p>${esc(Number(discovery.reward_xp ?? 0))} XP · ${esc(Number(discovery.reward_olives ?? 0))} aceitunas</p>
+    </article>`).join('')}</div>`;
+}
+
+function rewardsPanelHtml(snapshot = {}) {
+  const content = snapshot.content ?? {};
+  const discoveries = Array.isArray(snapshot.discoveries) ? snapshot.discoveries : [];
+  const activeDiscoveries = discoveries.filter((discovery) => discovery.active !== false);
+  const baseXp = Number(content.reward_xp ?? 0);
+  const baseOlives = Number(content.reward_olives ?? 0);
+  const discoveryXp = activeDiscoveries.reduce((sum, discovery) => sum + Number(discovery.reward_xp ?? 0), 0);
+  const discoveryOlives = activeDiscoveries.reduce((sum, discovery) => sum + Number(discovery.reward_olives ?? 0), 0);
+  const totalXp = baseXp + discoveryXp;
+  const totalOlives = baseOlives + discoveryOlives;
+
+  return `<section class="route-master-panel route-rewards-panel" data-route-master-panel="rewards">
+    <div class="route-panel-heading">
+      <div>
+        <p class="route-panel-kicker">Progreso y economía de aventura</p>
+        <h3>Recompensas</h3>
+        <p class="muted">La recompensa base se entrega al completar la ruta. Los descubrimientos activos pueden sumar bonificaciones adicionales.</p>
+      </div>
+      <a class="btn secondary" href="#gamification">Abrir gamificación global</a>
+    </div>
+
+    <div class="route-master-summary-grid route-rewards-summary">
+      <article class="route-master-summary-card"><span>Recompensa de la ruta</span><strong>${esc(baseXp)} XP · ${esc(baseOlives)} aceitunas</strong></article>
+      <article class="route-master-summary-card"><span>Bonus por descubrimientos</span><strong>${esc(discoveryXp)} XP · ${esc(discoveryOlives)} aceitunas</strong></article>
+      <article class="route-master-summary-card"><span>Potencial total</span><strong>${esc(totalXp)} XP · ${esc(totalOlives)} aceitunas</strong></article>
+    </div>
+
+    <form class="form two route-rewards-form" data-route-rewards-form>
+      <div class="field"><label>XP por completar ruta</label><input name="reward_xp" type="number" min="0" value="${esc(baseXp)}" required></div>
+      <div class="field"><label>Aceitunas por completar ruta</label><input name="reward_olives" type="number" min="0" value="${esc(baseOlives)}" required></div>
+      <p class="muted span-2">Guardar la recompensa base crea una nueva versión del contenido de la ruta para mantener trazabilidad editorial.</p>
+      <button type="submit" class="btn primary span-2">Guardar recompensa base</button>
+    </form>
+
+    <section class="route-reward-bonus-section">
+      <div class="route-panel-heading"><div><h4>Bonificaciones por descubrimientos</h4><p class="muted">Se administran desde la pestaña Descubrimientos y se suman al potencial de la ruta.</p></div></div>
+      ${rewardDiscoveryRows(discoveries)}
+    </section>
+  </section>`;
+}
+
 export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
   const html = baseRouteMasterShellHtml(snapshot, activeTab);
-  if (activeTab !== 'safety') return html;
-  return html.replace(
-    /<section class="route-master-panel" data-route-master-panel="safety">[\s\S]*?<\/section>/,
-    safetyPanelHtml(snapshot)
-  );
+  if (activeTab === 'safety') {
+    return html.replace(
+      /<section class="route-master-panel" data-route-master-panel="safety">[\s\S]*?<\/section>/,
+      safetyPanelHtml(snapshot)
+    );
+  }
+  if (activeTab === 'rewards') {
+    return html.replace(
+      /<section class="route-master-panel" data-route-master-panel="rewards">[\s\S]*?<\/section>/,
+      rewardsPanelHtml(snapshot)
+    );
+  }
+  return html;
 }

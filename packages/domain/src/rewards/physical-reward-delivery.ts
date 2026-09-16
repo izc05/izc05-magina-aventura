@@ -72,6 +72,7 @@ export function confirmPhysicalRewardDelivery(
   const userId = input.userId.trim();
   const redemptionId = input.redemptionId.trim();
   const operatorId = input.operatorId.trim();
+  const redeemedAt = Date.parse(input.redeemedAt);
 
   if (userId.length === 0) {
     return rejected('invalid-user-id');
@@ -85,7 +86,7 @@ export function confirmPhysicalRewardDelivery(
     return rejected('invalid-operator-id');
   }
 
-  if (!Number.isFinite(Date.parse(input.redeemedAt))) {
+  if (!Number.isFinite(redeemedAt)) {
     return rejected('invalid-redeemed-at');
   }
 
@@ -119,6 +120,11 @@ export function confirmPhysicalRewardDelivery(
 
   if (input.credential.status !== 'active') {
     return rejected('credential-not-active');
+  }
+
+  const credentialExpiresAt = Date.parse(input.credential.expiresAt);
+  if (!Number.isFinite(credentialExpiresAt) || redeemedAt > credentialExpiresAt) {
+    return rejected('credential-expired');
   }
 
   const sourcePrefix = `redemption:${redemptionId}`;

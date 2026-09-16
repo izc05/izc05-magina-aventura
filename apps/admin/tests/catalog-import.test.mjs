@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   catalogImportSummary,
+  computeCatalogManifestHash,
   importCatalogManifest,
   validateCatalogManifest,
 } from '../src/core/catalog-import.mjs';
@@ -11,7 +12,7 @@ const manifest = JSON.parse(
   await readFile(new URL('../../../data/catalog/sierra-magina-official-v1.json', import.meta.url), 'utf8'),
 );
 
-test('official manifest contains the verified 17-route Sierra Mágina snapshot', () => {
+test('official manifest contains the verified 17-route Sierra Mágina snapshot', async () => {
   const validation = validateCatalogManifest(manifest);
   assert.deepEqual(validation, { valid: true, errors: [] });
   assert.deepEqual(catalogImportSummary(manifest), {
@@ -21,7 +22,10 @@ test('official manifest contains the verified 17-route Sierra Mágina snapshot',
     pois: 0,
     trackLeads: 0,
   });
-  assert.match(manifest.manifest_sha256, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(
+    await computeCatalogManifestHash(manifest),
+    'sha256:8bee55ff570f087c5f87d163288d6da48f434d56abcdd1e2772f2a407a6d8441',
+  );
 });
 
 test('Veredón-Mojón Blanco preserves its three official municipalities', () => {
@@ -58,7 +62,7 @@ test('validator rejects duplicate identities and broken references', () => {
   assert.ok(validation.errors.some((error) => error.includes('ruta inexistente')));
 });
 
-test('authenticated adapter validates locally before calling the RPC', async () => {
+test('authenticated adapter verifies integrity before calling the RPC', async () => {
   const calls = [];
   const api = {
     async rpc(name, args) {
@@ -71,8 +75,12 @@ test('authenticated adapter validates locally before calling the RPC', async () 
   assert.deepEqual(calls, [{ name: 'admin_ingest_catalog_manifest', args: { payload: manifest } }]);
   assert.equal(result.routes, 17);
 
-  const invalid = structuredClone(manifest);
-  invalid.manifest_sha256 = '';
-  await assert.rejects(() => importCatalogManifest(api, invalid), /Manifest inválido/);
+  const missingHash = structuredClone(manifest);
+  missingHash.manifest_sha256 = '';
+  await assert.rejects(() => importCatalogManifest(api, missingHash), /Manifest inválido/);
+
+  const tampered = structuredClone(manifest);
+  tampered.routes[0].distance_km = 999;
+  await assert.rejects(() => importCatalogManifest(api, tampered), /SHA-256 no coincide/);
   assert.equal(calls.length, 1);
 });

@@ -289,7 +289,7 @@ function discoveryCardHtml(discovery = {}, index = 0) {
     <form class="form two route-discovery-form" data-route-discovery-form data-discovery-index="${esc(index)}">
       <div class="field span-2"><label>Nombre</label><input name="name" required maxlength="160" value="${esc(discovery.name ?? '')}"></div>
       <div class="field"><label>Categoría</label><select name="category">${discoveryCategoryOptions(discovery.category)}</select></div>
-      <div class="field"><label>Radio GPS (m)</label><input name="trigger_radius_m" type="number" min="5" max="500" value="${esc(discovery.trigger_radius_m ?? 30)}" required></div>
+      <div class="field"><label>Radio GPS (m)</label><input name="trigger_radius_m" type="number" min="5" max="500" value="${esc(discovery.radius_m ?? discovery.trigger_radius_m ?? 30)}" required></div>
       <div class="field"><label>XP</label><input name="reward_xp" type="number" min="0" value="${esc(discovery.reward_xp ?? 0)}"></div>
       <div class="field"><label>Aceitunas</label><input name="reward_olives" type="number" min="0" value="${esc(discovery.reward_olives ?? 0)}"></div>
       <label class="check span-2"><input name="active" type="checkbox"${discovery.active !== false ? ' checked' : ''}> Activo</label>

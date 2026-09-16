@@ -81,7 +81,7 @@ function rewardDiscoveryRows(discoveries) {
     return '<div class="empty">Esta ruta todavía no tiene descubrimientos con bonificación.</div>';
   }
 
-  return `<div class="route-reward-discoveries">${discoveries.map((discovery) => `
+  return `<div class="route-reward-discoveries" data-route-reward-discoveries>${discoveries.map((discovery) => `
     <article class="route-reward-discovery-card">
       <div><strong>${esc(discovery.name ?? 'Descubrimiento')}</strong><span>${discovery.active === false ? 'Inactivo' : 'Activo'}</span></div>
       <p>${esc(Number(discovery.reward_xp ?? 0))} XP · ${esc(Number(discovery.reward_olives ?? 0))} aceitunas</p>
@@ -98,8 +98,9 @@ function rewardsPanelHtml(snapshot = {}) {
   const discoveryOlives = activeDiscoveries.reduce((sum, discovery) => sum + Number(discovery.reward_olives ?? 0), 0);
   const totalXp = baseXp + discoveryXp;
   const totalOlives = baseOlives + discoveryOlives;
+  const slug = snapshot.route?.slug ?? '';
 
-  return `<section class="route-master-panel route-rewards-panel" data-route-master-panel="rewards">
+  return `<section class="route-master-panel route-rewards-panel" data-route-master-panel="rewards" data-route-rewards-slug="${esc(slug)}">
     <div class="route-panel-heading">
       <div>
         <p class="route-panel-kicker">Progreso y economía de aventura</p>
@@ -110,9 +111,9 @@ function rewardsPanelHtml(snapshot = {}) {
     </div>
 
     <div class="route-master-summary-grid route-rewards-summary">
-      <article class="route-master-summary-card"><span>Recompensa de la ruta</span><strong>${esc(baseXp)} XP · ${esc(baseOlives)} aceitunas</strong></article>
-      <article class="route-master-summary-card"><span>Bonus por descubrimientos</span><strong>${esc(discoveryXp)} XP · ${esc(discoveryOlives)} aceitunas</strong></article>
-      <article class="route-master-summary-card"><span>Potencial total</span><strong>${esc(totalXp)} XP · ${esc(totalOlives)} aceitunas</strong></article>
+      <article class="route-master-summary-card"><span>Recompensa de la ruta</span><strong data-route-reward-base>${esc(baseXp)} XP · ${esc(baseOlives)} aceitunas</strong></article>
+      <article class="route-master-summary-card"><span>Bonus por descubrimientos</span><strong data-route-reward-bonus>${esc(discoveryXp)} XP · ${esc(discoveryOlives)} aceitunas</strong></article>
+      <article class="route-master-summary-card"><span>Potencial total</span><strong data-route-reward-total>${esc(totalXp)} XP · ${esc(totalOlives)} aceitunas</strong></article>
     </div>
 
     <form class="form two route-rewards-form" data-route-rewards-form>

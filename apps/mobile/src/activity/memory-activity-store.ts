@@ -1,6 +1,7 @@
 import type {
   ActivitySession,
   ActivitySnapshot,
+  ActivitySyncBatch,
   LocationSample,
 } from '@magina-aventura/contracts';
 
@@ -10,6 +11,8 @@ export interface MemoryActivityStoreDatabase {
   sessions: Map<string, ActivitySession>;
   samples: Map<string, Map<number, LocationSample>>;
   snapshots: Map<string, Map<number, ActivitySnapshot>>;
+  syncBatches: Map<string, ActivitySyncBatch>;
+  syncedBatchIds: Set<string>;
 }
 
 export function createMemoryActivityStoreDatabase(): MemoryActivityStoreDatabase {
@@ -17,6 +20,8 @@ export function createMemoryActivityStoreDatabase(): MemoryActivityStoreDatabase
     sessions: new Map(),
     samples: new Map(),
     snapshots: new Map(),
+    syncBatches: new Map(),
+    syncedBatchIds: new Set(),
   };
 }
 
@@ -34,6 +39,14 @@ function cloneSnapshot(snapshot: ActivitySnapshot): ActivitySnapshot {
     lastValidSample: snapshot.lastValidSample
       ? cloneSample(snapshot.lastValidSample)
       : null,
+  };
+}
+
+function cloneBatch(batch: ActivitySyncBatch): ActivitySyncBatch {
+  return {
+    ...batch,
+    samples: batch.samples.map(cloneSample),
+    snapshot: batch.snapshot ? cloneSnapshot(batch.snapshot) : null,
   };
 }
 
@@ -165,5 +178,52 @@ export class MemoryActivityStore implements ActivityStore {
     return [...(this.database.samples.get(activityId)?.values() ?? [])]
       .sort((left, right) => left.sequence - right.sequence)
       .map(cloneSample);
+  }
+
+  async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {
+    const existing = [...this.database.syncBatches.values()].find(
+      (item) => item.idempotencyKey === batch.idempotencyKey,
+    );
+    if (existing) return cloneBatch(existing);
+
+    this.database.syncBatches.set(batch.batchId, cloneBatch(batch));
+    const session = this.database.sessions.get(batch.activityId);
+    if (session) {
+      this.database.sessions.set(batch.activityId, {
+        ...session,
+        syncState: 'queued',
+      });
+    }
+    return cloneBatch(batch);
+  }
+
+  async loadPendingSyncBatches(activityId: string): Promise<ActivitySyncBatch[]> {
+    return [...this.database.syncBatches.values()]
+      .filter(
+        (batch) =>
+          batch.activityId === activityId &&
+          !this.database.syncedBatchIds.has(batch.batchId),
+      )
+      .sort((left, right) => left.sequenceStart - right.sequenceStart)
+      .map(cloneBatch);
+  }
+
+  async markSyncBatchSynced(batchId: string): Promise<void> {
+    const batch = this.database.syncBatches.get(batchId);
+    if (!batch) return;
+
+    this.database.syncedBatchIds.add(batchId);
+    const hasPendingForActivity = [...this.database.syncBatches.values()].some(
+      (item) =>
+        item.activityId === batch.activityId &&
+        !this.database.syncedBatchIds.has(item.batchId),
+    );
+    const session = this.database.sessions.get(batch.activityId);
+    if (session && !hasPendingForActivity) {
+      this.database.sessions.set(batch.activityId, {
+        ...session,
+        syncState: 'synced',
+      });
+    }
   }
 }

@@ -42,6 +42,8 @@ apps/admin/
   media-tools.mjs
   notification-tools.mjs
   map-asset-tools.mjs
+  reward-tools.mjs
+  audit-tools.mjs
   src/core/
   tests/
   scripts/
@@ -73,7 +75,7 @@ Y ejecuta:
 pnpm build:admin-config
 ```
 
-El script `apps/admin/scripts/write-config.mjs` rechaza URLs no HTTPS y se niega a escribir claves secret/service-role en un archivo de navegador.
+El script `apps/admin/scripts/write-config.mjs` rechaza URLs no HTTPS, claves `sb_secret_...` y JWT legacy cuyo rol no sea `anon`. Así evita que una clave `service_role` antigua pueda terminar accidentalmente en la configuración del navegador.
 
 Nunca uses aquí `service_role`, `sb_secret_...` ni otra clave privada.
 
@@ -132,7 +134,7 @@ No existe un lector administrativo general de conversaciones privadas. La privac
 
 ## Aceitunas y premios
 
-Las aceitunas son un ledger de transacciones. Una corrección administrativa añade un movimiento con actor y motivo; nunca sobrescribe un saldo sin trazabilidad.
+Las aceitunas son un ledger de transacciones. Una corrección administrativa añade un movimiento con actor y motivo; nunca sobrescribe un saldo sin trazabilidad. Los clientes autenticados no tienen permisos Data API para insertar, actualizar o borrar movimientos directamente.
 
 El flujo de premio es:
 
@@ -166,7 +168,9 @@ Las funciones de consumo de la cola están concedidas únicamente a `service_rol
 - Funciones privilegiadas comprueban capacidad y/o actor.
 - Service-role nunca llega al navegador.
 - Tokens QR almacenados como hash.
-- Auditoría de cambios sensibles.
+- Audit log y ledger de aceitunas son append-only desde el punto de vista del cliente autenticado.
+- El escritor interno de auditoría no es ejecutable directamente por `anon`/`authenticated`.
+- Auditoría cubre también asociaciones de media y catálogos de gamificación.
 - Sesiones Admin se guardan en `sessionStorage` y renuevan automáticamente el access token mediante el refresh token.
 - CSP y headers defensivos para hosting estático.
 
@@ -183,8 +187,10 @@ incluye:
 - tests existentes de los paquetes y la app móvil;
 - validación de sintaxis de todos los `.mjs` de Admin;
 - tests Node del núcleo Admin;
+- comprobación de que todos los módulos operativos estén enlazados desde `index.html`;
+- tests del guard de configuración pública;
 - en GitHub Actions, prebuild Android;
 - `supabase db reset` desde cero;
-- pgTAP para contratos, RLS y RPC administrativos.
+- pgTAP para contratos, RLS, privilegios, auditoría y RPC administrativos.
 
 La rama de trabajo es `feat/admin-v1` y el PR correspondiente permanece separado de `main` hasta revisión/merge explícito.

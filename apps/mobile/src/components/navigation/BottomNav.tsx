@@ -84,7 +84,7 @@ function NavGlyph({ item, color }: { item: BottomNavigationItem; color: string }
 const styles = StyleSheet.create({
   navigation: {
     minHeight: 82,
-    paddingTop: spacing[10] ?? 10,
+    paddingTop: 10,
     paddingBottom: spacing[20],
     paddingHorizontal: spacing[8],
     flexDirection: 'row',

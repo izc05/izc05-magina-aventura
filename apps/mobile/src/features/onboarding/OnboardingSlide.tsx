@@ -129,7 +129,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sky,
   },
   skyGlow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: '#CFE4EF',
     opacity: 0.62,
   },
@@ -239,7 +243,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.warmBackground,
     paddingHorizontal: spacing[32],
-    paddingTop: spacing[28] ?? spacing[24],
+    paddingTop: spacing[28],
     alignItems: 'center',
   },
   title: {

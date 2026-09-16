@@ -99,4 +99,101 @@ describe('evaluateExplorationSample', () => {
     });
     expect(second.observations[0]!.distanceMeters).toBeCloseTo(0, 6);
   });
+
+  it('restarts consecutive evidence when the gap between reliable samples is too large', () => {
+    const first = evaluateExplorationSample(
+      createExplorationState(),
+      sample(),
+      [target],
+      policy,
+    );
+
+    const afterGap = evaluateExplorationSample(
+      first.state,
+      sample({
+        sequence: 2,
+        timestamp: '2026-09-16T06:00:30.000Z',
+      }),
+      [target],
+      policy,
+    );
+
+    expect(afterGap.observations).toEqual([]);
+    expect(afterGap.state.unlockedTargetIds).toEqual([]);
+    expect(afterGap.state.progressByTarget[target.id]).toEqual({
+      consecutiveSamples: 1,
+      lastEvidenceAt: '2026-09-16T06:00:30.000Z',
+    });
+  });
+
+  it('clears consecutive evidence after a sample rejected by the GPS metrics filter', () => {
+    const first = evaluateExplorationSample(
+      createExplorationState(),
+      sample(),
+      [target],
+      policy,
+    );
+
+    const rejected = evaluateExplorationSample(
+      first.state,
+      sample({
+        sequence: 2,
+        timestamp: '2026-09-16T06:00:05.000Z',
+        validForMetrics: false,
+        rejectionReason: 'poor_accuracy',
+      }),
+      [target],
+      policy,
+    );
+
+    expect(rejected.observations).toEqual([]);
+    expect(rejected.state.progressByTarget[target.id]).toEqual({
+      consecutiveSamples: 0,
+      lastEvidenceAt: null,
+    });
+
+    const nextReliable = evaluateExplorationSample(
+      rejected.state,
+      sample({
+        sequence: 3,
+        timestamp: '2026-09-16T06:00:10.000Z',
+      }),
+      [target],
+      policy,
+    );
+
+    expect(nextReliable.observations).toEqual([]);
+    expect(nextReliable.state.progressByTarget[target.id]!.consecutiveSamples).toBe(1);
+  });
+
+  it('never emits a second observation after the target is already unlocked', () => {
+    const first = evaluateExplorationSample(
+      createExplorationState(),
+      sample(),
+      [target],
+      policy,
+    );
+    const unlocked = evaluateExplorationSample(
+      first.state,
+      sample({
+        sequence: 2,
+        timestamp: '2026-09-16T06:00:05.000Z',
+      }),
+      [target],
+      policy,
+    );
+    const repeated = evaluateExplorationSample(
+      unlocked.state,
+      sample({
+        sequence: 3,
+        timestamp: '2026-09-16T06:00:10.000Z',
+      }),
+      [target],
+      policy,
+    );
+
+    expect(unlocked.observations).toHaveLength(1);
+    expect(repeated.observations).toEqual([]);
+    expect(repeated.state.unlockedTargetIds).toEqual(['checkpoint-1']);
+  });
 });

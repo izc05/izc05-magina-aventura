@@ -180,6 +180,95 @@ function trackPanelHtml(snapshot) {
   </section>`;
 }
 
+function contentPanelHtml(snapshot) {
+  const content = snapshot.content ?? {};
+  const sections = content.editorial_sections ?? {};
+  const safetyNotes = Array.isArray(content.safety_notes)
+    ? content.safety_notes.join('\n')
+    : String(content.safety_notes ?? '');
+  const seasons = new Set(Array.isArray(content.recommended_seasons) ? content.recommended_seasons : []);
+  const version = content.version ?? snapshot.route?.current_content_version ?? '—';
+  const seasonCheck = (value) => seasons.has(value) ? ' checked' : '';
+
+  return `<section class="route-master-panel route-content-panel" data-route-master-panel="content">
+    <div class="route-panel-heading route-content-heading">
+      <div>
+        <p class="route-panel-kicker">Ficha editorial versionada</p>
+        <h3>Contenido de la ruta</h3>
+        <p class="muted">Versión actual ${esc(version)}. Guardar crea una versión nueva; si la ruta estaba publicada, volverá a revisión.</p>
+      </div>
+      <span class="status">v${esc(version)}</span>
+    </div>
+
+    <form class="route-content-form" data-route-content-form>
+      <section class="route-content-section">
+        <h4>Descripción y seguridad</h4>
+        <div class="route-content-grid">
+          <div class="field span-2"><label>Descripción</label><textarea name="description" required>${esc(content.description ?? '')}</textarea></div>
+          <div class="field span-2"><label>Notas de seguridad <small>Una por línea</small></label><textarea name="safety_notes">${esc(safetyNotes)}</textarea></div>
+        </div>
+      </section>
+
+      <section class="route-content-section">
+        <h4>Datos técnicos</h4>
+        <div class="route-content-grid route-content-metrics-grid">
+          <div class="field"><label>Distancia (km)</label><input name="distance_km" type="number" step="0.01" min="0.01" value="${esc(content.distance_km ?? '')}" required></div>
+          <div class="field"><label>Desnivel + (m)</label><input name="elevation_gain_m" type="number" min="0" value="${esc(content.elevation_gain_m ?? 0)}" required></div>
+          <div class="field"><label>Desnivel − (m)</label><input name="elevation_loss_m" type="number" min="0" value="${esc(content.elevation_loss_m ?? 0)}" required></div>
+          <div class="field"><label>Altitud mín. (m)</label><input name="elevation_min_m" type="number" value="${esc(content.elevation_min_m ?? '')}"></div>
+          <div class="field"><label>Altitud máx. (m)</label><input name="elevation_max_m" type="number" value="${esc(content.elevation_max_m ?? '')}"></div>
+          <div class="field"><label>Duración (min)</label><input name="duration_minutes" type="number" min="1" value="${esc(content.duration_minutes ?? '')}" required></div>
+          <div class="field"><label>Dificultad</label><select name="difficulty"><option value="easy"${selected(content.difficulty,'easy')}>Fácil</option><option value="moderate"${selected(content.difficulty,'moderate')}>Moderada</option><option value="hard"${selected(content.difficulty,'hard')}>Difícil</option></select></div>
+          <div class="field"><label>Tipo de ruta</label><select name="route_kind"><option value="circular"${selected(content.route_kind,'circular')}>Circular</option><option value="linear"${selected(content.route_kind,'linear')}>Lineal</option><option value="out_and_back"${selected(content.route_kind,'out_and_back')}>Ida y vuelta</option></select></div>
+        </div>
+      </section>
+
+      <section class="route-content-section">
+        <h4>Acceso y condiciones</h4>
+        <div class="route-content-grid">
+          <div class="field"><label>Acceso</label><textarea name="access_notes">${esc(content.access_notes ?? '')}</textarea></div>
+          <div class="field"><label>Aparcamiento</label><textarea name="parking_notes">${esc(content.parking_notes ?? '')}</textarea></div>
+          <div class="field"><label>Agua</label><textarea name="water_notes">${esc(content.water_notes ?? '')}</textarea></div>
+          <div class="field"><label>Sombra</label><textarea name="shade_notes">${esc(content.shade_notes ?? '')}</textarea></div>
+          <div class="field span-2"><label>Cobertura móvil</label><textarea name="coverage_notes">${esc(content.coverage_notes ?? '')}</textarea></div>
+          <fieldset class="route-season-fieldset span-2"><legend>Época recomendada</legend><div class="route-season-options">
+            <label class="check"><input type="checkbox" name="recommended_seasons" value="spring"${seasonCheck('spring')}> Primavera</label>
+            <label class="check"><input type="checkbox" name="recommended_seasons" value="summer"${seasonCheck('summer')}> Verano</label>
+            <label class="check"><input type="checkbox" name="recommended_seasons" value="autumn"${seasonCheck('autumn')}> Otoño</label>
+            <label class="check"><input type="checkbox" name="recommended_seasons" value="winter"${seasonCheck('winter')}> Invierno</label>
+          </div></fieldset>
+        </div>
+      </section>
+
+      <section class="route-content-section">
+        <h4>Contenido editorial</h4>
+        <div class="route-content-grid route-editorial-grid">
+          <div class="field"><label>Patrimonio</label><textarea name="heritage">${esc(sections.heritage ?? '')}</textarea></div>
+          <div class="field"><label>Flora</label><textarea name="flora">${esc(sections.flora ?? '')}</textarea></div>
+          <div class="field"><label>Fauna</label><textarea name="fauna">${esc(sections.fauna ?? '')}</textarea></div>
+          <div class="field"><label>Olivar</label><textarea name="olive_grove">${esc(sections.olive_grove ?? '')}</textarea></div>
+          <div class="field"><label>Paisaje</label><textarea name="landscape">${esc(sections.landscape ?? '')}</textarea></div>
+          <div class="field"><label>Tradición</label><textarea name="tradition">${esc(sections.tradition ?? '')}</textarea></div>
+        </div>
+      </section>
+
+      <section class="route-content-section">
+        <h4>Recompensas y offline</h4>
+        <div class="route-content-grid route-content-reward-grid">
+          <div class="field"><label>XP</label><input name="reward_xp" type="number" min="0" value="${esc(content.reward_xp ?? 0)}" required></div>
+          <div class="field"><label>Aceitunas</label><input name="reward_olives" type="number" min="0" value="${esc(content.reward_olives ?? 0)}" required></div>
+          <label class="check span-2"><input name="offline_available" type="checkbox"${content.offline_available ? ' checked' : ''}> Disponible sin conexión</label>
+        </div>
+      </section>
+
+      <div class="route-content-actions">
+        <p class="muted">Los cambios no sobrescriben el histórico.</p>
+        <button type="submit" class="btn primary">Crear nueva versión</button>
+      </div>
+    </form>
+  </section>`;
+}
+
 function readinessItem(ok, label, detail = '') {
   return `<li class="route-gate-item ${ok ? 'is-ready' : 'is-pending'}"><span aria-hidden="true">${ok ? '✓' : '!'}</span><div><strong>${esc(label)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div></li>`;
 }
@@ -285,9 +374,11 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
     ? summaryPanelHtml(snapshot)
     : validTab === 'track'
       ? trackPanelHtml(snapshot)
-      : validTab === 'sources'
-        ? sourcesValidationPanelHtml(snapshot)
-        : placeholderPanelHtml(validTab, snapshot);
+      : validTab === 'content'
+        ? contentPanelHtml(snapshot)
+        : validTab === 'sources'
+          ? sourcesValidationPanelHtml(snapshot)
+          : placeholderPanelHtml(validTab, snapshot);
 
   return `<section class="route-master card">
     ${routeMasterHeaderHtml(snapshot)}

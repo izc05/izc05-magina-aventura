@@ -12,8 +12,9 @@
     "ios": "pnpm --filter @magina-aventura/mobile ios",
     "web": "pnpm --filter @magina-aventura/mobile web",
     "build:admin-config": "node apps/admin/scripts/write-config.mjs",
+    "check:admin": "node apps/admin/scripts/check-modules.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test && node --test apps/admin/tests/*.test.mjs",
+    "test": "pnpm -r --if-present test && node apps/admin/scripts/check-modules.mjs && node --test apps/admin/tests/*.test.mjs",
     "lint": "pnpm -r --if-present lint"
   }
 }

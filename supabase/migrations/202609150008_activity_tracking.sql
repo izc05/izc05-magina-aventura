@@ -3,7 +3,7 @@ create table public.activities (
   user_id uuid not null references auth.users(id) on delete cascade,
   route_id uuid not null references public.routes(id),
   geometry_version integer not null check (geometry_version > 0),
-  state text not null check (state in ('ACTIVE', 'PAUSED', 'FINISHED')),
+  state text not null check (state in ('FINISHED', 'VALIDATING', 'VERIFIED', 'REJECTED')),
   started_at timestamptz not null,
   paused_at timestamptz,
   finished_at timestamptz,
@@ -49,7 +49,10 @@ create policy "owners can insert activities"
   on public.activities
   for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and state = 'FINISHED'
+  );
 
 create policy "owners can read activity track batches"
   on public.activity_track_batches

@@ -73,6 +73,7 @@ describe('ActivityStore recovery contract', () => {
     const recovered = await store.loadActiveSession();
 
     expect(recovered?.session.state).toBe('ACTIVE');
+    expect(recovered?.session.lastProcessedSequence).toBe(1);
     expect(recovered?.snapshot.lastProcessedSequence).toBe(1);
     expect(recovered?.samplesAfterSnapshot.map((item) => item.sequence)).toEqual([2]);
   });

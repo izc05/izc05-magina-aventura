@@ -22,3 +22,16 @@ test('route master navigation does not put route UUID into visible data attribut
   assert.match(text, /routeBySlug/);
   assert.doesNotMatch(text, /data-route-open=\\?"\$\{esc\(route\.id\)\}/);
 });
+
+test('route master wires source and validation forms to protected RPCs and refreshes the snapshot', async () => {
+  const text = await source();
+  assert.match(text, /\[data-route-source-form\]/);
+  assert.match(text, /\[data-route-validation-form\]/);
+  assert.match(text, /admin_add_route_source/);
+  assert.match(text, /admin_update_route_validation/);
+  assert.match(text, /source_label/);
+  assert.match(text, /source_official/);
+  assert.match(text, /validation_notes/);
+  assert.match(text, /admin_route_master_snapshot/);
+  assert.match(text, /renderRouteMaster/);
+});

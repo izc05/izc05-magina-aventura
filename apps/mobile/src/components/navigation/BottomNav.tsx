@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
-    fontWeight: '650',
+    fontWeight: '700',
   },
   activeLabel: {
     fontWeight: '900',

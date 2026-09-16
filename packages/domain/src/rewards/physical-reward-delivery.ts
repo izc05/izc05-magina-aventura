@@ -117,6 +117,10 @@ export function confirmPhysicalRewardDelivery(
     return rejected('scan-credential-mismatch');
   }
 
+  if (input.credential.status !== 'active') {
+    return rejected('credential-not-active');
+  }
+
   const sourcePrefix = `redemption:${redemptionId}`;
 
   return {

@@ -38,4 +38,21 @@ describe('LocationProvider permissions', () => {
       servicesEnabled: true,
     });
   });
+
+  it('starts native background updates with the active activity id when fully ready', async () => {
+    const startedActivities: string[] = [];
+    const provider = createLocationProvider(
+      fakeAdapter({
+        getForegroundPermission: async () => 'granted',
+        getBackgroundPermission: async () => 'granted',
+        startBackgroundUpdates: async (activityId) => {
+          startedActivities.push(activityId);
+        },
+      }),
+    );
+
+    await provider.start('activity-123');
+
+    expect(startedActivities).toEqual(['activity-123']);
+  });
 });

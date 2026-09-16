@@ -15,6 +15,11 @@ test('sceneState activates one of six scenes and bounds local progress', () => {
   assert.equal(typeof state.active, 'boolean');
 });
 
+test('the cinematic journey starts and ends at full scene visibility', () => {
+  assert.equal(sceneState(0, 0, 6).visibility, 1);
+  assert.equal(sceneState(1, 5, 6).visibility, 1);
+});
+
 test('compact layer travel is smaller than desktop travel', () => {
   const desktop = layerTransform(0.9, 0.5, false);
   const compact = layerTransform(0.9, 0.5, true);

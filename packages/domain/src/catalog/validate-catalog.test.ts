@@ -28,7 +28,7 @@ const adventure: Adventure = {
   sourceIds: ['source-1'],
   trackId: null,
   metrics: {
-    distanceKm: 8.7,
+    distanceKm: 8.72,
     ascentM: null,
     descentM: null,
     minElevationM: null,
@@ -37,12 +37,14 @@ const adventure: Adventure = {
     durationMinutesMax: 180,
   },
   difficulty: {
-    physicalDemand: 3,
-    technicalTerrain: 2,
-    navigationComplexity: 2,
-    exposure: 1,
-    remoteness: 2,
+    physicalDemand: null,
+    technicalTerrain: null,
+    navigationComplexity: null,
+    exposure: null,
+    remoteness: null,
     simpleLabel: 'moderate',
+    sourceIds: ['source-1'],
+    verificationState: 'official_verified',
   },
   family: {
     editorialSuitability: 'review_required',
@@ -69,6 +71,16 @@ function snapshot(overrides: Partial<CatalogSnapshot> = {}): CatalogSnapshot {
 describe('validateCatalog', () => {
   it('reports unknown source references', () => {
     const invalidAdventure = { ...adventure, sourceIds: ['missing-source'] };
+    expect(validateCatalog(snapshot({ adventures: [invalidAdventure] }))).toContainEqual(
+      expect.objectContaining({ code: 'unknown_source_reference', severity: 'error' }),
+    );
+  });
+
+  it('reports unknown difficulty provenance', () => {
+    const invalidAdventure: Adventure = {
+      ...adventure,
+      difficulty: { ...adventure.difficulty, sourceIds: ['missing-source'] },
+    };
     expect(validateCatalog(snapshot({ adventures: [invalidAdventure] }))).toContainEqual(
       expect.objectContaining({ code: 'unknown_source_reference', severity: 'error' }),
     );

@@ -2,6 +2,7 @@ import type {
   ActivitySession,
   ActivitySnapshot,
   ActivityState,
+  ActivitySyncBatch,
   LocationRejectionReason,
   LocationSample,
 } from '@magina-aventura/contracts';
@@ -25,6 +26,9 @@ type SessionRow = {
 };
 
 type SnapshotRow = { payload_json: string };
+type SyncBatchRow = { payload_json: string };
+type SyncBatchActivityRow = { activity_id: string };
+type CountRow = { count: number };
 
 type SampleRow = {
   sequence: number;
@@ -67,6 +71,10 @@ function sampleFromRow(row: SampleRow): LocationSample {
     validForMetrics: row.valid_for_metrics === 1,
     rejectionReason: row.rejection_reason,
   };
+}
+
+function syncBatchFromRow(row: SyncBatchRow): ActivitySyncBatch {
+  return JSON.parse(row.payload_json) as ActivitySyncBatch;
 }
 
 async function writeSession(
@@ -216,6 +224,8 @@ export class SQLiteActivityStore implements ActivityStore {
         ON activity_samples(activity_id, sequence);
       CREATE INDEX IF NOT EXISTS activity_snapshots_latest_idx
         ON activity_snapshots(activity_id, last_processed_sequence DESC);
+      CREATE INDEX IF NOT EXISTS activity_sync_batches_pending_idx
+        ON activity_sync_batches(activity_id, state, sequence_start);
     `);
   }
 
@@ -326,6 +336,89 @@ export class SQLiteActivityStore implements ActivityStore {
       activityId,
     );
     return rows.map(sampleFromRow);
+  }
+
+  async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {
+    const db = await this.database();
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      await txn.runAsync(
+        `INSERT OR IGNORE INTO activity_sync_batches (
+          batch_id, activity_id, sequence_start, sequence_end, idempotency_key,
+          payload_json, state, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)`,
+        batch.batchId,
+        batch.activityId,
+        batch.sequenceStart,
+        batch.sequenceEnd,
+        batch.idempotencyKey,
+        JSON.stringify(batch),
+        batch.createdAt,
+      );
+      await txn.runAsync(
+        `UPDATE activity_sessions
+         SET sync_state = 'queued'
+         WHERE activity_id = ? AND sync_state <> 'synced'`,
+        batch.activityId,
+      );
+    });
+
+    const row = await db.getFirstAsync<SyncBatchRow>(
+      `SELECT payload_json
+       FROM activity_sync_batches
+       WHERE idempotency_key = ?`,
+      batch.idempotencyKey,
+    );
+    if (!row) {
+      throw new Error('Unable to persist activity sync batch');
+    }
+    return syncBatchFromRow(row);
+  }
+
+  async loadPendingSyncBatches(activityId: string): Promise<ActivitySyncBatch[]> {
+    const db = await this.database();
+    const rows = await db.getAllAsync<SyncBatchRow>(
+      `SELECT payload_json
+       FROM activity_sync_batches
+       WHERE activity_id = ? AND state <> 'synced'
+       ORDER BY sequence_start ASC`,
+      activityId,
+    );
+    return rows.map(syncBatchFromRow);
+  }
+
+  async markSyncBatchSynced(batchId: string): Promise<void> {
+    const db = await this.database();
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      const batchRow = await txn.getFirstAsync<SyncBatchActivityRow>(
+        `SELECT activity_id
+         FROM activity_sync_batches
+         WHERE batch_id = ?`,
+        batchId,
+      );
+      if (!batchRow) return;
+
+      await txn.runAsync(
+        `UPDATE activity_sync_batches
+         SET state = 'synced'
+         WHERE batch_id = ?`,
+        batchId,
+      );
+
+      const pending = await txn.getFirstAsync<CountRow>(
+        `SELECT COUNT(*) AS count
+         FROM activity_sync_batches
+         WHERE activity_id = ? AND state <> 'synced'`,
+        batchRow.activity_id,
+      );
+      if ((pending?.count ?? 0) === 0) {
+        await txn.runAsync(
+          `UPDATE activity_sessions
+           SET sync_state = 'synced'
+           WHERE activity_id = ?`,
+          batchRow.activity_id,
+        );
+      }
+    });
   }
 }
 

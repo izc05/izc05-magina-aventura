@@ -8,5 +8,6 @@ export * from './gamification/progression-cycle';
 export * from './gamification/ranking';
 export * from './integration/olive-outbox';
 export * from './rewards/olive-grants';
+export * from './rewards/reward-delivery';
 export * from './rewards/reward-validation';
 export * from './routes/route-status';

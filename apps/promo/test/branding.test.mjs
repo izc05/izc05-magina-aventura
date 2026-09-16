@@ -52,6 +52,14 @@ test('renders exploration as a recognisable app preview instead of a decorative 
   assert.match(css, /\.phone-route-line/);
 });
 
+test('shows profile capabilities without fake user activity totals', () => {
+  assert.match(html, /class="profile-ui/);
+  assert.match(html, /Tu progreso/);
+  assert.match(html, /Insignias/);
+  assert.match(css, /\.profile-progress-bar/);
+  assert.doesNotMatch(html, />24<|58 km/);
+});
+
 test('keeps the four cinematic story titles in semantic HTML', () => {
   for (const text of [
     'Explora Sierra Mágina',

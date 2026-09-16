@@ -8,7 +8,9 @@ on:
       - 'supabase/**'
       - 'data/catalog/**'
       - 'apps/admin/src/core/catalog-import.mjs'
+      - 'apps/admin/src/core/route-catalog-panel.mjs'
       - 'apps/admin/tests/catalog-import.test.mjs'
+      - 'apps/admin/tests/route-catalog-panel.test.mjs'
       - '.github/workflows/admin-catalog-db.yml'
   workflow_dispatch:
 
@@ -25,7 +27,7 @@ jobs:
           node-version: 22.13.0
 
       - name: Focused catalog unit tests
-        run: node --test apps/admin/tests/catalog-import.test.mjs
+        run: node --test apps/admin/tests/catalog-import.test.mjs apps/admin/tests/route-catalog-panel.test.mjs
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1

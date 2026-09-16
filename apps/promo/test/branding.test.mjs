@@ -34,46 +34,28 @@ test('keeps the compact official symbol for favicons and in-app mockups', () => 
   assert.match(html, /profile-ui-brand[\s\S]*assets\/magina-aventura-icon\.svg/);
 });
 
-test('authors nine cinematic frames with progressive scene metadata', () => {
-  const frames = html.match(/data-scene-frame="\d+"/g) ?? [];
-  assert.equal(frames.length, 9, `expected 9 cinematic frames, found ${frames.length}`);
-  for (const property of ['--scene-image', '--scene-x', '--scene-y', '--scene-zoom']) {
-    assert.ok(html.includes(property), `missing ${property} scene metadata`);
-  }
+test('authors the six cinematic journey scenes in narrative order', () => {
+  const sceneNames = [...html.matchAll(/data-cinematic-scene="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(sceneNames, [
+    'awakening',
+    'path',
+    'discovery',
+    'app',
+    'progress',
+    'finale',
+  ]);
+  assert.ok((html.match(/data-scene-layer/g) ?? []).length >= 12);
+  assert.ok((html.match(/data-depth="0\.\d+"/g) ?? []).length >= 12);
 });
 
-test('keeps a local WebP fallback behind every cinematic frame', () => {
-  const mappedFrames = branding.match(/\[data-scene-frame="[1-9]"\]/g) ?? [];
-  assert.equal(mappedFrames.length, 9, `expected 9 cinematic fallback mappings, found ${mappedFrames.length}`);
-  for (const asset of ['scene-01.webp', 'scene-06.webp', 'scene-09.webp']) {
-    assert.ok(branding.includes(`assets/scenes/${asset}`), `missing local fallback ${asset}`);
-  }
-  assert.match(branding, /background-image:var\(--scene-image\),var\(--scene-fallback\)/);
+test('keeps external photography out of the new cinematic runtime markup', () => {
+  assert.doesNotMatch(html, /commons\.wikimedia\.org/);
+  assert.doesNotMatch(html, /upload\.wikimedia\.org/);
+  assert.match(html, /Dirección visual y escenas originales para Mágina Aventura/);
 });
 
-test('uses at least five distinct real Sierra Mágina photography sources in the cinematic sequence', () => {
-  const urls = [...html.matchAll(/https:\/\/commons\.wikimedia\.org\/wiki\/Special:Redirect\/file\/([^?'\")]+)/g)]
-    .map((match) => match[1]);
-  const unique = new Set(urls);
-  assert.ok(unique.size >= 5, `expected at least 5 unique Commons photo sources, found ${unique.size}`);
-});
-
-test('publishes visible photography credits and Creative Commons license information', () => {
-  assert.match(html, /data-photo-credits/);
-  assert.match(html, /Veinticuatro de Jahén/);
-  assert.match(html, /Azkoiti/);
-  assert.match(html, /CC BY-SA 4\.0/);
-  assert.match(html, /CC BY-SA 3\.0/);
-});
-
-test('uses scene assets directly from the main stylesheet without the temporary scene-fix layer', () => {
-  assert.doesNotMatch(html, /scene-fix\.css/);
-  assert.match(css, /background-image:var\(--scene-image/);
-  assert.match(css, /background-position:var\(--scene-x/);
-});
-
-test('renders exploration as a recognisable app preview instead of a decorative crop', () => {
-  assert.match(html, /class="phone-shell/);
+test('renders exploration as a recognisable app preview inside the app scene', () => {
+  assert.match(html, /data-cinematic-scene="app"[\s\S]*class="phone-shell/);
   assert.match(html, /class="phone-map/);
   assert.match(html, /Rutas cerca de ti/);
   assert.match(html, /Mapa/);
@@ -82,8 +64,8 @@ test('renders exploration as a recognisable app preview instead of a decorative 
   assert.match(css, /\.phone-route-line/);
 });
 
-test('shows profile capabilities without fake user activity totals', () => {
-  assert.match(html, /class="profile-ui/);
+test('shows profile capabilities inside the progress scene without fake totals', () => {
+  assert.match(html, /data-cinematic-scene="progress"[\s\S]*class="profile-ui/);
   assert.match(html, /Tu progreso/);
   assert.match(html, /Insignias/);
   assert.match(css, /\.profile-progress-bar/);
@@ -101,33 +83,8 @@ test('finishes with a premium but honest Android release panel', () => {
   assert.doesNotMatch(html, /href="https:\/\/play\.google\.com/);
 });
 
-test('keeps the four cinematic story titles in semantic HTML', () => {
-  for (const text of [
-    'Explora Sierra Mágina',
-    'Cada ruta es una aventura',
-    'Descubre lo que te rodea',
-    'La aventura empieza aquí',
-  ]) {
-    assert.ok(html.includes(text), `missing story title: ${text}`);
-  }
-});
-
 test('keeps exploration, profile and download destinations', () => {
   for (const id of ['exploracion', 'perfil', 'descarga']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-});
-
-test('authors the six cinematic journey scenes in narrative order', () => {
-  const sceneNames = [...html.matchAll(/data-cinematic-scene="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(sceneNames, [
-    'awakening',
-    'path',
-    'discovery',
-    'app',
-    'progress',
-    'finale',
-  ]);
-  assert.ok((html.match(/data-scene-layer/g) ?? []).length >= 12);
-  assert.ok((html.match(/data-depth="0\.\d+"/g) ?? []).length >= 12);
 });

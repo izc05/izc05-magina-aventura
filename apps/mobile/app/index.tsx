@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '../src/components/branding/AppHeader';
@@ -9,15 +9,20 @@ import { BottomNav } from '../src/components/navigation/BottomNav';
 import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
+import {
+  filterHomeRoutes,
+  HOME_DIFFICULTY_FILTERS,
+  resolveBottomNavSelection,
+  type HomeDifficultyFilter,
+} from '../src/features/prebeta/prebeta-ux';
 import { developmentRoutes } from '../src/features/routes/fixtures';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
-const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
-
 export default function RoutesHomeScreen() {
-  const route = developmentRoutes[0];
   const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<HomeDifficultyFilter>('Todos');
 
   useEffect(() => {
     let mounted = true;
@@ -41,51 +46,75 @@ export default function RoutesHomeScreen() {
     };
   }, []);
 
+  const filteredRoutes = useMemo(
+    () => filterHomeRoutes(developmentRoutes, query, difficultyFilter),
+    [query, difficultyFilter],
+  );
+
+  function resetFilters() {
+    setQuery('');
+    setDifficultyFilter('Todos');
+  }
+
+  function handleBottomNav(item: (typeof brand.bottomNavigation)[number]) {
+    const action = resolveBottomNavSelection(item);
+
+    if (action.kind === 'navigate') {
+      router.replace(action.href);
+      return;
+    }
+
+    Alert.alert(
+      action.label,
+      'Este módulo se incorporará en una siguiente fase. En esta beta estamos cerrando rutas, navegación y GPS real.',
+      [{ text: 'Entendido' }],
+    );
+  }
+
   if (!ready) return <LaunchScreen />;
-  if (!route) return null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="dark" />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <AppHeader />
 
         <View style={styles.hero}>
-          <View style={styles.heroSkyGlow} />
+          <View style={styles.heroGlow} />
           <View style={styles.heroSun} />
           <View style={styles.heroMountainBack} />
           <View style={styles.heroMountainMid} />
           <View style={styles.heroMountainFront} />
           <View style={styles.heroPath} />
           <View style={styles.heroCopy}>
-            <Text style={styles.heroKicker}>SIERRA MÁGINA TE ESPERA</Text>
+            <Text style={styles.heroKicker}>SIERRA MÁGINA · JAÉN</Text>
             <Text style={styles.heroTitle}>Camina. Descubre.{`\n`}Conquista Mágina.</Text>
             <Text style={styles.heroBody}>
-              Rutas reales, patrimonio y naturaleza convertidos en una aventura que progresa contigo.
+              Rutas, patrimonio y naturaleza con información para preparar cada salida y seguirla con GPS.
             </Text>
           </View>
         </View>
 
         <View style={styles.valueStrip}>
-          <ValueItem kind="route" title="Rutas reales" />
-          <ValueItem kind="heritage" title="Patrimonio vivo" />
-          <ValueItem kind="nature" title="Naturaleza única" />
+          <ValueItem symbol="△" title="Rutas" />
+          <ValueItem symbol="◎" title="GPS real" />
+          <ValueItem symbol="◇" title="Offline" />
         </View>
 
         <View style={styles.searchBox}>
           <SearchGlyph />
           <TextInput
-            placeholder="Buscar rutas, municipios, lugares…"
+            accessibilityLabel="Buscar rutas o municipios"
+            autoCorrect={false}
+            placeholder="Buscar rutas o municipios…"
             placeholderTextColor={colors.muted}
+            value={query}
+            onChangeText={setQuery}
             style={styles.searchInput}
           />
-          <View style={styles.filterButton}>
-            <View style={styles.filterLineWide} />
-            <View style={styles.filterLineNarrow} />
+          <View style={styles.resultCountPill}>
+            <Text style={styles.resultCountText}>{filteredRoutes.length}</Text>
           </View>
         </View>
 
@@ -94,45 +123,85 @@ export default function RoutesHomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
         >
-          {filters.map((filter, index) => (
-            <View
-              key={filter}
-              style={[styles.filterChip, index === 0 && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>{filter}</Text>
-            </View>
-          ))}
+          {HOME_DIFFICULTY_FILTERS.map((filter) => {
+            const selected = difficultyFilter === filter;
+            return (
+              <Pressable
+                key={filter}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setDifficultyFilter(filter)}
+                style={({ pressed }) => [
+                  styles.filterChip,
+                  selected && styles.filterChipActive,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.filterText, selected && styles.filterTextActive]}>{filter}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Ruta destacada</Text>
-            <Text style={styles.sectionSubtitle}>Empieza a descubrir Sierra Mágina</Text>
+          <View style={styles.sectionHeaderCopy}>
+            <Text style={styles.sectionTitle}>Rutas disponibles</Text>
+            <Text style={styles.sectionSubtitle}>
+              {filteredRoutes.length === 1
+                ? '1 resultado en esta selección'
+                : `${filteredRoutes.length} resultados en esta selección`}
+            </Text>
           </View>
-          <Text style={styles.sectionAction}>Ver todas  →</Text>
+          {(query || difficultyFilter !== 'Todos') ? (
+            <Pressable accessibilityRole="button" onPress={resetFilters} hitSlop={8}>
+              <Text style={styles.resetAction}>Limpiar</Text>
+            </Pressable>
+          ) : null}
         </View>
 
-        <FeaturedRouteCard
-          route={route}
-          onPress={() =>
-            router.push({
-              pathname: '/routes/[slug]',
-              params: { slug: route.slug },
-            })
-          }
-        />
-
-        <View style={styles.challengeCard}>
-          <View style={styles.challengeIcon}>
-            <View style={styles.challengeMedal} />
-            <View style={styles.challengeRibbonLeft} />
-            <View style={styles.challengeRibbonRight} />
+        {filteredRoutes.length > 0 ? (
+          <View style={styles.routeList}>
+            {filteredRoutes.map((route) => (
+              <FeaturedRouteCard
+                key={route.id}
+                route={route}
+                onPress={() =>
+                  router.push({
+                    pathname: '/routes/[slug]',
+                    params: { slug: route.slug },
+                  })
+                }
+              />
+            ))}
           </View>
-          <View style={styles.challengeCopy}>
-            <Text style={styles.challengeEyebrow}>PRÓXIMAMENTE</Text>
-            <Text style={styles.challengeTitle}>Retos de temporada</Text>
-            <Text style={styles.challengeBody}>
-              Completa rutas, descubre lugares y sube en el ranking de Mágina.
+        ) : (
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyMark}>
+              <Text style={styles.emptyMarkText}>△</Text>
+            </View>
+            <Text style={styles.emptyTitle}>No encontramos rutas</Text>
+            <Text style={styles.emptyBody}>
+              Prueba con otro municipio, nombre o nivel de dificultad.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={resetFilters}
+              style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.emptyButtonText}>Ver todas las rutas</Text>
+            </Pressable>
+          </View>
+        )}
+
+        <View style={styles.betaCard}>
+          <View style={styles.betaIcon}>
+            <Text style={styles.betaIconText}>GPS</Text>
+          </View>
+          <View style={styles.betaCopy}>
+            <Text style={styles.betaEyebrow}>BETA DE CAMPO</Text>
+            <Text style={styles.betaTitle}>Preparada para validar navegación real</Text>
+            <Text style={styles.betaBody}>
+              Las secciones sociales y de recompensas se activarán después de cerrar rutas y seguimiento GPS.
             </Text>
           </View>
         </View>
@@ -144,54 +213,19 @@ export default function RoutesHomeScreen() {
       </ScrollView>
 
       <View style={styles.bottomNavWrap}>
-        <BottomNav active="Rutas" />
+        <BottomNav active="Rutas" onSelect={handleBottomNav} />
       </View>
     </SafeAreaView>
   );
 }
 
-function ValueItem({ kind, title }: { kind: 'route' | 'heritage' | 'nature'; title: string }) {
+function ValueItem({ symbol, title }: { symbol: string; title: string }) {
   return (
     <View style={styles.valueItem}>
       <View style={styles.valueIcon}>
-        {kind === 'route' ? <RouteValueGlyph /> : null}
-        {kind === 'heritage' ? <HeritageValueGlyph /> : null}
-        {kind === 'nature' ? <NatureValueGlyph /> : null}
+        <Text style={styles.valueSymbol}>{symbol}</Text>
       </View>
       <Text style={styles.valueTitle}>{title}</Text>
-    </View>
-  );
-}
-
-function RouteValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.valueMountain} />
-      <View style={styles.valuePath} />
-    </View>
-  );
-}
-
-function HeritageValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.templeRoof} />
-      <View style={styles.templeColumns}>
-        <View style={styles.templeColumn} />
-        <View style={styles.templeColumn} />
-        <View style={styles.templeColumn} />
-      </View>
-      <View style={styles.templeBase} />
-    </View>
-  );
-}
-
-function NatureValueGlyph() {
-  return (
-    <View style={styles.valueGlyphBox}>
-      <View style={styles.leafStem} />
-      <View style={styles.leafLeft} />
-      <View style={styles.leafRight} />
     </View>
   );
 }
@@ -223,12 +257,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     ...shadow.card,
   },
-  heroSkyGlow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+  heroGlow: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#BFDCE9',
     opacity: 0.54,
   },
@@ -237,7 +267,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#F0D274',
+    backgroundColor: colors.aoveGold,
     right: 34,
     top: 28,
     opacity: 0.92,
@@ -325,99 +355,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  valueSymbol: {
+    color: colors.olive900,
+    fontSize: 19,
+    fontWeight: '900',
+  },
   valueTitle: {
     marginTop: spacing[8],
     color: colors.ink,
     fontSize: 10,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  valueGlyphBox: {
-    width: 25,
-    height: 25,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueMountain: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderBottomWidth: 16,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: colors.olive900,
-    bottom: 2,
-  },
-  valuePath: {
-    position: 'absolute',
-    width: 3,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: colors.white,
-    bottom: 1,
-    transform: [{ rotate: '23deg' }],
-  },
-  templeRoof: {
-    position: 'absolute',
-    top: 2,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 11,
-    borderRightWidth: 11,
-    borderBottomWidth: 7,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: colors.olive900,
-  },
-  templeColumns: {
-    position: 'absolute',
-    top: 10,
-    flexDirection: 'row',
-    gap: 3,
-  },
-  templeColumn: {
-    width: 3,
-    height: 10,
-    backgroundColor: colors.olive900,
-  },
-  templeBase: {
-    position: 'absolute',
-    bottom: 2,
-    width: 23,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-  },
-  leafStem: {
-    position: 'absolute',
-    width: 3,
-    height: 22,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-18deg' }],
-  },
-  leafLeft: {
-    position: 'absolute',
-    width: 13,
-    height: 6,
-    borderRadius: 7,
-    backgroundColor: colors.olive700,
-    left: 1,
-    top: 8,
-    transform: [{ rotate: '28deg' }],
-  },
-  leafRight: {
-    position: 'absolute',
-    width: 14,
-    height: 6,
-    borderRadius: 7,
-    backgroundColor: colors.olive900,
-    right: 0,
-    top: 5,
-    transform: [{ rotate: '-25deg' }],
   },
   searchBox: {
     height: 56,
@@ -460,26 +408,18 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 14,
   },
-  filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  resultCountPill: {
+    minWidth: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.oliveWash,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.warmBackground,
   },
-  filterLineWide: {
-    width: 17,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-    marginBottom: 5,
-  },
-  filterLineNarrow: {
-    width: 9,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
+  resultCountText: {
+    color: colors.olive900,
+    fontSize: 12,
+    fontWeight: '900',
   },
   filters: {
     gap: spacing[8],
@@ -505,12 +445,19 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: colors.white,
   },
+  pressed: {
+    opacity: 0.78,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    gap: spacing[12],
     marginTop: spacing[4],
     marginBottom: spacing[12],
+  },
+  sectionHeaderCopy: {
+    flex: 1,
   },
   sectionTitle: {
     color: colors.ink,
@@ -522,70 +469,101 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 3,
   },
-  sectionAction: {
+  resetAction: {
     color: colors.olive700,
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '900',
+    paddingBottom: 2,
+  },
+  routeList: {
+    gap: spacing[20],
+  },
+  emptyCard: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing[24],
+  },
+  emptyMark: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.oliveWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyMarkText: {
+    color: colors.olive900,
+    fontSize: 23,
     fontWeight: '900',
   },
-  challengeCard: {
+  emptyTitle: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: spacing[12],
+  },
+  emptyBody: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginTop: spacing[8],
+  },
+  emptyButton: {
+    marginTop: spacing[16],
+    minHeight: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.olive900,
+    paddingHorizontal: spacing[20],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  betaCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,
     backgroundColor: colors.limestone,
     padding: spacing[20],
     marginTop: spacing[20],
   },
-  challengeIcon: {
-    width: 50,
-    height: 50,
+  betaIcon: {
+    width: 52,
+    height: 52,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.aoveGold,
+    backgroundColor: colors.olive900,
     marginRight: spacing[16],
-    position: 'relative',
   },
-  challengeMedal: {
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: colors.olive900,
-    marginTop: -6,
+  betaIconText: {
+    color: colors.aoveGold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
-  challengeRibbonLeft: {
-    position: 'absolute',
-    width: 4,
-    height: 12,
-    backgroundColor: colors.olive900,
-    bottom: 8,
-    left: 19,
-    transform: [{ rotate: '18deg' }],
-  },
-  challengeRibbonRight: {
-    position: 'absolute',
-    width: 4,
-    height: 12,
-    backgroundColor: colors.olive900,
-    bottom: 8,
-    right: 19,
-    transform: [{ rotate: '-18deg' }],
-  },
-  challengeCopy: {
+  betaCopy: {
     flex: 1,
   },
-  challengeEyebrow: {
+  betaEyebrow: {
     color: colors.earth,
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1.2,
   },
-  challengeTitle: {
+  betaTitle: {
     color: colors.ink,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     marginTop: 2,
   },
-  challengeBody: {
+  betaBody: {
     color: colors.muted,
     fontSize: 12,
     lineHeight: 17,

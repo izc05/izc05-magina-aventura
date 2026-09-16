@@ -1,6 +1,10 @@
 -- Complete audit coverage for administrative catalog/content mutations that are
 -- performed directly through the Data API under RLS.
 
+create trigger audit_route_geometries
+  after insert or update or delete on public.route_geometries
+  for each row execute function private.audit_row_change();
+
 create trigger audit_route_media
   after insert or update or delete on public.route_media
   for each row execute function private.audit_row_change();

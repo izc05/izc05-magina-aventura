@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(23);
 
 -- Test-only dynamic wrapper: a missing production helper becomes a failed
 -- assertion instead of aborting the whole RED run.
@@ -69,21 +69,31 @@ values
   ('44444444-4444-4444-8444-444444444444', 'owner', null);
 
 insert into public.community_photos (
-  id, route_id, user_id, object_key, moderation_status
+  id, route_id, user_id, object_key, moderation_status, deleted_at
 ) values
   (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
     '00000000-0000-4000-8000-000000000002',
     '11111111-1111-4111-8111-111111111111',
     'community/security/pending.jpg',
-    'pending'
+    'pending',
+    null
   ),
   (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
     '00000000-0000-4000-8000-000000000002',
     '11111111-1111-4111-8111-111111111111',
     'community/security/approved.jpg',
-    'approved'
+    'approved',
+    null
+  ),
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+    '00000000-0000-4000-8000-000000000002',
+    '11111111-1111-4111-8111-111111111111',
+    'community/security/deleted.jpg',
+    'deleted',
+    now()
   );
 
 insert into public.route_comments (id, route_id, user_id, body)
@@ -100,6 +110,32 @@ values
     '22222222-2222-4222-8222-222222222222',
     'Comentario ajeno'
   );
+
+insert into public.route_reviews (id, route_id, user_id, rating, body)
+values (
+  'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+  '00000000-0000-4000-8000-000000000002',
+  '11111111-1111-4111-8111-111111111111',
+  4,
+  'Reseña borrada'
+);
+
+update public.route_reviews
+set deleted_at = now()
+where id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1';
+
+insert into public.route_incidents (id, route_id, user_id, category, description)
+values (
+  'dddddddd-dddd-4ddd-8ddd-ddddddddddd1',
+  '00000000-0000-4000-8000-000000000002',
+  '11111111-1111-4111-8111-111111111111',
+  'fallen_tree',
+  'Incidencia borrada'
+);
+
+update public.route_incidents
+set deleted_at = now()
+where id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
@@ -143,6 +179,50 @@ select is(
   $sql$),
   1::bigint,
   'user can soft-delete own comment'
+);
+
+select is(
+  public._test_community_exec_count($sql$
+    update public.route_comments
+    set body = 'No debe editarse tras borrar'
+    where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'
+    returning id
+  $sql$),
+  0::bigint,
+  'soft-deleted comment cannot be edited by its owner'
+);
+
+select is(
+  public._test_community_exec_count($sql$
+    update public.community_photos
+    set caption = 'No debe editarse tras borrar'
+    where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'
+    returning id
+  $sql$),
+  0::bigint,
+  'soft-deleted photo cannot be edited by its owner'
+);
+
+select is(
+  public._test_community_exec_count($sql$
+    update public.route_reviews
+    set body = 'No debe editarse tras borrar'
+    where id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1'
+    returning id
+  $sql$),
+  0::bigint,
+  'soft-deleted review cannot be edited by its owner'
+);
+
+select is(
+  public._test_community_exec_count($sql$
+    update public.route_incidents
+    set description = 'No debe editarse tras borrar'
+    where id = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1'
+    returning id
+  $sql$),
+  0::bigint,
+  'soft-deleted incident cannot be edited by its owner'
 );
 
 select throws_ok(

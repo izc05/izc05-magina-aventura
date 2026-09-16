@@ -14,11 +14,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
-import {
-  difficultyLabel,
-  durationLabel,
-  getDevelopmentRouteBySlug,
-} from '../../src/features/routes/route-utils';
+import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
+import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
 import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
@@ -167,6 +164,7 @@ export default function RouteDetailScreen() {
     );
   }
 
+  const detail = presentRouteDetail(route);
   const canDownloadOffline =
     offlineManifest !== null &&
     offlineState !== 'ready' &&
@@ -191,23 +189,23 @@ export default function RouteDetailScreen() {
           <View style={styles.heroCopy}>
             <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
             <Text style={styles.title}>{route.title}</Text>
-            <Text style={styles.difficulty}>{difficultyLabel(route.difficulty)}</Text>
+            <Text style={styles.difficulty}>{detail.difficulty}</Text>
           </View>
         </View>
 
         <View style={styles.statsCard}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{route.distanceKm.toFixed(1)} km</Text>
+            <Text style={styles.statValue}>{detail.distance}</Text>
             <Text style={styles.statLabel}>Distancia</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>+{route.elevationGainM} m</Text>
+            <Text style={styles.statValue}>{detail.elevation}</Text>
             <Text style={styles.statLabel}>Desnivel</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{durationLabel(route.durationMinutes)}</Text>
+            <Text style={styles.statValue}>{detail.duration}</Text>
             <Text style={styles.statLabel}>Duración</Text>
           </View>
         </View>
@@ -232,12 +230,8 @@ export default function RouteDetailScreen() {
 
         <View style={styles.rewardCard}>
           <Text style={styles.rewardEyebrow}>RECOMPENSAS DE ESTA AVENTURA</Text>
-          <Text style={styles.rewardTitle}>
-            Hasta {route.rewardPreview.xp} XP · {route.rewardPreview.olives} 🫒
-          </Text>
-          <Text style={styles.rewardBody}>
-            {route.rewardPreview.discoveries} descubrimientos disponibles en la ruta.
-          </Text>
+          <Text style={styles.rewardTitle}>{detail.rewardHeadline}</Text>
+          <Text style={styles.rewardBody}>{detail.discoveries}</Text>
         </View>
 
         <View style={styles.safetyCard}>

@@ -162,3 +162,21 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
     ${panel}
   </section>`;
 }
+
+export function routeListRowHtml(route = {}) {
+  const municipality = route.municipality_name ?? route.municipality ?? 'Sierra Mágina';
+  const version = route.version ?? {};
+  const details = [
+    Number.isFinite(Number(version.distance_km)) ? `${Number(version.distance_km)} km` : null,
+    Number.isFinite(Number(version.elevation_gain_m)) ? `+${Number(version.elevation_gain_m)} m` : null,
+    version.difficulty ? difficultyLabel(version.difficulty) : null
+  ].filter(Boolean).join(' · ');
+
+  return `<tr class="route-master-list-row">
+    <td><strong>${esc(route.title ?? 'Ruta')}</strong><small class="route-friendly-code">${esc(routeDisplayCode(route))}</small></td>
+    <td>${esc(municipality)}</td>
+    <td><span class="status status-${esc(route.status)}">${esc(statusLabel(route.status))}</span></td>
+    <td>${esc(details || '—')}</td>
+    <td class="route-row-actions"><button type="button" class="btn primary tiny" data-route-open="${esc(route.slug ?? '')}">Abrir ficha</button></td>
+  </tr>`;
+}

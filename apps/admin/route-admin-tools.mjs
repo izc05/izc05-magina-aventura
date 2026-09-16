@@ -96,6 +96,17 @@ function normalizedTrackSourceKind(value) {
   return ['official', 'field', 'community', 'manual'].includes(kind) ? kind : 'manual';
 }
 
+function optionalNumber(values, name) {
+  const raw = String(values.get(name) ?? '').trim();
+  return raw === '' ? null : Number(raw);
+}
+
+function requiredNumber(values, name) {
+  const value = Number(values.get(name));
+  if (!Number.isFinite(value)) throw new Error(`Valor numérico no válido: ${name}`);
+  return value;
+}
+
 function bindRouteMasterForms(stage, list, route) {
   const sourceForm = stage.querySelector('[data-route-source-form]');
   sourceForm?.addEventListener('submit', async (event) => {
@@ -140,6 +151,57 @@ function bindRouteMasterForms(stage, list, route) {
     } catch (error) {
       flash(`No se pudo guardar la validación: ${error.message}`, 'error');
       setFormBusy(validationForm, false);
+    }
+  });
+
+  const contentForm = stage.querySelector('[data-route-content-form]');
+  contentForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const values = new FormData(contentForm);
+    setFormBusy(contentForm, true);
+    try {
+      const content_payload = {
+        description: String(values.get('description') ?? '').trim(),
+        safety_notes: String(values.get('safety_notes') ?? '')
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        distance_km: requiredNumber(values, 'distance_km'),
+        elevation_gain_m: requiredNumber(values, 'elevation_gain_m'),
+        elevation_loss_m: requiredNumber(values, 'elevation_loss_m'),
+        elevation_min_m: optionalNumber(values, 'elevation_min_m'),
+        elevation_max_m: optionalNumber(values, 'elevation_max_m'),
+        duration_minutes: requiredNumber(values, 'duration_minutes'),
+        difficulty: String(values.get('difficulty') ?? 'moderate'),
+        reward_xp: requiredNumber(values, 'reward_xp'),
+        reward_olives: requiredNumber(values, 'reward_olives'),
+        offline_available: values.get('offline_available') === 'on',
+        route_kind: String(values.get('route_kind') ?? 'circular'),
+        access_notes: String(values.get('access_notes') ?? '').trim(),
+        parking_notes: String(values.get('parking_notes') ?? '').trim(),
+        water_notes: String(values.get('water_notes') ?? '').trim(),
+        shade_notes: String(values.get('shade_notes') ?? '').trim(),
+        coverage_notes: String(values.get('coverage_notes') ?? '').trim(),
+        recommended_seasons: values.getAll('recommended_seasons').map((value) => String(value)),
+        editorial_sections: {
+          heritage: String(values.get('heritage') ?? '').trim(),
+          flora: String(values.get('flora') ?? '').trim(),
+          fauna: String(values.get('fauna') ?? '').trim(),
+          olive_grove: String(values.get('olive_grove') ?? '').trim(),
+          landscape: String(values.get('landscape') ?? '').trim(),
+          tradition: String(values.get('tradition') ?? '').trim()
+        }
+      };
+
+      const newVersion = await rpc('admin_update_route_content_v2', {
+        target_route_id: route.id,
+        content_payload
+      });
+      flash(`Contenido guardado correctamente como versión ${newVersion}.`);
+      await reloadRouteMaster(stage, list, route, 'content');
+    } catch (error) {
+      flash(`No se pudo guardar el contenido: ${error.message}`, 'error');
+      setFormBusy(contentForm, false);
     }
   });
 

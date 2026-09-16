@@ -1,6 +1,7 @@
 [build]
-  command = "node apps/admin/scripts/write-config.mjs"
-  publish = "apps/admin"
+  base = "apps/admin"
+  command = "node scripts/write-config.mjs"
+  publish = "."
 
 [build.environment]
   NODE_VERSION = "22.13.0"

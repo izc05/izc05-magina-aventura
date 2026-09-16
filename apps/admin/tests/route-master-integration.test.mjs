@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const sourceUrl = new URL('../route-admin-tools.mjs', import.meta.url);
 const visualToolsUrl = new URL('../visual-tools.mjs', import.meta.url);
+const safetyToolsUrl = new URL('../safety-tools.mjs', import.meta.url);
 
 async function source() {
   return readFile(sourceUrl, 'utf8');
@@ -11,6 +12,10 @@ async function source() {
 
 async function visualSource() {
   return readFile(visualToolsUrl, 'utf8');
+}
+
+async function safetySource() {
+  return readFile(safetyToolsUrl, 'utf8');
 }
 
 test('route admin integrates the master snapshot and human-facing rows', async () => {
@@ -104,4 +109,23 @@ test('route master media cards save asset metadata and selected-route relation w
   assert.match(text, /kind:/);
   assert.match(text, /sort_order:/);
   assert.match(text, /reloadRouteMaster\(stage, list, route, ['"]media['"]\)/);
+});
+
+test('route master safety actions resolve the selected route by slug, create incidents and resolve snapshot incidents', async () => {
+  const text = await safetySource();
+  assert.match(text, /data-route-safety-slug/);
+  assert.match(text, /dataset\.routeSafetySlug/);
+  assert.match(text, /table\(['"]routes['"]/);
+  assert.match(text, /slug=eq\.\$\{encodeURIComponent\(slug\)\}/);
+  assert.match(text, /\[data-route-safety-form\]/);
+  assert.match(text, /insert\(['"]route_safety_incidents['"]/);
+  assert.match(text, /route_id:\s*route\.id/);
+  assert.match(text, /blocks_adventure:/);
+  assert.match(text, /ends_at:/);
+  assert.match(text, /admin_route_master_snapshot/);
+  assert.match(text, /\[data-route-safety-resolve\]/);
+  assert.match(text, /dataset\.routeSafetyResolve/);
+  assert.match(text, /snapshot\.safety/);
+  assert.match(text, /admin_resolve_safety/);
+  assert.match(text, /incident_id:\s*incident\.id/);
 });

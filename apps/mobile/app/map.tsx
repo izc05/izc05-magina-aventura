@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 126 },
   mapFrame: { marginTop: spacing[4] },
   filters: { gap: spacing[8], paddingHorizontal: spacing[20], paddingVertical: spacing[16] },
-  filter: { paddingHorizontal: spacing[14], paddingVertical: spacing[8], borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  filter: { paddingHorizontal: spacing[12], paddingVertical: spacing[8], borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   filterActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
   filterText: { color: colors.ink, fontSize: 11, fontWeight: '800' },
   filterTextActive: { color: colors.white },

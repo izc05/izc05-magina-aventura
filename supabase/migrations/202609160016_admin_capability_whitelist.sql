@@ -43,8 +43,9 @@ as $$
     );
 $$;
 
--- Public RPC wrappers are the only browser-callable entry points into private
--- mutation/read helpers. They always derive the actor from auth.uid().
+-- Supabase can grant EXECUTE on newly created public functions directly to
+-- `anon`. Public RPCs that enter the private Admin layer must remain
+-- SECURITY INVOKER and callable only after authentication.
 do $$
 declare fn record;
 begin
@@ -56,12 +57,8 @@ begin
       and p.prokind='f'
       and pg_get_functiondef(p.oid) ilike '%private.%'
   loop
-    execute format('alter function public.%s security definer', fn.signature);
+    execute format('alter function public.%s security invoker', fn.signature);
+    execute format('revoke execute on function public.%s from anon', fn.signature);
+    execute format('grant execute on function public.%s to authenticated', fn.signature);
   end loop;
 end $$;
-
--- Browser users must not bypass public wrappers and supply a forged `actor`
--- directly to internal helpers. RLS still needs the two read-only predicates.
-revoke execute on all functions in schema private from authenticated;
-grant execute on function private.admin_has_capability(text,uuid) to authenticated;
-grant execute on function private.admin_partner_allowed(uuid,text,uuid) to authenticated;

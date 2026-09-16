@@ -1,21 +1,49 @@
 import type { BottomNavigationItem } from '../../theme/branding';
-import type { AdventureRouteCard } from '../routes/route-types';
+import type { AdventureRouteCard, RouteDifficulty } from '../routes/route-types';
 
-export type HomeDifficultyFilter = 'Todos' | 'Fácil' | 'Moderada' | 'Difícil';
+export const HOME_DIFFICULTY_FILTERS = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
+
+export type HomeDifficultyFilter = (typeof HOME_DIFFICULTY_FILTERS)[number];
 
 export type BottomNavSelection =
   | Readonly<{ kind: 'navigate'; href: '/' }>
   | Readonly<{ kind: 'coming-soon'; label: Exclude<BottomNavigationItem, 'Rutas'> }>;
 
+const difficultyByFilter: Record<Exclude<HomeDifficultyFilter, 'Todos'>, RouteDifficulty> = {
+  Fácil: 'easy',
+  Moderada: 'moderate',
+  Difícil: 'hard',
+};
+
+function normalizeSearchValue(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('es');
+}
+
 export function filterHomeRoutes(
   routes: readonly AdventureRouteCard[],
-  _query: string,
-  _filter: HomeDifficultyFilter,
+  query: string,
+  filter: HomeDifficultyFilter,
 ): AdventureRouteCard[] {
-  return [...routes];
+  const normalizedQuery = normalizeSearchValue(query);
+  const difficulty = filter === 'Todos' ? null : difficultyByFilter[filter];
+
+  return routes.filter((route) => {
+    if (difficulty !== null && route.difficulty !== difficulty) return false;
+    if (!normalizedQuery) return true;
+
+    const searchableText = normalizeSearchValue(
+      `${route.title} ${route.municipalityName} ${route.slug}`,
+    );
+
+    return searchableText.includes(normalizedQuery);
+  });
 }
 
 export function resolveBottomNavSelection(item: BottomNavigationItem): BottomNavSelection {
   if (item === 'Rutas') return { kind: 'navigate', href: '/' };
-  return { kind: 'coming-soon', label: 'Retos' };
+  return { kind: 'coming-soon', label: item };
 }

@@ -172,7 +172,11 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   heroGlow: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: '#47725B',
     opacity: 0.55,
   },

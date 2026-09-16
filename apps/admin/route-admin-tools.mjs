@@ -1,6 +1,8 @@
 import { getSession, rpc, table } from './src/core/api.mjs';
 import { canPermanentlyDeleteRoute, confirmRouteDeletionInput } from './src/core/route-editor.mjs';
 import { routeListRowHtml, routeMasterShellHtml } from './src/core/route-master-view.mjs';
+import { parseTrackText, sha256Hex } from './src/core/track-import.mjs';
+import { mountRouteEditor } from './visual-tools.mjs';
 
 const app = document.querySelector('#app');
 
@@ -89,6 +91,11 @@ async function reloadRouteMaster(stage, list, route, activeTab = 'summary') {
   return snapshot;
 }
 
+function normalizedTrackSourceKind(value) {
+  const kind = String(value ?? 'manual');
+  return ['official', 'field', 'community', 'manual'].includes(kind) ? kind : 'manual';
+}
+
 function bindRouteMasterForms(stage, list, route) {
   const sourceForm = stage.querySelector('[data-route-source-form]');
   sourceForm?.addEventListener('submit', async (event) => {
@@ -135,6 +142,55 @@ function bindRouteMasterForms(stage, list, route) {
       setFormBusy(validationForm, false);
     }
   });
+
+  const trackForm = stage.querySelector('[data-route-track-import-form]');
+  trackForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const values = new FormData(trackForm);
+    const file = values.get('file');
+    if (!file || typeof file.text !== 'function') {
+      flash('Selecciona un archivo GPX o KML.', 'error');
+      return;
+    }
+
+    setFormBusy(trackForm, true);
+    try {
+      const xml = await file.text();
+      const parsed = parseTrackText(xml);
+      const geometry_wkt = parsed.geometryWkt;
+      const file_hash = await sha256Hex(xml);
+      const sourceUrl = String(values.get('source_url') ?? '').trim();
+      const newVersion = await rpc('admin_import_route_track', {
+        target_route_id: route.id,
+        geometry_wkt,
+        track_format: parsed.format,
+        track_source_kind: normalizedTrackSourceKind(values.get('source_kind')),
+        track_source_url: sourceUrl || null,
+        track_original_filename: file.name || null,
+        track_source_hash: file_hash,
+        track_source_id: null,
+        track_notes: String(values.get('notes') ?? '').trim()
+      });
+      flash(`Track importado correctamente como geometría v${newVersion}.`);
+      await reloadRouteMaster(stage, list, route, 'track');
+    } catch (error) {
+      flash(`No se pudo importar el track: ${error.message}`, 'error');
+      setFormBusy(trackForm, false);
+    }
+  });
+}
+
+function mountRouteMasterTrackEditor(stage, list, route) {
+  const workspace = stage.querySelector('[data-route-master-track-editor]');
+  if (!workspace) return;
+
+  void mountRouteEditor(workspace, route.id, {
+    onChange: () => reloadRouteMaster(stage, list, route, 'track')
+  }).catch((error) => {
+    if (!workspace.isConnected) return;
+    workspace.classList.add('empty-workspace');
+    workspace.innerHTML = `<p class="muted">El editor visual estará disponible cuando exista una geometría válida. Puedes importar un GPX/KML arriba.</p><p class="muted">${esc(error.message)}</p>`;
+  });
 }
 
 function renderRouteMaster(stage, list, route, snapshot, activeTab = 'summary') {
@@ -150,6 +206,7 @@ function renderRouteMaster(stage, list, route, snapshot, activeTab = 'summary') 
   });
 
   bindRouteMasterForms(stage, list, route);
+  if (activeTab === 'track') mountRouteMasterTrackEditor(stage, list, route);
 }
 
 async function openRouteMaster(route, list) {

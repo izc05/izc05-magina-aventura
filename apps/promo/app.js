@@ -1,16 +1,4 @@
 (() => {
-  const sceneUrls = [
-    'assets/scenes/scene-01.webp',
-    'assets/scenes/scene-06.webp',
-    'assets/scenes/scene-09.webp',
-  ];
-
-  sceneUrls.forEach((src) => {
-    const image = new Image();
-    image.decoding = 'async';
-    image.src = src;
-  });
-
   const cinematic = document.querySelector('[data-cinematic]');
   const frames = [...document.querySelectorAll('.frame')];
   const heroCopy = document.querySelector('[data-hero-copy]');
@@ -20,6 +8,18 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const compactViewport = window.matchMedia('(max-width: 900px)');
   let raf = 0;
+
+  const sceneUrls = [...new Set(frames.map((frame) => {
+    const value = frame.style.getPropertyValue('--scene-image').trim();
+    const match = value.match(/^url\((['"]?)(.*?)\1\)$/);
+    return match?.[2] ?? null;
+  }).filter(Boolean))];
+
+  sceneUrls.forEach((src) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = src;
+  });
 
   const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
 

@@ -6,6 +6,8 @@ on:
       - feat/visual-identity-onboarding-v1
       - feat/visual-route-flow-v1
       - feat/visual-adventure-summary-v1
+      - feat/integration-gps-visual-v1
+      - feat/android-beta-arm64-v1
   workflow_dispatch:
 
 permissions:
@@ -47,16 +49,36 @@ jobs:
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
-      - name: Build standalone preview APK
+      - name: Build standalone ARM64 release APK
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
 
-      - name: Upload Android preview
+      - name: Verify ARM64-only APK and report size
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          test -f "$apk"
+
+          apk_bytes=$(stat -c%s "$apk")
+          echo "APK bytes: $apk_bytes"
+          echo "APK MiB: $((apk_bytes / 1024 / 1024))"
+
+          mapfile -t abis < <(unzip -Z1 "$apk" | awk -F/ '/^lib\// {print $2}' | sort -u)
+          printf 'ABIs in APK: %s\n' "${abis[*]}"
+
+          if [[ ${#abis[@]} -ne 1 || "${abis[0]}" != "arm64-v8a" ]]; then
+            echo "Expected an ARM64-only APK, but found: ${abis[*]}"
+            exit 1
+          fi
+
+      - name: Upload Android ARM64 beta
         uses: actions/upload-artifact@v4
         with:
-          name: magina-aventura-demo-complete
+          name: magina-aventura-beta-arm64-${{ github.run_number }}
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
+          compression-level: 0

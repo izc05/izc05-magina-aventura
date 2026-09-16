@@ -152,10 +152,29 @@ export function catalogImportSummary(manifest) {
   };
 }
 
+export async function computeCatalogManifestHash(manifest) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('SHA-256 no disponible en este entorno.');
+  }
+
+  const canonical = JSON.stringify({ ...manifest, manifest_sha256: '' });
+  const bytes = new TextEncoder().encode(canonical);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  const hex = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return `sha256:${hex}`;
+}
+
 export async function importCatalogManifest(api, manifest) {
   const validation = validateCatalogManifest(manifest);
   if (!validation.valid) {
     throw new Error(`Manifest inválido: ${validation.errors.join('; ')}`);
+  }
+
+  const computedHash = await computeCatalogManifestHash(manifest);
+  if (computedHash !== manifest.manifest_sha256) {
+    throw new Error(`Manifest inválido: SHA-256 no coincide (${computedHash}).`);
   }
 
   if (!api || typeof api.rpc !== 'function') {

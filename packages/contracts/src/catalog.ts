@@ -100,7 +100,7 @@ export interface Adventure {
   description: string;
   activityTypes: ActivityType[];
   municipalityIds: string[];
-  shape: RouteShape;
+  shape: RouteShape | null;
   publicationState: PublicationState;
   verificationState: VerificationState;
   sourceIds: string[];

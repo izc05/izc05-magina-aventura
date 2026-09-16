@@ -66,7 +66,7 @@ function rawPoint(timestampMs: number, latitude: number, longitude: number) {
 }
 
 describe('ActivityController', () => {
-  it('starts, drains durable GPS points, pauses, resumes and finishes', async () => {
+  it('starts, drains durable GPS points, pauses, resumes, finishes and queues the track', async () => {
     const store = new MemoryActivityStore();
     const inbox = new MemoryBackgroundLocationInbox();
     const provider = createProvider();
@@ -102,6 +102,10 @@ describe('ActivityController', () => {
     const finished = await controller.finish();
     expect(finished.session.state).toBe('FINISHED');
     expect(provider.stop).toHaveBeenCalledTimes(2);
+
+    const pending = await store.loadPendingSyncBatches('activity-1');
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.idempotencyKey).toBe('activity:activity-1:track:1-2');
   });
 
   it('recovers samples stored after the latest snapshot after process-like restart', async () => {

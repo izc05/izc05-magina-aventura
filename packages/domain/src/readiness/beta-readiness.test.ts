@@ -23,14 +23,16 @@ const manualGate: BetaGateDefinition = {
 };
 
 const evidence = (
+  gateId: string,
   kind: BetaGateEvidence['kind'],
   candidateSha: string,
   passed = true,
 ): BetaGateEvidence => ({
+  gateId,
   kind,
   candidateSha,
   passed,
-  reference: `${kind}:${candidateSha}`,
+  reference: `${gateId}:${kind}:${candidateSha}`,
 });
 
 describe('evaluateBetaGate', () => {
@@ -50,7 +52,9 @@ describe('evaluateBetaGate', () => {
 
   it('does not let CI evidence satisfy a manual gate', () => {
     expect(
-      evaluateBetaGate(manualGate, 'sha-new', [evidence('ci', 'sha-new')]),
+      evaluateBetaGate(manualGate, 'sha-new', [
+        evidence('gps-field', 'ci', 'sha-new'),
+      ]),
     ).toMatchObject({
       status: 'MANUAL',
       blockers: ['manual-evidence-required'],
@@ -59,7 +63,16 @@ describe('evaluateBetaGate', () => {
 
   it('ignores stale evidence from another candidate SHA', () => {
     const result = evaluateBetaGate(automaticGate, 'sha-new', [
-      evidence('ci', 'sha-old'),
+      evidence('ci-domain', 'ci', 'sha-old'),
+    ]);
+
+    expect(result.status).toBe('BLOCKED');
+    expect(result.evidence).toEqual([]);
+  });
+
+  it('ignores evidence that belongs to a different gate', () => {
+    const result = evaluateBetaGate(automaticGate, 'sha-new', [
+      evidence('android-build', 'ci', 'sha-new'),
     ]);
 
     expect(result.status).toBe('BLOCKED');
@@ -78,7 +91,7 @@ describe('evaluateBetaGate', () => {
   it('requires passing current evidence for an automatic gate', () => {
     expect(
       evaluateBetaGate(automaticGate, 'sha-new', [
-        evidence('ci', 'sha-new', false),
+        evidence('ci-domain', 'ci', 'sha-new', false),
       ]),
     ).toMatchObject({
       status: 'BLOCKED',
@@ -88,18 +101,24 @@ describe('evaluateBetaGate', () => {
 
   it('marks current passing evidence READY', () => {
     expect(
-      evaluateBetaGate(automaticGate, 'sha-new', [evidence('ci', 'sha-new')]),
+      evaluateBetaGate(automaticGate, 'sha-new', [
+        evidence('ci-domain', 'ci', 'sha-new'),
+      ]),
     ).toMatchObject({ status: 'READY', blockers: [] });
 
     expect(
-      evaluateBetaGate(manualGate, 'sha-new', [evidence('manual', 'sha-new')]),
+      evaluateBetaGate(manualGate, 'sha-new', [
+        evidence('gps-field', 'manual', 'sha-new'),
+      ]),
     ).toMatchObject({ status: 'READY', blockers: [] });
   });
 });
 
 describe('deriveBetaCandidateState', () => {
   it('uses BLOCKED over MANUAL over READY for candidate state', () => {
-    const ready = evaluateBetaGate(automaticGate, 'sha', [evidence('ci', 'sha')]);
+    const ready = evaluateBetaGate(automaticGate, 'sha', [
+      evidence('ci-domain', 'ci', 'sha'),
+    ]);
     const manual = evaluateBetaGate(manualGate, 'sha', []);
     const blocked = evaluateBetaGate(automaticGate, 'sha', []);
 

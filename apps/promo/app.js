@@ -7,6 +7,7 @@
   const storySteps = [...document.querySelectorAll('[data-story-step]')];
   const topbar = document.querySelector('[data-topbar]');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const compactViewport = window.matchMedia('(max-width: 900px)');
   let raf = 0;
 
   const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
@@ -39,7 +40,9 @@
     heroCopy.style.pointerEvents = heroFade > 0.15 ? 'auto' : 'none';
 
     if (!reduceMotion) {
-      heroCopy.style.transform = `translateY(calc(-42% + ${progress * -42}px))`;
+      heroCopy.style.transform = compactViewport.matches
+        ? `translate3d(0, ${Math.round(progress * -22)}px, 0)`
+        : `translateY(calc(-42% + ${progress * -42}px))`;
     }
 
     if (storySteps.length) {
@@ -75,6 +78,7 @@
 
   addEventListener('scroll', requestRender, { passive: true });
   addEventListener('resize', requestRender, { passive: true });
+  compactViewport.addEventListener?.('change', requestRender);
   render();
 
   const observer = new IntersectionObserver((entries) => {

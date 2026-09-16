@@ -18,7 +18,7 @@ const snapshot = {
       id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       name: 'Adelfal de Cuadros',
       category: 'flora',
-      trigger_radius_m: 35,
+      radius_m: 35,
       reward_xp: 60,
       reward_olives: 12,
       active: true
@@ -27,7 +27,7 @@ const snapshot = {
       id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
       name: 'Torreón de Cuadros',
       category: 'heritage',
-      trigger_radius_m: 30,
+      radius_m: 30,
       reward_xp: 80,
       reward_olives: 15,
       active: false
@@ -48,6 +48,7 @@ test('discoveries tab renders editable human-facing cards without UUIDs', () => 
   assert.match(html, /data-discovery-index="1"/);
   assert.match(html, /Adelfal de Cuadros/);
   assert.match(html, /Torreón de Cuadros/);
+  assert.match(html, /name="trigger_radius_m"[^>]*value="35"/);
   assert.match(html, /Añade y mueve puntos desde Track \/ Mapa/);
   for (const name of ['name','category','trigger_radius_m','reward_xp','reward_olives','active']) {
     assert.match(html, new RegExp(`name="${name}"`));

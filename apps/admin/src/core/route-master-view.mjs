@@ -45,6 +45,16 @@ function durationLabel(minutes) {
   return remainder ? `${hours} h ${remainder} min` : `${hours} h`;
 }
 
+function selected(actual, expected) {
+  return actual === expected ? ' selected' : '';
+}
+
+function dateLabel(value) {
+  if (!value) return 'Sin revisar';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('es-ES');
+}
+
 export function routeDisplayCode(route = {}) {
   const code = String(route.route_code ?? '').trim();
   if (code) return code;
@@ -140,6 +150,97 @@ function summaryPanelHtml(snapshot) {
   </section>`;
 }
 
+function readinessItem(ok, label, detail = '') {
+  return `<li class="route-gate-item ${ok ? 'is-ready' : 'is-pending'}"><span aria-hidden="true">${ok ? '✓' : '!'}</span><div><strong>${esc(label)}</strong>${detail ? `<small>${esc(detail)}</small>` : ''}</div></li>`;
+}
+
+function sourceCardHtml(source) {
+  return `<article class="route-source-card${source.official ? ' is-official' : ''}">
+    <div class="route-source-card-head">
+      <div><strong>${esc(source.label ?? 'Fuente')}</strong><small>${source.official ? 'Fuente oficial' : esc(source.source_type ?? 'otra')}</small></div>
+      <span>${esc(dateLabel(source.checked_at))}</span>
+    </div>
+    ${source.url ? `<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">Abrir fuente ↗</a>` : ''}
+    ${source.notes ? `<p>${esc(source.notes)}</p>` : ''}
+  </article>`;
+}
+
+function sourcesValidationPanelHtml(snapshot) {
+  const readiness = snapshot.readiness ?? {};
+  const validation = snapshot.validation ?? {};
+  const sources = Array.isArray(snapshot.sources) ? snapshot.sources : [];
+  const track = snapshot.track_source ?? null;
+  const reasons = Array.isArray(readiness.reasons) ? readiness.reasons : [];
+
+  const gateItems = [
+    readinessItem(Boolean(readiness.has_content), 'Contenido actual'),
+    readinessItem(Boolean(readiness.has_geometry), 'Geometría actual'),
+    readinessItem(Boolean(readiness.has_official_source), 'Fuente oficial'),
+    readinessItem(Boolean(readiness.track_verified), 'Track verificado'),
+    readinessItem(Boolean(readiness.editorial_verified), 'Validación editorial'),
+    readinessItem(Boolean(readiness.safety_reviewed), 'Seguridad revisada'),
+    readinessItem(Number(readiness.blocking_incidents ?? 0) === 0, 'Sin incidencias bloqueantes', Number(readiness.blocking_incidents ?? 0) ? `${Number(readiness.blocking_incidents)} activas` : '')
+  ].join('');
+
+  const sourceCards = sources.length
+    ? sources.map(sourceCardHtml).join('')
+    : '<div class="empty route-sources-empty">Todavía no hay fuentes registradas.</div>';
+
+  const trackHtml = track
+    ? `<div class="route-track-provenance-grid">
+        <div><span>Formato</span><strong>${esc(String(track.format ?? '—').toUpperCase())}</strong></div>
+        <div><span>Procedencia</span><strong>${esc(track.source_kind ?? '—')}</strong></div>
+        <div><span>Archivo</span><strong>${esc(track.original_filename ?? '—')}</strong></div>
+        <div><span>Validación</span><strong>${esc(track.validated_at ? `Validado · ${dateLabel(track.validated_at)}` : 'Pendiente')}</strong></div>
+      </div>
+      ${track.source_url ? `<a class="route-track-source-link" href="${esc(track.source_url)}" target="_blank" rel="noopener noreferrer">Abrir fuente del track ↗</a>` : ''}
+      ${track.notes ? `<p class="muted">${esc(track.notes)}</p>` : ''}`
+    : '<p class="muted">No hay procedencia de track registrada para la geometría actual.</p>';
+
+  return `<section class="route-master-panel route-sources-panel" data-route-master-panel="sources">
+    <div class="route-sources-layout">
+      <article class="route-gate-card">
+        <div class="route-panel-heading"><div><p class="route-panel-kicker">Control de calidad</p><h3>Gate de publicación</h3></div><span class="route-readiness route-readiness-${readiness.ready ? 'success' : 'warning'}">${readiness.ready ? 'Listo' : 'Pendiente'}</span></div>
+        <ul class="route-gate-list">${gateItems}</ul>
+        ${reasons.length ? `<div class="route-gate-reasons"><strong>Qué falta</strong><ul>${reasons.map((reason) => `<li>${esc(reason)}</li>`).join('')}</ul></div>` : '<p class="success">La ruta cumple todos los requisitos del gate V2.</p>'}
+      </article>
+
+      <article class="route-validation-card">
+        <div class="route-panel-heading"><div><p class="route-panel-kicker">Estado editorial</p><h3>Validación</h3></div></div>
+        <form class="form two" data-route-validation-form>
+          <div class="field"><label>Editorial</label><select name="editorial_status"><option value="pending"${selected(validation.editorial_status,'pending')}>Pendiente</option><option value="reviewing"${selected(validation.editorial_status,'reviewing')}>En revisión</option><option value="verified"${selected(validation.editorial_status,'verified')}>Verificado</option></select></div>
+          <div class="field"><label>Track</label><select name="track_status"><option value="missing"${selected(validation.track_status,'missing')}>Falta</option><option value="imported"${selected(validation.track_status,'imported')}>Importado</option><option value="verified"${selected(validation.track_status,'verified')}>Verificado</option></select></div>
+          <div class="field"><label>Campo</label><select name="field_status"><option value="not_checked"${selected(validation.field_status,'not_checked')}>Sin comprobar</option><option value="planned"${selected(validation.field_status,'planned')}>Planificado</option><option value="verified"${selected(validation.field_status,'verified')}>Verificado</option></select></div>
+          <div class="field"><label>Multimedia</label><select name="media_status"><option value="missing"${selected(validation.media_status,'missing')}>Falta</option><option value="partial"${selected(validation.media_status,'partial')}>Parcial</option><option value="ready"${selected(validation.media_status,'ready')}>Lista</option></select></div>
+          <div class="field"><label>Seguridad</label><select name="safety_status"><option value="pending"${selected(validation.safety_status,'pending')}>Pendiente</option><option value="reviewed"${selected(validation.safety_status,'reviewed')}>Revisada</option></select></div>
+          <div class="field span-2"><label>Notas de validación</label><textarea name="notes" placeholder="Observaciones, verificaciones pendientes y trabajo de campo">${esc(validation.notes ?? '')}</textarea></div>
+          <button type="submit" class="btn primary span-2">Guardar validación</button>
+        </form>
+      </article>
+    </div>
+
+    <div class="route-sources-layout route-sources-secondary">
+      <article class="route-sources-card">
+        <div class="route-panel-heading"><div><p class="route-panel-kicker">Trazabilidad</p><h3>Fuentes</h3></div><span class="status">${esc(sources.length)} registradas</span></div>
+        <div class="route-source-list">${sourceCards}</div>
+        <form class="form two route-source-form" data-route-source-form>
+          <div class="field"><label>Nombre de la fuente</label><input name="label" required maxlength="160" placeholder="Ayuntamiento, IGN, trabajo de campo…"></div>
+          <div class="field"><label>Tipo</label><select name="source_type"><option value="official">Oficial</option><option value="map">Mapa</option><option value="track">Track</option><option value="field">Trabajo de campo</option><option value="other">Otra</option></select></div>
+          <div class="field span-2"><label>URL</label><input name="url" type="url" required placeholder="https://…"></div>
+          <label class="check"><input name="official" type="checkbox"> Marcar como fuente oficial</label>
+          <div class="field span-2"><label>Notas</label><textarea name="notes" placeholder="Qué información respalda esta fuente"></textarea></div>
+          <button type="submit" class="btn secondary span-2">Añadir fuente</button>
+        </form>
+      </article>
+
+      <article class="route-track-provenance-card">
+        <div class="route-panel-heading"><div><p class="route-panel-kicker">Geometría actual</p><h3>Procedencia del track</h3></div></div>
+        ${trackHtml}
+      </article>
+    </div>
+  </section>`;
+}
+
 function placeholderPanelHtml(activeTab, snapshot) {
   const tab = ROUTE_MASTER_TABS.find((item) => item.id === activeTab) ?? ROUTE_MASTER_TABS[0];
   const badges = routeMasterTabModels(snapshot);
@@ -152,7 +253,9 @@ export function routeMasterShellHtml(snapshot = {}, activeTab = 'summary') {
   const tabs = routeMasterTabModels(snapshot);
   const panel = validTab === 'summary'
     ? summaryPanelHtml(snapshot)
-    : placeholderPanelHtml(validTab, snapshot);
+    : validTab === 'sources'
+      ? sourcesValidationPanelHtml(snapshot)
+      : placeholderPanelHtml(validTab, snapshot);
 
   return `<section class="route-master card">
     ${routeMasterHeaderHtml(snapshot)}

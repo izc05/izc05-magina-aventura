@@ -53,12 +53,14 @@ describe('SQLiteBackgroundLocationInbox', () => {
     await inbox.initialize();
     await inbox.append('activity-1', [point(1000), point(2000)]);
 
-    const schema = String(mocks.execAsync.mock.calls[0]?.[0] ?? '');
+    const execCalls = mocks.execAsync.mock.calls as unknown[][];
+    const runCalls = mocks.runAsync.mock.calls as unknown[][];
+    const schema = String(execCalls[0]?.[0] ?? '');
     expect(schema).toContain('activity_background_location_inbox');
     expect(schema).toContain('UNIQUE(activity_id, timestamp_ms, latitude, longitude)');
 
     expect(mocks.runAsync).toHaveBeenCalledTimes(2);
-    expect(String(mocks.runAsync.mock.calls[0]?.[0] ?? '')).toContain('INSERT OR IGNORE');
+    expect(String(runCalls[0]?.[0] ?? '')).toContain('INSERT OR IGNORE');
   });
 
   it('loads pending rows in inbox order and acknowledges only through a processed id', async () => {
@@ -92,7 +94,8 @@ describe('SQLiteBackgroundLocationInbox', () => {
     expect(pending.map((item) => item.inboxId)).toEqual([4, 5]);
     expect(pending[1]?.point.altitudeMeters).toBeNull();
 
-    const deleteCall = mocks.runAsync.mock.calls.at(-1);
+    const runCalls = mocks.runAsync.mock.calls as unknown[][];
+    const deleteCall = runCalls.at(-1);
     expect(String(deleteCall?.[0] ?? '')).toContain('inbox_id <= ?');
     expect(deleteCall?.slice(1)).toEqual(['activity-1', 4]);
   });

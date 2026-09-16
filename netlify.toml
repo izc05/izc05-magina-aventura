@@ -5,3 +5,5 @@
 
 [build.environment]
   NODE_VERSION = "22.13.0"
+  MAGINA_ADMIN_SUPABASE_URL = "https://klchkjsdybbgritxkswp.supabase.co"
+  MAGINA_ADMIN_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_neY7nXnGfgjhMa4rIv2AmQ_5DMnJY54"

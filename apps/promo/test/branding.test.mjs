@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
@@ -13,7 +13,7 @@ test('pins the approved mountain-path-sun artwork and removes the old olive bran
 test('keeps the compact official symbol for favicons and in-app mockups', () => { assert.match(html,/rel="icon" href="assets\/magina-aventura-icon\.svg"/); assert.match(html,/phone-appbar[\s\S]*assets\/magina-aventura-icon\.svg/); assert.match(html,/profile-ui-brand[\s\S]*assets\/magina-aventura-icon\.svg/); });
 test('authors the six cinematic journey scenes in narrative order', () => { const names=[...html.matchAll(/data-cinematic-scene="([^"]+)"/g)].map(m=>m[1]); assert.deepEqual(names,['awakening','path','discovery','app','progress','finale']); assert.ok((html.match(/data-scene-layer/g)??[]).length>=12); assert.ok((html.match(/data-depth="0\.\d+"/g)??[]).length>=12); });
 test('keeps external photography out of the new cinematic runtime markup', () => { assert.doesNotMatch(html,/commons\.wikimedia\.org/); assert.doesNotMatch(html,/upload\.wikimedia\.org/); assert.match(html,/Dirección visual y escenas originales para Mágina Aventura/); });
-test('keeps cinematic runtime imagery under the proprietary local asset tree', () => { const urls=[...html.matchAll(/--layer-image:url\('([^']+)'\)/g)].map(m=>m[1]); assert.ok(urls.length>=12,`expected layered local runtime assets, found ${urls.length}`); assert.ok(urls.every(url=>url.startsWith('assets/cinematic/'))); assert.doesNotMatch(html,/commons\.wikimedia\.org\/wiki\/Special:Redirect/); });
+test('keeps cinematic runtime imagery under the proprietary local asset tree', () => { const urls=[...html.matchAll(/--layer-image:url\('([^']+)'\)/g)].map(m=>m[1]); assert.ok(urls.length>=12,`expected layered local runtime assets, found ${urls.length}`); assert.ok(urls.every(url=>url.startsWith('assets/cinematic/'))); assert.ok(urls.every(url=>existsSync(new URL(`../${url}`, import.meta.url))), 'every cinematic layer must resolve to a committed local asset'); assert.doesNotMatch(html,/commons\.wikimedia\.org\/wiki\/Special:Redirect/); });
 test('embeds the existing product previews inside cinematic scenes four and five', () => { assert.match(html,/data-cinematic-scene="app"[\s\S]*class="phone-shell/); assert.match(html,/data-cinematic-scene="progress"[\s\S]*class="profile-ui/); assert.equal((html.match(/class="phone-shell/g)??[]).length,1); assert.equal((html.match(/class="profile-ui/g)??[]).length,1); });
 test('renders exploration as a recognisable app preview inside the app scene', () => { assert.match(html,/class="phone-map/); assert.match(html,/Rutas cerca de ti/); assert.match(html,/Mapa/); assert.match(html,/Guardadas/); assert.match(css,/\.phone-shell/); assert.match(css,/\.phone-route-line/); });
 test('shows profile capabilities inside the progress scene without fake totals', () => { assert.match(html,/Tu progreso/); assert.match(html,/Insignias/); assert.match(css,/\.profile-progress-bar/); assert.doesNotMatch(html,/>24<|58 km/); });

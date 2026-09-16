@@ -25,4 +25,17 @@ describe('Mágina Aventura branding contract', () => {
       'Perfil',
     ]);
   });
+
+  it('pins the approved mountain-path-sun identity across app surfaces', () => {
+    expect(brand.identity).toEqual({
+      version: '2026-09-16-approved-logo',
+      mark: 'mountain-path-sun',
+      descriptor: 'SIERRA MÁGINA · JAÉN',
+      fullLogoAsset: './assets/branding/magina-aventura-logo.svg',
+      iconSourceAsset: './assets/branding/magina-aventura-icon.svg',
+      appIconAsset: './assets/branding/icon.png',
+      adaptiveIconAsset: './assets/branding/adaptive-icon.png',
+      splashAsset: './assets/branding/splash-logo.png',
+    });
+  });
 });

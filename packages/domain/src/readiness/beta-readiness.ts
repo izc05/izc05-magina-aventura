@@ -28,6 +28,7 @@ export type BetaGateEvidenceKind =
   | 'content';
 
 export interface BetaGateEvidence {
+  gateId: string;
   kind: BetaGateEvidenceKind;
   candidateSha: string;
   passed: boolean;
@@ -66,7 +67,8 @@ export function evaluateBetaGate(
   evidence: BetaGateEvidence[],
 ): EvaluatedBetaGate {
   const currentEvidence = evidence.filter(
-    (item) => item.candidateSha === candidateSha,
+    (item) =>
+      item.gateId === definition.id && item.candidateSha === candidateSha,
   );
 
   if (!definition.required) {

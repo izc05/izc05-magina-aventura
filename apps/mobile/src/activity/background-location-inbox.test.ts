@@ -36,7 +36,12 @@ describe('BackgroundLocationInbox contract', () => {
     await inbox.append('activity-1', [point(1000), point(2000), point(3000)]);
 
     const pending = await inbox.loadPending('activity-1');
-    await inbox.acknowledgeThrough('activity-1', pending[1].inboxId);
+    expect(pending).toHaveLength(3);
+    const second = pending.at(1);
+    expect(second).toBeDefined();
+    if (!second) throw new Error('Expected second pending background location');
+
+    await inbox.acknowledgeThrough('activity-1', second.inboxId);
 
     expect((await inbox.loadPending('activity-1')).map((item) => item.point.timestampMs)).toEqual([
       3000,

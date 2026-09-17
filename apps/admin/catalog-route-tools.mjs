@@ -4,7 +4,7 @@ import {
   routeCatalogPanelHtml,
 } from './src/core/route-catalog-panel.mjs';
 
-const app = document.querySelector('#app');
+const app = typeof document !== 'undefined' ? document.querySelector('#app') : null;
 
 export function routeCodeFromEyebrowText(text) {
   const parts = String(text ?? '').split('·').map((part) => part.trim()).filter(Boolean);

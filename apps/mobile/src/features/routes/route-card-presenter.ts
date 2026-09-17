@@ -10,11 +10,15 @@ export type FeaturedRoutePresentation = Readonly<{
 }>;
 
 export function presentFeaturedRoute(route: AdventureRouteCard): FeaturedRoutePresentation {
+  const betaDataPending = route.developmentFixture === true;
+
   return {
     distance: `${route.distanceKm.toFixed(1).replace('.', ',')} km`,
-    elevation: `+${route.elevationGainM} m`,
+    elevation: betaDataPending ? 'Pendiente' : `+${route.elevationGainM} m`,
     duration: durationLabel(route.durationMinutes),
     difficulty: difficultyLabel(route.difficulty),
-    rewards: `${route.rewardPreview.discoveries} descubrimientos · +${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
+    rewards: betaDataPending
+      ? 'Recompensas pendientes de validación'
+      : `${route.rewardPreview.discoveries} descubrimientos · +${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
   };
 }

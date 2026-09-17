@@ -1,0 +1,142 @@
+{
+  "template_version": "0.1",
+  "adventure_id": "MA-001",
+  "status": "TEMPLATE_READY",
+  "purpose": "Plantilla de validación física previa a publicación. No contiene valores inventados: los campos deben rellenarse durante la inspección de campo.",
+  "session": {
+    "validation_id": null,
+    "date": null,
+    "start_time": null,
+    "end_time": null,
+    "validator": null,
+    "device": null,
+    "weather": null,
+    "temperature_c": null,
+    "recent_rain": null,
+    "official_open_status_checked": false,
+    "road_access_checked": false,
+    "continuous_field_track_file": null,
+    "notes": null
+  },
+  "route_level_checks": {
+    "full_route_completed": null,
+    "access_pass": null,
+    "trail_pass": null,
+    "safety_pass": null,
+    "signage_pass": null,
+    "gps_pass": null,
+    "photos_complete": null,
+    "water_points_reviewed": null,
+    "route_direction_recommended": null,
+    "official_control_field_discrepancies_resolved": null,
+    "overall_result": null
+  },
+  "route_level_observations": {
+    "parking": null,
+    "public_access": null,
+    "road_condition": null,
+    "surface_summary": null,
+    "shade_summary": null,
+    "mobile_coverage_summary": null,
+    "gps_coverage_summary": null,
+    "escape_routes": [],
+    "seasonal_risks": [],
+    "active_hazards": [],
+    "temporary_restrictions": [],
+    "emergency_access_notes": null
+  },
+  "checkpoint_template": {
+    "checkpoint_id": null,
+    "date_time": null,
+    "lat": null,
+    "lon": null,
+    "gps_accuracy_m": null,
+    "device_elevation_m": null,
+    "route_distance_m_field": null,
+    "on_correct_track": null,
+    "signage_present": null,
+    "signage_legible": null,
+    "surface_condition": null,
+    "safe_stop_area": null,
+    "fall_risk": null,
+    "water_risk": null,
+    "traffic_risk": null,
+    "slip_risk": null,
+    "exposure_level": null,
+    "mobile_coverage": null,
+    "gps_quality": null,
+    "observable_element": null,
+    "observation_direction": null,
+    "approach_photo_ref": null,
+    "main_photo_ref": null,
+    "exit_photo_ref": null,
+    "signage_photo_ref": null,
+    "evidence_photo_refs": [],
+    "activation_radius_candidate_m": null,
+    "activatable_from_wrong_path": null,
+    "associated_poi_ids": [],
+    "documentary_source_checked": null,
+    "discrepancy_notes": null,
+    "result": null
+  },
+  "checkpoint_records": [
+    {"checkpoint_id": "CP00", "name": "El Umbral de Cuadros", "result": null},
+    {"checkpoint_id": "CP01", "name": "La Primera Decisión", "result": null},
+    {"checkpoint_id": "CP02", "name": "Los Sistillos · Donde nace el agua", "result": null},
+    {"checkpoint_id": "CP03", "name": "La Subida", "result": null},
+    {"checkpoint_id": "CP04", "name": "Sobre el Valle", "result": null},
+    {"checkpoint_id": "CP05", "name": "El Paisaje que Cambia", "result": null},
+    {"checkpoint_id": "CP06", "name": "Páginas de Piedra", "result": null},
+    {"checkpoint_id": "CP07", "name": "Fresneda · El agua no siempre se bebe", "result": null},
+    {"checkpoint_id": "CP08", "name": "El Vigía de Cuadros", "result": null},
+    {"checkpoint_id": "CP09", "name": "Cinco siglos de devoción", "result": null},
+    {"checkpoint_id": "CP10", "name": "La Cueva del Agua", "result": null},
+    {"checkpoint_id": "FINAL", "name": "Has leído el valle", "result": null}
+  ],
+  "poi_field_questions": [
+    {
+      "poi_id": "poi-casa-molino",
+      "question": "¿El elemento visible puede identificarse inequívocamente como el molino documentado y desde qué punto seguro?",
+      "answer": null,
+      "result": null
+    },
+    {
+      "poi_id": "poi-tunel-control",
+      "question": "¿Qué es exactamente el elemento etiquetado como 'Túnel' en el track de control?",
+      "answer": null,
+      "result": null
+    }
+  ],
+  "water_checks": [
+    {
+      "water_point": "Los Sistillos",
+      "exact_location_confirmed": null,
+      "flow_present": null,
+      "potability_signage": null,
+      "potable_verified": false,
+      "notes": null
+    },
+    {
+      "water_point": "Fresneda/Fresnedilla",
+      "exact_name_confirmed": null,
+      "exact_location_confirmed": null,
+      "flow_present": null,
+      "potability_signage": null,
+      "potable_verified": false,
+      "notes": null
+    }
+  ],
+  "segment_checks": [
+    {"segment_id": "MA001-S01", "result": null, "notes": null},
+    {"segment_id": "MA001-S02", "result": null, "notes": null},
+    {"segment_id": "MA001-S03", "result": null, "notes": null},
+    {"segment_id": "MA001-S04", "result": null, "notes": null},
+    {"segment_id": "MA001-S05", "result": null, "notes": null},
+    {"segment_id": "MA001-S06", "result": null, "notes": null},
+    {"segment_id": "MA001-S07", "result": null, "notes": null},
+    {"segment_id": "MA001-S08", "result": null, "notes": null},
+    {"segment_id": "MA001-S09", "result": null, "notes": null}
+  ],
+  "allowed_results": ["PASS", "REVIEW", "FAIL"],
+  "publication_rule": "No abrir el publication gate hasta que los controles obligatorios estén en PASS o exista una revisión explícita y documentada que resuelva cualquier REVIEW. Un FAIL bloquea publicación."
+}

@@ -1,0 +1,43 @@
+{
+  "route_id": "MA-001",
+  "name": "Cuadros / Sendero de Las Viñas",
+  "source_role": "CONTROL_ONLY",
+  "source": "Wikiloc route 47452434 (user-downloaded files)",
+  "canonical_geometry": "PENDING_OFFICIAL_KML",
+  "kml_track_points": 776,
+  "tcx_track_points": 500,
+  "calculated_distance_km": 8.987,
+  "tcx_distance_km": 8.981,
+  "recorded_time_seconds": 10608,
+  "recorded_time_hms": "02:56:48",
+  "elevation_min_m": 567.5,
+  "elevation_max_m": 916.9,
+  "start": {
+    "lat": 37.787831,
+    "lon": -3.408336,
+    "elevation_m": 570.724
+  },
+  "end": {
+    "lat": 37.787857,
+    "lon": -3.409155,
+    "elevation_m": 604.931
+  },
+  "start_end_separation_m": 72.0,
+  "waypoints": [
+    {"name":"ÁREA RECREATIVA DE CUADROS-SENDERO DE LAS VIÑAS (BEDMAR) (P.N de Sierra Mágina)","lat":37.787831,"lon":-3.408336,"elevation_m":570.7,"nearest_track_index":0,"km_along_route":0.0,"distance_to_track_m":0.0},
+    {"name":"area recreativa cuadros","lat":37.787656,"lon":-3.408512,"elevation_m":570.443,"nearest_track_index":3,"km_along_route":0.027,"distance_to_track_m":0.0},
+    {"name":"casa molino","lat":37.790133,"lon":-3.40774,"elevation_m":579.552,"nearest_track_index":708,"km_along_route":8.378,"distance_to_track_m":1.1},
+    {"name":"cruce senderos","lat":37.779242,"lon":-3.411834,"elevation_m":608.471,"nearest_track_index":105,"km_along_route":1.315,"distance_to_track_m":0.6},
+    {"name":"cueva del agua","lat":37.790201,"lon":-3.407717,"elevation_m":573.001,"nearest_track_index":693,"km_along_route":8.263,"distance_to_track_m":1.7},
+    {"name":"desvio derecha","lat":37.791832,"lon":-3.426235,"elevation_m":739.061,"nearest_track_index":409,"km_along_route":4.902,"distance_to_track_m":1.6},
+    {"name":"olivar","lat":37.787802,"lon":-3.420265,"elevation_m":916.5,"nearest_track_index":252,"km_along_route":3.106,"distance_to_track_m":2.2},
+    {"name":"pilar fresnedilla","lat":37.789345,"lon":-3.427609,"elevation_m":796.489,"nearest_track_index":374,"km_along_route":4.57,"distance_to_track_m":3.1},
+    {"name":"torreon","lat":37.789406,"lon":-3.409604,"elevation_m":686.273,"nearest_track_index":588,"km_along_route":6.804,"distance_to_track_m":0.5},
+    {"name":"tunel","lat":37.789803,"lon":-3.408281,"elevation_m":602.652,"nearest_track_index":753,"km_along_route":8.731,"distance_to_track_m":2.1}
+  ],
+  "notes": [
+    "This geometry is a control/reference track, not the canonical official route.",
+    "KML preserves the original 776-point geometry.",
+    "TCX is simplified to 500 trackpoints."
+  ]
+}

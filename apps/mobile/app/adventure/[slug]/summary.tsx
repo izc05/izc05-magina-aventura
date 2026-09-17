@@ -21,7 +21,6 @@ export default function ActivitySummaryScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         <View style={styles.header}>
           <Text style={styles.eyebrow}>¡AVENTURA COMPLETADA!</Text>
           <Text style={styles.title}>{route.title}</Text>
@@ -60,20 +59,13 @@ export default function ActivitySummaryScreen() {
             <CollectionCard emoji="🦅" name="Águila Real" family="Fauna" collected={false} />
           </View>
         </View>
-
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable 
-          style={styles.primaryButton} 
-          onPress={() => router.push('/profile' as any)}
-        >
+        <Pressable style={styles.primaryButton} onPress={() => router.push('/profile' as any)}>
           <Text style={styles.primaryButtonText}>Ver mi Pasaporte</Text>
         </Pressable>
-        <Pressable 
-          style={styles.secondaryButton} 
-          onPress={() => router.push('/')}
-        >
+        <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
           <Text style={styles.secondaryButtonText}>Volver al inicio</Text>
         </Pressable>
       </View>
@@ -83,7 +75,7 @@ export default function ActivitySummaryScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.limestone },
-  scrollContent: { padding: spacing[20], paddingBottom: spacing[120] },
+  scrollContent: { padding: spacing[20], paddingBottom: spacing[40] * 3 },
   header: { alignItems: 'center', marginTop: spacing[32], marginBottom: spacing[32] },
   eyebrow: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginBottom: spacing[8] },
   title: { color: colors.ink, fontSize: 24, fontWeight: '900', textAlign: 'center', marginBottom: spacing[4] },

@@ -13,6 +13,11 @@ export type AdventureSummaryPresentation = Readonly<{
   note: string;
 }>;
 
+function targetReward(route: AdventureRouteCard): string {
+  if (route.developmentFixture === true) return 'Recompensas pendientes de validación';
+  return `Objetivo: +${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`;
+}
+
 export function presentAdventureSummary(
   route: AdventureRouteCard,
 ): AdventureSummaryPresentation {
@@ -25,7 +30,7 @@ export function presentAdventureSummary(
     elevation: '+0 m',
     xpRecorded: '0 XP registrados',
     olivesRecorded: '0 aceitunas registradas',
-    targetReward: `Objetivo: +${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
+    targetReward: targetReward(route),
     note: 'Vista demo: no se guarda actividad ni se conceden recompensas.',
   };
 }

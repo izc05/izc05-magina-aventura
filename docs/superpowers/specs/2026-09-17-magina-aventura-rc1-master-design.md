@@ -138,9 +138,9 @@ Server
   -> valida actividad
   -> VERIFIED | FLAGGED | REJECTED
 Domain
-  -> XP + niveles + estadísticas + badges + retos + rankings
+  -> sólo si VERIFIED: XP + niveles + estadísticas + badges + retos + rankings
 Reward Ledger
-  -> aceitunas idempotentes
+  -> sólo si VERIFIED: aceitunas idempotentes
 Integration Outbox
   -> contrato preparado para futuros consumidores como Mi Olivo
 ```
@@ -212,11 +212,14 @@ El track GPS original es evidencia y no se sobrescribe para hacerlo coincidir co
 
 ### 6.3 Estados
 
-La máquina lógica es:
+Los ejes de estado son conceptualmente independientes:
 
-`DRAFT -> ACTIVE <-> PAUSED -> FINISHED -> SYNC_PENDING -> VALIDATING -> VERIFIED | FLAGGED | REJECTED -> REWARDED`
+- lifecycle: `DRAFT -> ACTIVE <-> PAUSED -> FINISHED`;
+- sync: `LOCAL_ONLY -> SYNC_PENDING -> UPLOADING -> SERVER_RECEIVED`;
+- validation: `PENDING -> VALIDATING -> VERIFIED | FLAGGED | REJECTED`;
+- reward: `NOT_ELIGIBLE | PENDING -> REWARDED`, donde `REWARDED` sólo puede alcanzarse desde una actividad `VERIFIED`.
 
-La implementación puede separar lifecycle, sync y validation en columnas distintas; no se reduce a un booleano ambiguo `completed`.
+La implementación puede representar estos ejes en columnas distintas; no se reduce a un booleano ambiguo `completed`.
 
 ### 6.4 Checkpoints y descubrimientos
 
@@ -274,7 +277,9 @@ La actividad se persiste incrementalmente. El sistema no espera al final para gu
 
 Estados de sync conceptuales:
 
-`LOCAL_ONLY -> SYNC_PENDING -> UPLOADING -> SERVER_RECEIVED -> VALIDATING -> VERIFIED | FLAGGED | REJECTED`
+`LOCAL_ONLY -> SYNC_PENDING -> UPLOADING -> SERVER_RECEIVED`
+
+Después, la validación sigue su propio eje: `PENDING -> VALIDATING -> VERIFIED | FLAGGED | REJECTED`.
 
 Cada evento/lote posee identidad idempotente. El móvil no elimina un elemento de la cola hasta recibir ACK inequívoco del servidor.
 

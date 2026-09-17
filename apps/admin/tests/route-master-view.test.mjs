@@ -213,6 +213,51 @@ test('sources validation tab renders publication gate, provenance and editable c
   assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
 });
 
+test('safety tab renders route incidents and create controls without technical ids', () => {
+  const richSnapshot = {
+    ...snapshot,
+    safety: [
+      {
+        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        title: 'Sendero cerrado por trabajos forestales',
+        description: 'No iniciar nuevas aventuras hasta nuevo aviso.',
+        severity: 'critical',
+        status: 'open',
+        starts_at: '2026-09-16T12:00:00Z',
+        ends_at: '2026-09-18T18:00:00Z',
+        blocks_adventure: true,
+        resolved_at: null
+      },
+      {
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        title: 'Precaución por firme irregular',
+        description: 'Tramo pedregoso junto al mirador.',
+        severity: 'warning',
+        status: 'resolved',
+        starts_at: '2026-09-12T08:00:00Z',
+        ends_at: null,
+        blocks_adventure: false,
+        resolved_at: '2026-09-14T10:00:00Z'
+      }
+    ]
+  };
+  const html = routeMasterShellHtml(richSnapshot, 'safety');
+  assert.match(html, /data-route-master-panel="safety"/);
+  assert.match(html, /data-route-safety-form/);
+  for (const name of ['title','description','severity','ends_at','blocks_adventure']) {
+    assert.match(html, new RegExp(`name="${name}"`));
+  }
+  assert.match(html, /Sendero cerrado por trabajos forestales/);
+  assert.match(html, /Precaución por firme irregular/);
+  assert.match(html, /Bloquea nuevas aventuras/);
+  assert.match(html, /data-route-safety-resolve="0"/);
+  assert.doesNotMatch(html, /data-route-safety-resolve="1"/);
+  assert.doesNotMatch(html, /Ruta UUID/);
+  assert.doesNotMatch(html, /aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+  assert.doesNotMatch(html, /bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/);
+  assert.doesNotMatch(html, /cccccccc-cccc-cccc-cccc-cccccccccccc/);
+});
+
 test('route list row opens by slug and never exposes the technical UUID', () => {
   const html = routeListRowHtml({
     ...snapshot.route,

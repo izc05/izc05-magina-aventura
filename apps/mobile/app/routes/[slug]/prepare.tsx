@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { activityRuntime } from '../../../src/activity/activity-runtime';
 import type { LocationPermissionState } from '../../../src/activity/location-provider';
 import { BrandMark } from '../../../src/components/branding/BrandMark';
+import { AdventureLandscape } from '../../../src/components/visuals/AdventureLandscape';
 import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
 import {
   presentPreparation,
@@ -127,15 +128,17 @@ export default function PrepareRouteAdventureScreen() {
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={styles.sun} />
+          <AdventureLandscape variant="prepare" />
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
-          <BrandMark size={54} inverse />
-          <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
-          <Text style={styles.title}>Prepara tu aventura</Text>
-          <Text style={styles.routeName}>{route.title}</Text>
-          <Text style={styles.routePlace}>{route.municipalityName}</Text>
+          <View style={styles.heroCopy}>
+            <BrandMark size={54} inverse />
+            <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
+            <Text style={styles.title}>Prepara tu aventura</Text>
+            <Text style={styles.routeName}>{route.title}</Text>
+            <Text style={styles.routePlace}>{route.municipalityName} · Sierra Mágina</Text>
+          </View>
         </View>
 
         <View style={styles.summaryCard}>
@@ -232,13 +235,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  sun: {
-    position: 'absolute', right: 34, top: 48, width: 82, height: 82,
-    borderRadius: 41, backgroundColor: colors.aoveGold, opacity: 0.92,
-  },
+  heroCopy: { zIndex: 2 },
   backButton: {
-    position: 'absolute', left: spacing[16], top: spacing[16], width: 44, height: 44,
-    borderRadius: radius.pill, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center',
+    position: 'absolute',
+    left: spacing[16],
+    top: spacing[16],
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(250,249,246,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
   },
   backText: { color: colors.olive900, fontSize: 31, lineHeight: 31 },
   eyebrow: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.6, marginTop: spacing[20] },
@@ -246,8 +254,13 @@ const styles = StyleSheet.create({
   routeName: { color: colors.limestone, fontSize: 16, fontWeight: '800', marginTop: spacing[12] },
   routePlace: { color: colors.limestone, fontSize: 12, opacity: 0.8, marginTop: 2 },
   summaryCard: {
-    marginHorizontal: spacing[20], marginTop: -22, borderRadius: radius.lg,
-    backgroundColor: colors.white, flexDirection: 'row', padding: spacing[16], ...shadow.card,
+    marginHorizontal: spacing[20],
+    marginTop: -22,
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    padding: spacing[16],
+    ...shadow.card,
   },
   metric: { flex: 1, alignItems: 'center' },
   metricValue: { color: colors.ink, fontSize: 14, fontWeight: '900' },
@@ -256,12 +269,23 @@ const styles = StyleSheet.create({
   sectionTitle: { marginHorizontal: spacing[20], marginTop: 4, color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   sectionBody: { marginHorizontal: spacing[20], marginTop: spacing[8], color: colors.muted, fontSize: 13, lineHeight: 19 },
   readinessCard: {
-    margin: spacing[20], marginBottom: 0, borderRadius: radius.lg, backgroundColor: colors.white,
-    borderWidth: 1, borderColor: colors.border, overflow: 'hidden', ...shadow.card,
+    margin: spacing[20],
+    marginBottom: 0,
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    ...shadow.card,
   },
   readinessRow: {
-    minHeight: 62, paddingHorizontal: spacing[16], flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.border,
+    minHeight: 62,
+    paddingHorizontal: spacing[16],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   readinessLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing[12] },
@@ -279,8 +303,25 @@ const styles = StyleSheet.create({
   infoBody: { color: colors.limestone, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   errorCard: { marginHorizontal: spacing[20], borderRadius: radius.md, backgroundColor: colors.goldWash, padding: spacing[16] },
   errorText: { color: colors.earth, fontSize: 12, fontWeight: '800', lineHeight: 18 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.white, padding: spacing[16], borderTopWidth: 1, borderTopColor: colors.border },
-  startButton: { minHeight: 68, borderRadius: radius.lg, backgroundColor: colors.olive900, paddingHorizontal: spacing[20], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.white,
+    padding: spacing[16],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  startButton: {
+    minHeight: 68,
+    borderRadius: radius.lg,
+    backgroundColor: colors.olive900,
+    paddingHorizontal: spacing[20],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   startButtonPressed: { opacity: 0.75 },
   startButtonText: { color: colors.white, fontSize: 15, fontWeight: '900' },
   startButtonCaption: { color: colors.limestone, fontSize: 10, marginTop: 3 },

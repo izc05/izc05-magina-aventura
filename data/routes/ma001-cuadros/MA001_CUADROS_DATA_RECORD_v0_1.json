@@ -1,0 +1,152 @@
+{
+  "schema_version": "adventure-content-contract-v1.1-draft",
+  "adventure_id": "MA-001",
+  "slug": "cuadros-las-vinas",
+  "title": "Cuadros · Las Viñas",
+  "subtitle": "Agua, piedra y frontera",
+  "municipality": "Bedmar y Garcíez",
+  "province": "Jaén",
+  "territory": "Sierra Mágina",
+  "route_type": "CIRCULAR",
+  "activity_type": "HIKING",
+  "difficulty": "MEDIA",
+  "editorial_status": "FIELD_VALIDATION_PENDING",
+  "publication_gate_status": "BLOCKED_MULTIPLE",
+  "publication_gate_reasons": [
+    "OFFICIAL_TEMPORARY_CLOSURE",
+    "FIELD_VALIDATION_PENDING",
+    "OFFICIAL_TRACK_CONTRAST_PENDING"
+  ],
+  "theme": "Agua, geología, paisaje cultivado, patrimonio e historia de frontera",
+  "narrative_arc": [
+    "AGUA",
+    "ASCENSO",
+    "PAISAJE",
+    "PIEDRA",
+    "FRONTERA",
+    "TRADICION",
+    "AGUA",
+    "REGRESO"
+  ],
+  "metrics": {
+    "official_distance_m": 8720,
+    "official_duration_estimated_min": 180,
+    "control_distance_m": 8987,
+    "control_recorded_time_sec": 10608,
+    "control_elevation_min_m": 567.5,
+    "control_elevation_max_m": 916.9,
+    "canonical_elevation_gain_m": null,
+    "canonical_elevation_loss_m": null,
+    "canonical_start": null,
+    "canonical_end": null
+  },
+  "tracks": [
+    {
+      "track_id": "ma001-control-wikiloc-47452434",
+      "track_type": "CONTROL",
+      "source_name": "Wikiloc route 47452434",
+      "track_points_count": 776,
+      "distance_m": 8987,
+      "elevation_min_m": 567.5,
+      "elevation_max_m": 916.9,
+      "is_canonical": false,
+      "confidence": "C",
+      "field_validation_status": "NOT_APPLICABLE"
+    },
+    {
+      "track_id": "ma001-official-las-vinas",
+      "track_type": "OFFICIAL",
+      "source_name": "Sendero Las Viñas",
+      "track_points_count": null,
+      "distance_m": 8720,
+      "is_canonical": false,
+      "confidence": "A",
+      "status": "LOCATED_EXTRACTION_OR_CONTRAST_PENDING"
+    },
+    {
+      "track_id": "ma001-field",
+      "track_type": "FIELD",
+      "status": "PENDING",
+      "is_canonical": false
+    }
+  ],
+  "chapters": [
+    {"sequence": 1, "chapter_id": "ma001-ch-agua", "title": "El agua", "start_checkpoint_id": "CP00", "end_checkpoint_id": "CP02"},
+    {"sequence": 2, "chapter_id": "ma001-ch-subida", "title": "La subida", "start_checkpoint_id": "CP03", "end_checkpoint_id": "CP04"},
+    {"sequence": 3, "chapter_id": "ma001-ch-paisaje-piedra", "title": "El paisaje y la piedra", "start_checkpoint_id": "CP05", "end_checkpoint_id": "CP07"},
+    {"sequence": 4, "chapter_id": "ma001-ch-frontera", "title": "La frontera", "start_checkpoint_id": "CP08", "end_checkpoint_id": "CP08"},
+    {"sequence": 5, "chapter_id": "ma001-ch-memoria-regreso", "title": "Memoria y regreso", "start_checkpoint_id": "CP09", "end_checkpoint_id": "FINAL"}
+  ],
+  "checkpoints": [
+    {"checkpoint_id": "CP00", "name": "El Umbral de Cuadros", "type": ["START", "SAFETY"], "km_from_start_control": 0.0, "elevation_m_control": 571, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP01", "name": "La Primera Decisión", "type": ["NAV"], "km_from_start_control": 1.315, "elevation_m_control": 608, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP02", "name": "Los Sistillos · Donde nace el agua", "type": ["MAJOR", "NATURE"], "km_from_start_control": null, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP03", "name": "La Subida", "type": ["DISCOVERY"], "km_from_start_control": null, "required": false, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP04", "name": "Sobre el Valle", "type": ["MAJOR", "LANDSCAPE"], "km_from_start_control": 3.12, "elevation_m_control": 917, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP05", "name": "El Paisaje que Cambia", "type": ["DISCOVERY"], "km_from_start_control": 3.106, "elevation_m_control": 916.5, "required": false, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP06", "name": "Páginas de Piedra", "type": ["MAJOR", "GEOLOGY"], "km_from_start_control": null, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP07", "name": "Fresneda · El agua no siempre se bebe", "type": ["DISCOVERY", "SAFETY"], "km_from_start_control": 4.57, "elevation_m_control": 796.5, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP08", "name": "El Vigía de Cuadros", "type": ["MAJOR", "HERITAGE"], "km_from_start_control": 6.804, "elevation_m_control": 686.3, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP09", "name": "Cinco siglos de devoción", "type": ["MAJOR", "CULTURE"], "km_from_start_control": null, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "CP10", "name": "La Cueva del Agua", "type": ["MAJOR", "NATURE"], "km_from_start_control": 8.263, "elevation_m_control": 573.0, "required": true, "field_validation_status": "PENDING"},
+    {"checkpoint_id": "FINAL", "name": "Has leído el valle", "type": ["FINAL"], "km_from_start_control": 8.987, "required": true, "field_validation_status": "PENDING"}
+  ],
+  "optional_discoveries": [
+    {"poi_id": "poi-casa-molino", "name": "Casa Molino", "km_from_start_control": 8.378, "elevation_m_control": 579.6, "status": "FIELD_PENDING"},
+    {"poi_id": "poi-tunel-control", "name": "Túnel", "km_from_start_control": 8.731, "elevation_m_control": 602.7, "status": "HOLD", "note": "Nombre procedente sólo del track de control; identificar físicamente antes de publicar."}
+  ],
+  "collections": [
+    {"collection_id": "agua-de-magina", "name": "Agua de Mágina", "items": ["CP02", "CP07", "CP10"], "status": "PILOT"},
+    {"collection_id": "frontera-de-magina", "name": "Frontera de Mágina", "items": ["CP08"], "status": "PILOT"},
+    {"collection_id": "memoria-de-magina", "name": "Memoria de Mágina", "items": ["CP09"], "status": "PILOT"},
+    {"collection_id": "tiempo-profundo", "name": "Tiempo profundo", "items": ["CP06"], "status": "PILOT"}
+  ],
+  "game_design": {
+    "speed_bonus_xp": 0,
+    "completion_xp_candidate": 250,
+    "badge_candidate": "Guardián de Cuadros",
+    "xp_economy_status": "PILOT_NOT_FROZEN"
+  },
+  "reward_pilot": {
+    "status": "PARTNER_PENDING",
+    "concept": "He completado Cuadros",
+    "reward_example": "10–15 % de descuento o producto/consumición definida por comercio colaborador",
+    "redemption_method": null
+  },
+  "multimedia": {
+    "shot_list_status": "DEFINED",
+    "assets_ready": false,
+    "rights_review_status": "PENDING",
+    "community_media_allowed_with_permission": true
+  },
+  "offline": {
+    "offline_ready": false,
+    "offline_pack_revision": null,
+    "offline_assets_complete": false
+  },
+  "localization": {
+    "default_locale": "es-ES",
+    "available_locales": ["es-ES"],
+    "translation_status": "NOT_STARTED"
+  },
+  "field_validation": {
+    "status": "PENDING",
+    "required_before_publication": true,
+    "field_track_required": true,
+    "checkpoint_gps_required": true,
+    "photo_evidence_required": true
+  },
+  "completion_rules": {
+    "status": "PENDING_FIELD_TESTS",
+    "minimum_route_coverage_pct": null,
+    "required_checkpoint_ids": null,
+    "allowed_route_deviation_m": null,
+    "gps_quality_required": null,
+    "anti_spoof_required": true
+  },
+  "admin": {
+    "content_workflow_status": "DRAFT",
+    "version": "0.1",
+    "change_note": "Primer registro estructurado derivado de la ficha maestra, guion jugable y auditoría del contrato."
+  }
+}

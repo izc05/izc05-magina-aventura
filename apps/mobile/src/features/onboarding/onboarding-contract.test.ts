@@ -17,8 +17,16 @@ describe('Mágina Aventura onboarding contract', () => {
       'Bienvenido a Mágina Aventura',
       'Descubre rutas',
       'Camina y desbloquea',
-      'Gana XP y aceitunas',
+      'Construye tu progreso',
     ]);
+  });
+
+  it('does not promise rewards before validated activity rewards are enabled', () => {
+    const rewardsSlide = onboardingSlides.find((slide) => slide.id === 'rewards');
+
+    expect(rewardsSlide?.body).toContain('se activarán');
+    expect(rewardsSlide?.body).toContain('validar cada actividad');
+    expect(rewardsSlide?.title).not.toContain('Gana');
   });
 
   it('routes a fresh install to onboarding and a returning install home', () => {

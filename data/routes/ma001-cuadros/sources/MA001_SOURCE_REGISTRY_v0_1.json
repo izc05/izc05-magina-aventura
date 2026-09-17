@@ -1,0 +1,118 @@
+{
+  "registry_version": "0.1",
+  "adventure_id": "MA-001",
+  "principle": "Toda afirmación factual, geometría externa o recurso multimedia debe conservar procedencia y condiciones de reutilización. Una fuente comunitaria no se convierte automáticamente en fuente canónica.",
+  "sources": [
+    {
+      "source_id": "ma001-src-junta-las-vinas-page",
+      "source_type": "OFFICIAL_WEB_PAGE",
+      "authority": "Junta de Andalucía",
+      "title": "Sendero Las Viñas",
+      "url": "https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/las-vi%C3%B1as/255035",
+      "role": ["ROUTE_DESCRIPTION", "DISTANCE", "DURATION", "DIFFICULTY", "NATURE", "GEOLOGY", "OPERATIONAL_STATUS"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "ACTIVE_REFERENCE"
+    },
+    {
+      "source_id": "ma001-src-jaen-paraiso-las-vinas",
+      "source_type": "OFFICIAL_TOURISM_WEB_PAGE",
+      "authority": "Jaén Paraíso Interior / Diputación Provincial de Jaén",
+      "title": "Sendero Las Viñas",
+      "url": "https://www.jaenparaisointerior.es/es/w/sendero-las-vinas",
+      "role": ["ROUTE_DESCRIPTION", "ACCESS", "ROUTE_REFERENCE"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "ACTIVE_REFERENCE"
+    },
+    {
+      "source_id": "ma001-src-junta-official-kml",
+      "source_type": "OFFICIAL_TRACK_FILE",
+      "authority": "Junta de Andalucía",
+      "title": "18_Las_Vinas.kml",
+      "url": "https://www.juntadeandalucia.es/medioambiente/portal/documents/20151/91693279/18_Las_Vinas.kml/3a861247-00ee-0c65-c0d0-7b304acc9ff3?t=1675942382809",
+      "role": ["OFFICIAL_TRACK"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "LOCATED_DOWNLOAD_PENDING",
+      "note": "La URL oficial está localizada. La descarga automática ha fallado en el entorno de trabajo; no declarar importado hasta disponer del archivo íntegro."
+    },
+    {
+      "source_id": "ma001-src-diputacion-official-kml",
+      "source_type": "OFFICIAL_TRACK_FILE",
+      "authority": "Jaén Paraíso Interior / Diputación Provincial de Jaén",
+      "title": "mapa_equip_uso_publico (Las Viñas)",
+      "url": "https://www.jaenparaisointerior.es/documents/303680/0/mapa_equip_uso_publico%2B%2829%29.kml/3d49ab1f-f042-1fa5-6f01-ba7eacdac423?t=1599144808308",
+      "role": ["OFFICIAL_TRACK_REFERENCE"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "LOCATED_DOWNLOAD_PENDING",
+      "note": "Conservar separada de la geometría de Junta hasta comparar ambas."
+    },
+    {
+      "source_id": "ma001-src-junta-torreon",
+      "source_type": "OFFICIAL_WEB_PAGE",
+      "authority": "Junta de Andalucía",
+      "title": "Torreón de Cuadros",
+      "role": ["HERITAGE", "VIEWPOINT"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "ACTIVE_REFERENCE"
+    },
+    {
+      "source_id": "ma001-src-bedmar-history",
+      "source_type": "MUNICIPAL_WEB_PAGE",
+      "authority": "Ayuntamiento de Bedmar y Garcíez",
+      "title": "Historia",
+      "url": "https://www.bedmargarciez.es/el-municipio/historia/",
+      "role": ["LOCAL_HISTORY", "FRONTIER_CONTEXT"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "ACTIVE_REFERENCE"
+    },
+    {
+      "source_id": "ma001-src-bedmar-heritage",
+      "source_type": "MUNICIPAL_WEB_PAGE",
+      "authority": "Ayuntamiento de Bedmar y Garcíez",
+      "title": "Patrimonio histórico",
+      "url": "https://www.bedmargarciez.es/turismo/patrimonio-historico/",
+      "role": ["SANCTUARY", "MILL", "LOCAL_HERITAGE"],
+      "confidence": "A",
+      "reuse_status": "REVIEW_REQUIRED",
+      "status": "ACTIVE_REFERENCE"
+    },
+    {
+      "source_id": "ma001-src-control-wikiloc-47452434",
+      "source_type": "COMMUNITY_TRACK",
+      "authority": "Wikiloc user contribution",
+      "title": "ÁREA RECREATIVA DE CUADROS-SENDERO DE LAS VIÑAS (BEDMAR) (P.N de Sierra Mágina)",
+      "external_id": "47452434",
+      "role": ["CONTROL_TRACK", "CONTROL_WAYPOINTS"],
+      "confidence": "C",
+      "reuse_status": "CONTROL_ONLY_DO_NOT_REPUBLISH_AS_OWN",
+      "status": "AVAILABLE",
+      "local_assets": [
+        "control/MA001_Cuadros_LasVinas_CONTROL_summary.json"
+      ]
+    },
+    {
+      "source_id": "ma001-src-field-validation",
+      "source_type": "FIRST_PARTY_FIELD_DATA",
+      "authority": "Mágina Aventura",
+      "title": "MA-001 Field Validation",
+      "role": ["FIELD_TRACK", "CHECKPOINT_GPS", "SAFETY", "PHOTOS", "OBSERVABILITY"],
+      "confidence": "A_AFTER_PASS",
+      "reuse_status": "FIRST_PARTY",
+      "status": "PENDING"
+    }
+  ],
+  "provenance_rules": {
+    "official_track_raw_must_be_preserved": true,
+    "community_control_cannot_be_promoted_without_validation": true,
+    "field_raw_files_must_be_preserved": true,
+    "derived_geometry_must_reference_inputs": true,
+    "historical_claims_require_specific_source": true,
+    "water_potability_requires_current_explicit_verification": true,
+    "media_rights_must_be_resolved_before_publication": true
+  }
+}

@@ -2,30 +2,34 @@ import type { AdventureRouteCard } from './route-types';
 
 /**
  * Development-only route data used to validate the first visual vertical.
- * These values are placeholders and MUST be replaced by verified route data
- * before any production release.
+ * Only the explicitly verified basics below are exposed in the pre-beta.
+ * Geometry, elevation, rewards and route guidance remain pending until their
+ * authoritative sources are integrated.
  */
 export const developmentRoutes: AdventureRouteCard[] = [
   {
-    id: 'dev-bedmar-cuadros-001',
-    slug: 'sendero-de-cuadros-dev',
-    title: 'Sendero de Cuadros',
-    municipalityId: 'dev-bedmar-garciez',
-    municipalityName: 'Bedmar y Garcíez',
-    distanceKm: 8.7,
-    elevationGainM: 412,
-    durationMinutes: 150,
-    difficulty: 'moderate',
+    id: 'prebeta-cambil-el-peralejo-001',
+    slug: 'el-peralejo-prebeta',
+    title: 'El Peralejo',
+    municipalityId: 'cambil',
+    municipalityName: 'Cambil',
+    distanceKm: 2.268,
+    elevationGainM: 0,
+    durationMinutes: 60,
+    difficulty: 'easy',
     rewardPreview: {
-      xp: 750,
-      olives: 120,
-      discoveries: 7,
+      xp: 0,
+      olives: 0,
+      discoveries: 0,
     },
     contentVersion: 1,
-    description: 'Contenido de desarrollo pendiente de validación editorial.',
-    safetyNotes: ['Datos de seguridad pendientes de validación de campo.'],
-    startLatitude: 37.823,
-    startLongitude: -3.413,
+    description:
+      'Datos básicos verificados para la prueba pre-beta; el trazado GPS oficial pendiente de incorporación.',
+    safetyNotes: [
+      'Comprueba el estado operativo y las condiciones de seguridad de la ruta antes de iniciar la actividad.',
+    ],
+    startLatitude: 37.689886,
+    startLongitude: -3.487147,
     geometryVersion: 1,
     offlineAvailable: false,
     developmentFixture: true,

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../src/components/branding/AppHeader';
 import { PrimaryTabBar } from '../src/components/navigation/PrimaryTabBar';
 import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
+import { AdventureLandscape } from '../src/components/visuals/AdventureLandscape';
 import { presentHome, type HomeQuickAction } from '../src/features/home/home-presenter';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
@@ -63,12 +64,7 @@ export default function HomeScreen() {
         <AppHeader />
 
         <View style={styles.hero}>
-          <View style={styles.heroGlow} />
-          <View style={styles.sun} />
-          <View style={styles.mountainBack} />
-          <View style={styles.mountainMid} />
-          <View style={styles.mountainFront} />
-          <View style={styles.path} />
+          <AdventureLandscape variant="home" />
 
           <View style={styles.heroCopy}>
             <Text style={styles.greeting}>Buenos días,</Text>
@@ -170,66 +166,6 @@ const styles = StyleSheet.create({
     padding: spacing[24],
     justifyContent: 'flex-end',
     ...shadow.card,
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: '#47725B',
-    opacity: 0.55,
-  },
-  sun: {
-    position: 'absolute',
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    right: 30,
-    top: 26,
-    backgroundColor: colors.aoveGold,
-    opacity: 0.96,
-  },
-  mountainBack: {
-    position: 'absolute',
-    width: 330,
-    height: 145,
-    borderRadius: 64,
-    right: -108,
-    bottom: 90,
-    backgroundColor: '#6D8A72',
-    transform: [{ rotate: '-14deg' }],
-  },
-  mountainMid: {
-    position: 'absolute',
-    width: 320,
-    height: 150,
-    borderRadius: 64,
-    left: -120,
-    bottom: 72,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '17deg' }],
-  },
-  mountainFront: {
-    position: 'absolute',
-    width: 350,
-    height: 135,
-    borderRadius: 58,
-    right: -120,
-    bottom: 34,
-    backgroundColor: '#173C2D',
-    transform: [{ rotate: '9deg' }],
-  },
-  path: {
-    position: 'absolute',
-    width: 54,
-    height: 150,
-    borderRadius: 28,
-    backgroundColor: colors.limestone,
-    left: '48%',
-    bottom: 0,
-    opacity: 0.86,
-    transform: [{ rotate: '18deg' }],
   },
   heroCopy: {
     zIndex: 2,

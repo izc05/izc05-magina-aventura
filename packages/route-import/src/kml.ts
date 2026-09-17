@@ -1,6 +1,6 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import type { GeoJsonPosition, RouteLineFeature } from '@magina-aventura/contracts';
-import { calculateRouteBounds, validateRouteLineFeature } from '@magina-aventura/geo';
+import { calculateRouteBounds, validateRouteLineFeature, calculateTrackMetrics } from '@magina-aventura/geo';
 import type { ImportedRouteGeometry } from './gpx';
 
 function findLineStringCoordinates(node: unknown): string | null {
@@ -87,5 +87,6 @@ export function parseKml(xml: string, routeId: string, geometryVersion: number):
     start: coordinates[0]!,
     bounds: calculateRouteBounds(coordinates),
     elevationsM,
+    metrics: calculateTrackMetrics(line, elevationsM),
   };
 }

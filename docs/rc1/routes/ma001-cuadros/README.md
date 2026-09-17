@@ -14,6 +14,7 @@ Esta rama **NO modifica** la Master Spec RC1 ni el plan de integración aprobado
 - `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART3.md` — final, XP, fotografía, procedencia, fuentes y gate de publicación.
 - `MA001_CONTENT_CONTRACT_AUDIT_v1.md` — cruce de MA-001 contra el Adventure Content Contract para localizar campos pendientes.
 - `MA001_FIELD_DAY_RUNBOOK_v0_1.md` — protocolo humano para la futura jornada de validación física.
+- `MA001_FREEZE_CHECKLIST_v0_1.md` — condiciones para `CONTENT_FROZEN` y `READY_TO_PUBLISH`.
 
 ## Documentos globales relacionados
 
@@ -28,6 +29,7 @@ Esta rama **NO modifica** la Master Spec RC1 ni el plan de integración aprobado
 - `data/routes/ma001-cuadros/MA001_ROUTE_SEGMENTS_v0_1.json` — nueve segmentos físicos del recorrido.
 - `data/routes/ma001-cuadros/validation/MA001_FIELD_VALIDATION_TEMPLATE_v0_1.json` — formulario estructurado para validación física.
 - `data/routes/ma001-cuadros/media/MA001_MEDIA_MANIFEST_v0_1.json` — inventario de imágenes requeridas, roles y gate multimedia.
+- `data/routes/ma001-cuadros/sources/MA001_SOURCE_REGISTRY_v0_1.json` — procedencia oficial, comunitaria y de campo con reglas de reutilización.
 - `data/routes/ma001-cuadros/control/MA001_Cuadros_LasVinas_CONTROL_summary.json` — resumen técnico del track comunitario de control.
 
 El track comunitario de Wikiloc se considera exclusivamente `CONTROL_ONLY`. La geometría canónica deberá proceder del track oficial contrastado y de la posterior validación de campo.
@@ -44,9 +46,11 @@ El track comunitario de Wikiloc se considera exclusivamente `CONTROL_ONLY`. La g
 - Checkpoints: candidatos avanzados.
 - Narrativa: avanzada.
 - Imágenes: manifiesto definido; producción/permiso pendiente.
+- Procedencia: registro v0.1 creado.
 - Juego: XP e insignias en modo piloto.
 - Plantilla de validación física: lista.
 - Runbook de salida de campo: listo.
+- Freeze Checklist: lista.
 - Validación física: pendiente.
 - Publicación: bloqueada hasta reapertura oficial y validación.
 
@@ -69,8 +73,10 @@ Bloqueos:
 3. cuando exista reapertura, ejecutar el Field Day Runbook;
 4. comparar `OFFICIAL_TRACK ↔ CONTROL_TRACK ↔ FIELD_TRACK`;
 5. resolver radios, coordenadas y POI pendientes;
-6. congelar reglas de completado tras prueba real;
-7. probar el contrato con MA-002 sin añadir lógica específica.
+6. completar Media Manifest con archivos reales y derechos claros;
+7. congelar reglas de completado tras prueba real;
+8. alcanzar `CONTENT_FROZEN` según la Freeze Checklist;
+9. probar el contrato con MA-002 sin añadir lógica específica.
 
 ## Principio
 

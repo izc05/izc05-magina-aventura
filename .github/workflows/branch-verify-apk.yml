@@ -11,6 +11,7 @@ permissions:
   contents: read
 
 env:
+  NODE_ENV: production
   EXPO_PUBLIC_SUPABASE_URL: https://klchkjsdybbgritxkswp.supabase.co
   EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_neY7nXnGfgjhMa4rIv2AmQ_5DMnJY54
 
@@ -33,7 +34,7 @@ jobs:
           cache: pnpm
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'

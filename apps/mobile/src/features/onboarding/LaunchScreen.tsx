@@ -8,6 +8,11 @@ export function LaunchScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.glowTop} />
+      <View style={styles.sun} />
+      <View style={styles.mountainBack} />
+      <View style={styles.mountainFront} />
+      <View style={styles.path} />
+
       <View style={styles.brandWrap}>
         <BrandMark size={136} framed inverse />
         <Text style={styles.name}>{brand.name}</Text>
@@ -16,14 +21,10 @@ export function LaunchScreen() {
 
       <View style={styles.loadingWrap}>
         <ActivityIndicator color={colors.aoveGold} size="small" />
-        <Text style={styles.loading}>Cargando aventuras…</Text>
+        <Text style={styles.loading}>Preparando Mágina…</Text>
       </View>
 
-      <View style={styles.footerBranch} />
-      <View style={[styles.footerLeaf, styles.footerLeafOne]} />
-      <View style={[styles.footerLeaf, styles.footerLeafTwo]} />
-      <View style={[styles.footerLeaf, styles.footerLeafThree]} />
-      <Text style={styles.footer}>LA NATURALEZA TAMBIÉN TE CAMBIA</Text>
+      <Text style={styles.footer}>{brand.claim.toUpperCase()}</Text>
     </View>
   );
 }
@@ -38,13 +39,56 @@ const styles = StyleSheet.create({
   },
   glowTop: {
     position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
+    width: 330,
+    height: 330,
+    borderRadius: 165,
     backgroundColor: colors.olive700,
-    opacity: 0.28,
+    opacity: 0.26,
     top: -170,
     right: -120,
+  },
+  sun: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.aoveGold,
+    opacity: 0.16,
+    right: -18,
+    bottom: 108,
+  },
+  mountainBack: {
+    position: 'absolute',
+    width: 360,
+    height: 165,
+    borderRadius: 70,
+    backgroundColor: colors.olive700,
+    opacity: 0.45,
+    right: -125,
+    bottom: -62,
+    transform: [{ rotate: '-15deg' }],
+  },
+  mountainFront: {
+    position: 'absolute',
+    width: 330,
+    height: 150,
+    borderRadius: 66,
+    backgroundColor: colors.olive500,
+    opacity: 0.28,
+    left: -120,
+    bottom: -72,
+    transform: [{ rotate: '17deg' }],
+  },
+  path: {
+    position: 'absolute',
+    width: 46,
+    height: 150,
+    borderRadius: 28,
+    backgroundColor: colors.limestone,
+    opacity: 0.18,
+    left: '47%',
+    bottom: -94,
+    transform: [{ rotate: '18deg' }],
   },
   brandWrap: {
     alignItems: 'center',
@@ -67,7 +111,7 @@ const styles = StyleSheet.create({
   },
   loadingWrap: {
     position: 'absolute',
-    bottom: 150,
+    bottom: 142,
     alignItems: 'center',
     gap: spacing[12],
   },
@@ -82,40 +126,6 @@ const styles = StyleSheet.create({
     color: colors.limestone,
     fontSize: 8,
     fontWeight: '800',
-    letterSpacing: 2.1,
-  },
-  footerBranch: {
-    position: 'absolute',
-    width: 180,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.olive700,
-    left: -35,
-    bottom: 58,
-    transform: [{ rotate: '-18deg' }],
-    opacity: 0.7,
-  },
-  footerLeaf: {
-    position: 'absolute',
-    width: 58,
-    height: 20,
-    borderRadius: 30,
-    backgroundColor: colors.olive700,
-    opacity: 0.65,
-  },
-  footerLeafOne: {
-    left: 1,
-    bottom: 70,
-    transform: [{ rotate: '18deg' }],
-  },
-  footerLeafTwo: {
-    left: 45,
-    bottom: 42,
-    transform: [{ rotate: '-27deg' }],
-  },
-  footerLeafThree: {
-    left: 92,
-    bottom: 78,
-    transform: [{ rotate: '4deg' }],
+    letterSpacing: 1.5,
   },
 });

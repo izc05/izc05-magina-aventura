@@ -33,7 +33,23 @@ export default function ActiveAdventureScreen() {
     [route, engineState],
   );
 
-  if (!route || !presentation) return null;
+  if (!route || !presentation) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <StatusBar style="dark" />
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundTitle}>Aventura no disponible</Text>
+          <Text style={styles.notFoundBody}>
+            No encontramos la ruta o la actividad necesaria para abrir esta aventura.
+          </Text>
+          <Pressable style={styles.primaryButton} onPress={() => router.replace('/')}>
+            <Text style={styles.primaryButtonText}>Volver al inicio</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const currentRoute = route;
   const isPaused = engineState?.session.state === 'PAUSED';
   const hasActivity = Boolean(engineState);
@@ -162,7 +178,7 @@ export default function ActiveAdventureScreen() {
               </Pressable>
             </View>
             <Text style={styles.persistNote}>
-              Puedes bloquear la pantalla. Android seguirá guardando posiciones en SQLite y el track se sincronizará después.
+              Puedes bloquear la pantalla durante la aventura. El teléfono seguirá guardando el recorrido y conservará los datos aunque pierdas la conexión.
             </Text>
           </>
         )}
@@ -302,6 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.olive900,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing[20],
   },
   primaryButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
   persistNote: {
@@ -309,5 +326,25 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     marginTop: spacing[12],
+  },
+  notFound: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing[24],
+  },
+  notFoundTitle: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  notFoundBody: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginTop: spacing[8],
+    maxWidth: 320,
   },
 });

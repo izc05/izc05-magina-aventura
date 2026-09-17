@@ -13,15 +13,21 @@ export type RouteDetailPresentation = {
 export function presentRouteDetail(
   route: AdventureRouteCard,
 ): RouteDetailPresentation {
+  const betaDataPending = route.developmentFixture === true;
+
   return {
     distance: `${route.distanceKm.toLocaleString('es-ES', {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     })} km`,
-    elevation: `+${route.elevationGainM} m`,
+    elevation: betaDataPending ? 'Pendiente' : `+${route.elevationGainM} m`,
     duration: durationLabel(route.durationMinutes),
     difficulty: difficultyLabel(route.difficulty),
-    rewardHeadline: `+${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
-    discoveries: `${route.rewardPreview.discoveries} descubrimientos en la ruta`,
+    rewardHeadline: betaDataPending
+      ? 'Recompensas en validación'
+      : `+${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
+    discoveries: betaDataPending
+      ? 'Descubrimientos en preparación'
+      : `${route.rewardPreview.discoveries} descubrimientos en la ruta`,
   };
 }

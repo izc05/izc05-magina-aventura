@@ -81,6 +81,8 @@ export default function PrepareRouteAdventureScreen() {
     );
   }
 
+  const currentRoute = route;
+
   async function prepareAndStart() {
     if (busy) return;
     setBusy(true);
@@ -110,11 +112,11 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
 
-      const payload = await developmentRouteMapRepository.getMapPayload(route!.slug);
+      const payload = await developmentRouteMapRepository.getMapPayload(currentRoute.slug);
       const routeLine = payload?.line.geometry.coordinates ?? [];
 
-      await activityRuntime.start(route!, routeLine);
-      router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
+      await activityRuntime.start(currentRoute, routeLine);
+      router.replace({ pathname: '/adventure/[slug]', params: { slug: currentRoute.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');
     } finally {
@@ -134,20 +136,20 @@ export default function PrepareRouteAdventureScreen() {
           <BrandMark size={54} inverse />
           <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
           <Text style={styles.title}>Prepara tu aventura</Text>
-          <Text style={styles.routeName}>{route.title}</Text>
-          <Text style={styles.routePlace}>{route.municipalityName}</Text>
+          <Text style={styles.routeName}>{currentRoute.title}</Text>
+          <Text style={styles.routePlace}>{currentRoute.municipalityName}</Text>
         </View>
 
         <View style={styles.summaryCard}>
-          <Metric value={`${route.distanceKm.toFixed(1).replace('.', ',')} km`} label="Distancia" />
-          <Metric value={`+${route.elevationGainM} m`} label="Desnivel" />
-          <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
+          <Metric value={`${currentRoute.distanceKm.toFixed(1).replace('.', ',')} km`} label="Distancia" />
+          <Metric value={`+${currentRoute.elevationGainM} m`} label="Desnivel" />
+          <Metric value={durationLabel(currentRoute.durationMinutes)} label="Duración" />
         </View>
 
-        <Text style={styles.sectionEyebrow}>COMPROBACIÓN REAL DEL TELÉFONO</Text>
+        <Text style={styles.sectionEyebrow}>ANTES DE EMPEZAR</Text>
         <Text style={styles.sectionTitle}>¿Estamos listos?</Text>
         <Text style={styles.sectionBody}>
-          La aventura solo arranca cuando Android permite ubicación y seguimiento con la pantalla bloqueada.
+          Revisamos ubicación, seguimiento con la pantalla bloqueada y disponibilidad sin conexión antes de iniciar el recorrido.
         </Text>
 
         <View style={styles.readinessCard}>
@@ -163,10 +165,10 @@ export default function PrepareRouteAdventureScreen() {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoEyebrow}>REGISTRO OFFLINE-FIRST</Text>
-          <Text style={styles.infoTitle}>El GPS no depende de Internet</Text>
+          <Text style={styles.infoEyebrow}>PREPARADA PARA ZONAS SIN COBERTURA</Text>
+          <Text style={styles.infoTitle}>El recorrido no depende de Internet</Text>
           <Text style={styles.infoBody}>
-            Los puntos se guardan primero en SQLite. Puedes perder cobertura y el recorrido seguirá registrándose. Si existe un track oficial verificado, también se usa para progreso y avisos de salida de ruta; si no existe, la app no inventa geometría.
+            Durante la aventura, las posiciones se guardan primero en el teléfono. Si pierdes cobertura, el seguimiento puede continuar. Cuando exista un trazado oficial verificado podremos usarlo también para progreso y avisos de salida de ruta; si no existe, la app no inventará el recorrido.
           </Text>
         </View>
 
@@ -189,7 +191,7 @@ export default function PrepareRouteAdventureScreen() {
               {busy ? 'Preparando GPS…' : presentation.canStartGps ? 'Iniciar aventura' : 'Preparar GPS e iniciar'}
             </Text>
             <Text style={styles.startButtonCaption}>
-              {presentation.canStartGps ? 'Tracking real · segundo plano activo' : 'Android pedirá los permisos necesarios'}
+              {presentation.canStartGps ? 'GPS listo · seguimiento con pantalla bloqueada' : 'Te pediremos solo los permisos necesarios'}
             </Text>
           </View>
           <Text style={styles.startArrow}>→</Text>

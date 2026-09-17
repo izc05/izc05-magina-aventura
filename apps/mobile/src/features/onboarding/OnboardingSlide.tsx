@@ -15,7 +15,7 @@ export function OnboardingSlide({ slide, width }: OnboardingSlideProps) {
       <View style={styles.scene}>
         <Landscape />
         {slide.id === 'welcome' ? <Hiker /> : null}
-        {slide.id === 'routes' ? <Signpost /> : null}
+        {slide.id === 'routes' ? <RouteGuide /> : null}
         {slide.id === 'discover' ? <Discovery /> : null}
         {slide.id === 'rewards' ? <RewardMark /> : null}
       </View>
@@ -38,10 +38,9 @@ function Landscape() {
       <View style={styles.mountainNear} />
       <View style={styles.ground} />
       <View style={styles.path} />
-      <View style={styles.oliveBranchLeft} />
-      <View style={styles.oliveLeafA} />
-      <View style={styles.oliveLeafB} />
-      <View style={styles.oliveLeafC} />
+      <View style={styles.brandTrailMarker}>
+        <View style={styles.markerDot} />
+      </View>
     </View>
   );
 }
@@ -59,19 +58,27 @@ function Hiker() {
   );
 }
 
-function Signpost() {
+function RouteGuide() {
   return (
-    <View style={styles.signpost}>
-      <View style={styles.signPole} />
-      <View style={[styles.signBoard, styles.signBoardTop]}>
-        <Text style={styles.signText}>RUTAS</Text>
+    <View style={styles.guideCard}>
+      <View style={styles.guideBadge}>
+        <Text style={styles.guideBadgeText}>RUTA</Text>
       </View>
-      <View style={[styles.signBoard, styles.signBoardMiddle]}>
-        <Text style={styles.signText}>NATURALEZA</Text>
+      <Text style={styles.guideTitle}>Elige con información</Text>
+      <View style={styles.guideMetrics}>
+        <GuideMetric value="8,7 km" label="Distancia" />
+        <GuideMetric value="+412 m" label="Desnivel" />
+        <GuideMetric value="2 h 30" label="Tiempo" />
       </View>
-      <View style={[styles.signBoard, styles.signBoardBottom]}>
-        <Text style={styles.signText}>PATRIMONIO</Text>
-      </View>
+    </View>
+  );
+}
+
+function GuideMetric({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.guideMetric}>
+      <Text style={styles.guideMetricValue}>{value}</Text>
+      <Text style={styles.guideMetricLabel}>{label}</Text>
     </View>
   );
 }
@@ -99,8 +106,8 @@ function RewardMark() {
       <View style={styles.rewardGlow} />
       <BrandMark size={112} framed inverse />
       <View style={styles.rewardBadges}>
-        <RewardBadge value="XP" label="+100" />
-        <RewardBadge value="●" label="+3" />
+        <RewardBadge value="XP" label="PROGRESO" />
+        <RewardBadge value="✓" label="RUTAS" />
         <RewardBadge value="◆" label="DESCUBRE" />
       </View>
     </View>
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 46,
-    backgroundColor: '#F1D57A',
+    backgroundColor: colors.aoveGold,
     right: 42,
     top: 64,
     opacity: 0.86,
@@ -199,45 +206,24 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '12deg' }],
     opacity: 0.95,
   },
-  oliveBranchLeft: {
+  brandTrailMarker: {
     position: 'absolute',
-    width: 120,
-    height: 5,
-    borderRadius: 3,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 5,
+    borderColor: colors.white,
     backgroundColor: colors.olive900,
-    left: -20,
-    bottom: 50,
-    transform: [{ rotate: '-28deg' }],
+    left: 38,
+    bottom: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  oliveLeafA: {
-    position: 'absolute',
-    width: 45,
-    height: 17,
-    borderRadius: 22,
-    backgroundColor: colors.olive900,
-    left: 18,
-    bottom: 72,
-    transform: [{ rotate: '18deg' }],
-  },
-  oliveLeafB: {
-    position: 'absolute',
-    width: 52,
-    height: 18,
-    borderRadius: 25,
-    backgroundColor: colors.olive700,
-    left: 47,
-    bottom: 47,
-    transform: [{ rotate: '-35deg' }],
-  },
-  oliveLeafC: {
-    position: 'absolute',
-    width: 44,
-    height: 16,
-    borderRadius: 22,
-    backgroundColor: colors.olive900,
-    left: 72,
-    bottom: 84,
-    transform: [{ rotate: '8deg' }],
+  markerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.aoveGold,
   },
   copy: {
     flex: 1,
@@ -325,42 +311,50 @@ const styles = StyleSheet.create({
     top: 48,
     transform: [{ rotate: '9deg' }],
   },
-  signpost: {
+  guideCard: {
     position: 'absolute',
-    left: '20%',
-    bottom: 70,
-    width: 210,
-    height: 215,
+    left: 28,
+    right: 28,
+    bottom: 72,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(250,249,246,0.95)',
+    padding: spacing[20],
   },
-  signPole: {
-    position: 'absolute',
-    width: 10,
-    height: 205,
-    borderRadius: 5,
-    backgroundColor: '#71533B',
-    left: 94,
-    bottom: 0,
+  guideBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    backgroundColor: colors.olive900,
+    paddingHorizontal: spacing[10],
+    paddingVertical: 5,
   },
-  signBoard: {
-    position: 'absolute',
-    left: 17,
-    width: 168,
-    height: 44,
-    borderRadius: 6,
-    backgroundColor: '#77543A',
-    borderWidth: 2,
-    borderColor: '#9D795B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  signBoardTop: { top: 16, transform: [{ rotate: '-2deg' }] },
-  signBoardMiddle: { top: 72, transform: [{ rotate: '1deg' }] },
-  signBoardBottom: { top: 128, transform: [{ rotate: '-1deg' }] },
-  signText: {
-    color: colors.warmBackground,
-    fontSize: 12,
+  guideBadgeText: {
+    color: colors.white,
+    fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 1.3,
+    letterSpacing: 1,
+  },
+  guideTitle: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: spacing[10],
+  },
+  guideMetrics: {
+    flexDirection: 'row',
+    marginTop: spacing[16],
+  },
+  guideMetric: {
+    flex: 1,
+  },
+  guideMetricValue: {
+    color: colors.olive900,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  guideMetricLabel: {
+    color: colors.muted,
+    fontSize: 9,
+    marginTop: 2,
   },
   discovery: {
     position: 'absolute',
@@ -446,8 +440,8 @@ const styles = StyleSheet.create({
     width: 168,
     height: 168,
     borderRadius: 84,
-    backgroundColor: '#F4D66A',
-    opacity: 0.38,
+    backgroundColor: colors.aoveGold,
+    opacity: 0.3,
     top: -28,
   },
   rewardBadges: {

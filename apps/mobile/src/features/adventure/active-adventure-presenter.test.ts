@@ -64,8 +64,8 @@ describe('active adventure presentation', () => {
     if (!route) return;
 
     expect(presentActiveAdventure(route)).toEqual({
-      routeTitle: 'Sendero de Cuadros',
-      place: 'Bedmar y Garcíez',
+      routeTitle: 'El Peralejo',
+      place: 'Cambil',
       modeLabel: 'GPS PREPARADO · SIN ACTIVIDAD',
       progress: '0 %',
       distance: '0,00 km',
@@ -73,7 +73,7 @@ describe('active adventure presentation', () => {
       elevation: '+0 m',
       objectiveTitle: 'Inicia la aventura',
       objectiveMeta: 'El track comenzará al activar el GPS',
-      rewardPreview: '+750 XP · +120 aceitunas',
+      rewardPreview: 'Recompensas pendientes de validación',
     });
   });
 

@@ -6,7 +6,7 @@ export type PrepareOfflineState = OfflinePackageState | 'unavailable' | 'error';
 export type ReadinessTone = 'ready' | 'pending' | 'review';
 
 export type ReadinessCheck = Readonly<{
-  id: 'location' | 'background' | 'offline' | 'safety';
+  id: 'location' | 'background' | 'offline' | 'route-guide' | 'safety';
   label: string;
   state: string;
   tone: ReadinessTone;
@@ -103,6 +103,12 @@ export function presentPreparation(
         label: 'Ruta offline',
         state: offlineStateCopy,
         tone: offlineReady ? 'ready' : 'pending',
+      },
+      {
+        id: 'route-guide',
+        label: 'Guía de ruta',
+        state: 'Sin trazado oficial',
+        tone: 'review',
       },
       { id: 'safety', label: 'Seguridad', state: 'Revisar', tone: 'review' },
     ],

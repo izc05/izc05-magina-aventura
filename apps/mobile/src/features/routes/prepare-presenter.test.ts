@@ -18,8 +18,25 @@ describe('adventure preparation presentation', () => {
         { id: 'location', label: 'Ubicación', state: 'Lista', tone: 'ready' },
         { id: 'background', label: 'GPS en segundo plano', state: 'Listo', tone: 'ready' },
         { id: 'offline', label: 'Ruta offline', state: 'Listo', tone: 'ready' },
+        { id: 'route-guide', label: 'Guía de ruta', state: 'Sin trazado oficial', tone: 'review' },
         { id: 'safety', label: 'Seguridad', state: 'Revisar', tone: 'review' },
       ],
+    });
+  });
+
+  it('allows GPS recording while clearly disclosing that route guidance is unavailable', () => {
+    const presentation = presentPreparation('unavailable', {
+      servicesEnabled: true,
+      foregroundGranted: true,
+      backgroundGranted: true,
+    });
+
+    expect(presentation.canStartGps).toBe(true);
+    expect(presentation.checks).toContainEqual({
+      id: 'route-guide',
+      label: 'Guía de ruta',
+      state: 'Sin trazado oficial',
+      tone: 'review',
     });
   });
 

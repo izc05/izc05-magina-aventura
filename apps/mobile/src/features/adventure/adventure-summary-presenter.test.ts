@@ -11,14 +11,14 @@ describe('adventure summary presentation', () => {
 
     expect(presentAdventureSummary(route)).toEqual({
       title: 'Resumen de aventura',
-      routeTitle: 'Sendero de Cuadros',
-      place: 'Bedmar y Garcíez',
+      routeTitle: 'El Peralejo',
+      place: 'Cambil',
       distance: '0,0 km',
       elapsed: '00:00',
       elevation: '+0 m',
       xpRecorded: '0 XP registrados',
       olivesRecorded: '0 aceitunas registradas',
-      targetReward: 'Objetivo: +750 XP · +120 aceitunas',
+      targetReward: 'Recompensas pendientes de validación',
       note: 'Vista demo: no se guarda actividad ni se conceden recompensas.',
     });
   });

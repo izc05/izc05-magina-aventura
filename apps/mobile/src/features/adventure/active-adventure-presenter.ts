@@ -87,11 +87,16 @@ function objective(state: ActivityEngineState): { title: string; meta: string } 
   };
 }
 
+function rewardPreview(route: AdventureRouteCard): string {
+  if (route.developmentFixture === true) return 'Recompensas pendientes de validación';
+  return `+${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`;
+}
+
 export function presentActiveAdventure(
   route: AdventureRouteCard,
   state?: ActivityEngineState | null,
 ): ActiveAdventurePresentation {
-  const rewardPreview = `+${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`;
+  const rewards = rewardPreview(route);
 
   if (!state) {
     return {
@@ -104,7 +109,7 @@ export function presentActiveAdventure(
       elevation: '+0 m',
       objectiveTitle: 'Inicia la aventura',
       objectiveMeta: 'El track comenzará al activar el GPS',
-      rewardPreview,
+      rewardPreview: rewards,
     };
   }
 
@@ -125,6 +130,6 @@ export function presentActiveAdventure(
     elevation: `+${Math.round(Math.max(0, state.snapshot.elevationGainMeters))} m`,
     objectiveTitle: currentObjective.title,
     objectiveMeta: currentObjective.meta,
-    rewardPreview,
+    rewardPreview: rewards,
   };
 }

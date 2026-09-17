@@ -26,22 +26,14 @@ export function FeaturedRouteCard({ route, onPress }: FeaturedRouteCardProps) {
         <View style={styles.mountainMid} />
         <View style={styles.mountainFront} />
         <View style={styles.path} />
-        <View style={styles.olives}>
-          <View style={styles.oliveLeafOne} />
-          <View style={styles.oliveLeafTwo} />
-          <View style={styles.oliveFruitOne} />
-          <View style={styles.oliveFruitTwo} />
-        </View>
 
         <View style={styles.routeTypeBadge}>
           <Text style={styles.routeTypeText}>RUTA · SIERRA MÁGINA</Text>
         </View>
-        <View style={styles.favoriteButton}>
-          <View style={styles.favoriteRing} />
-        </View>
+
         {route.developmentFixture ? (
           <View style={styles.developmentBadge}>
-            <Text style={styles.developmentText}>DATOS DE DESARROLLO</Text>
+            <Text style={styles.developmentText}>DATOS EN VALIDACIÓN</Text>
           </View>
         ) : null}
       </View>
@@ -49,7 +41,9 @@ export function FeaturedRouteCard({ route, onPress }: FeaturedRouteCardProps) {
       <View style={styles.content}>
         <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
         <Text style={styles.title}>{route.title}</Text>
-        <Text style={styles.description} numberOfLines={2}>{route.description}</Text>
+        <Text style={styles.description} numberOfLines={2}>
+          {route.description}
+        </Text>
 
         <View style={styles.metrics}>
           <Metric value={presentation.distance} label="Distancia" />
@@ -62,7 +56,7 @@ export function FeaturedRouteCard({ route, onPress }: FeaturedRouteCardProps) {
             <Text style={styles.difficultyText}>{presentation.difficulty}</Text>
           </View>
           <View style={styles.rewardCopy}>
-            <Text style={styles.rewardKicker}>RECOMPENSAS</Text>
+            <Text style={styles.rewardKicker}>OBJETIVOS</Text>
             <Text style={styles.rewardText}>{presentation.rewards}</Text>
           </View>
           <View style={styles.arrowButton}>
@@ -91,7 +85,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   pressed: {
-    opacity: 0.96,
+    opacity: 0.94,
     transform: [{ scale: 0.995 }],
   },
   visual: {
@@ -110,12 +104,13 @@ const styles = StyleSheet.create({
   },
   sun: {
     position: 'absolute',
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: '#F1D57A',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: colors.aoveGold,
     right: 38,
     top: 26,
+    opacity: 0.9,
   },
   mountainBack: {
     position: 'absolute',
@@ -157,51 +152,6 @@ const styles = StyleSheet.create({
     bottom: -84,
     transform: [{ rotate: '19deg' }],
   },
-  olives: {
-    position: 'absolute',
-    left: -5,
-    bottom: -3,
-    width: 110,
-    height: 78,
-  },
-  oliveLeafOne: {
-    position: 'absolute',
-    width: 50,
-    height: 16,
-    borderRadius: 25,
-    left: 8,
-    top: 19,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-28deg' }],
-  },
-  oliveLeafTwo: {
-    position: 'absolute',
-    width: 54,
-    height: 17,
-    borderRadius: 25,
-    left: 46,
-    top: 34,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '25deg' }],
-  },
-  oliveFruitOne: {
-    position: 'absolute',
-    width: 15,
-    height: 15,
-    borderRadius: 8,
-    left: 50,
-    top: 48,
-    backgroundColor: '#4E5727',
-  },
-  oliveFruitTwo: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    left: 67,
-    top: 55,
-    backgroundColor: '#6B493F',
-  },
   routeTypeBadge: {
     position: 'absolute',
     top: spacing[16],
@@ -216,24 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1.1,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    top: spacing[16],
-    right: spacing[16],
-    backgroundColor: 'rgba(250,249,246,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  favoriteRing: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.olive900,
   },
   developmentBadge: {
     position: 'absolute',

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../theme/tokens';
 import { AppLogo } from './AppLogo';
@@ -7,15 +7,10 @@ export function AppHeader() {
   return (
     <View style={styles.header}>
       <AppLogo compact />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Notificaciones"
-        style={styles.notificationButton}
-      >
-        <View style={styles.bellDome} />
-        <View style={styles.bellBase} />
-        <View style={styles.bellClapper} />
-      </Pressable>
+      <View accessibilityRole="text" style={styles.betaBadge}>
+        <View style={styles.betaDot} />
+        <Text style={styles.betaText}>BETA GPS</Text>
+      </View>
     </View>
   );
 }
@@ -28,36 +23,27 @@ const styles = StyleSheet.create({
     paddingTop: spacing[8],
     paddingBottom: spacing[16],
   },
-  notificationButton: {
-    width: 44,
-    height: 44,
+  betaBadge: {
+    minHeight: 36,
     borderRadius: radius.pill,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
+    gap: spacing[8],
+    paddingHorizontal: spacing[12],
+    backgroundColor: colors.oliveWash,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  bellDome: {
-    width: 14,
-    height: 15,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 2,
-    borderBottomWidth: 0,
-    borderColor: colors.olive900,
+  betaDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.aoveGold,
   },
-  bellBase: {
-    width: 18,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: colors.olive900,
-  },
-  bellClapper: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 2,
-    backgroundColor: colors.olive900,
+  betaText: {
+    color: colors.olive900,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });

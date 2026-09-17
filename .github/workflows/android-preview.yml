@@ -8,6 +8,7 @@ on:
       - feat/visual-adventure-summary-v1
       - feat/integration-gps-visual-v1
       - feat/android-beta-arm64-v1
+      - feat/prebeta-ux-polish-v1
   workflow_dispatch:
 
 permissions:

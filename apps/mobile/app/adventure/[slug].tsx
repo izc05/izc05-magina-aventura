@@ -62,7 +62,9 @@ export default function ActiveAdventureScreen() {
         </View>
         <View style={styles.actionRow}>
           <Pressable style={styles.actionButton}><Text style={styles.actionButtonText}>⚑ Ruta</Text></Pressable>
-          <Pressable style={styles.pauseButton}><Text style={styles.pauseButtonText}>Ⅱ Pausar</Text></Pressable>
+          <Pressable style={styles.pauseButton} onPress={() => router.push(`/adventure/${slug}/summary` as any)}>
+            <Text style={styles.pauseButtonText}>Ⅱ Pausar / Terminar</Text>
+          </Pressable>
           <Pressable style={styles.actionButton}><Text style={styles.actionButtonText}>! SOS</Text></Pressable>
         </View>
       </View>

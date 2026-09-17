@@ -28,7 +28,8 @@ The following documents are authoritative design inputs for RC1 and subsequent c
 - `2026-09-17-rc1-section-07-map-navigation-design.md` — map/navigation/weather/safety canon;
 - `2026-09-17-rc1-section-08-admin-control-center.md` — Admin/Super Admin canon;
 - `2026-09-17-rc1-section-09-data-backend-canon.md` — data/backend/storage/sync canon;
-- `2026-09-17-rc1-section-10-beta-quality-canon.md` — beta/quality/release-gate canon.
+- `2026-09-17-rc1-section-10-beta-quality-canon.md` — beta/quality/release-gate canon;
+- `2026-09-17-rc1-section-11-scope-integration-canon.md` — RC1/RC1.1/V2 scope and integration-order canon.
 
 Additional sections explicitly approved by the owner become part of this locked canon even before this manifest is updated; this manifest is a governance aid, not the source of product authority.
 

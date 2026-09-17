@@ -26,8 +26,8 @@ export const onboardingSlides: readonly OnboardingSlide[] = [
   },
   {
     id: 'rewards',
-    title: 'Gana XP y aceitunas',
-    body: 'Completa rutas, descubre lugares, consigue recompensas y sube de nivel dentro de Mágina.',
+    title: 'Construye tu progreso',
+    body: 'Esta beta valida rutas y GPS. XP, aceitunas y recompensas se activarán después de validar cada actividad.',
   },
 ] as const;
 

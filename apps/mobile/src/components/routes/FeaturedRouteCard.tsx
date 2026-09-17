@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { presentFeaturedRoute } from '../../features/routes/route-card-presenter';
 import type { AdventureRouteCard } from '../../features/routes/route-types';
 import { colors, radius, shadow, spacing, typography } from '../../theme/tokens';
+import { AdventureLandscape } from '../visuals/AdventureLandscape';
 
 type FeaturedRouteCardProps = Readonly<{
   route: AdventureRouteCard;
@@ -20,24 +21,13 @@ export function FeaturedRouteCard({ route, onPress }: FeaturedRouteCardProps) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.visual}>
-        <View style={styles.skyGlow} />
-        <View style={styles.sun} />
-        <View style={styles.mountainBack} />
-        <View style={styles.mountainMid} />
-        <View style={styles.mountainFront} />
-        <View style={styles.path} />
-        <View style={styles.olives}>
-          <View style={styles.oliveLeafOne} />
-          <View style={styles.oliveLeafTwo} />
-          <View style={styles.oliveFruitOne} />
-          <View style={styles.oliveFruitTwo} />
-        </View>
+        <AdventureLandscape variant="card" />
 
         <View style={styles.routeTypeBadge}>
           <Text style={styles.routeTypeText}>RUTA · SIERRA MÁGINA</Text>
         </View>
         <View style={styles.favoriteButton}>
-          <View style={styles.favoriteRing} />
+          <Text style={styles.favoriteGlyph}>♡</Text>
         </View>
         {route.developmentFixture ? (
           <View style={styles.developmentBadge}>
@@ -99,109 +89,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.sky,
   },
-  skyGlow: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: '#D8E8ED',
-    opacity: 0.45,
-  },
-  sun: {
-    position: 'absolute',
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: '#F1D57A',
-    right: 38,
-    top: 26,
-  },
-  mountainBack: {
-    position: 'absolute',
-    width: 310,
-    height: 145,
-    borderRadius: 60,
-    backgroundColor: '#719083',
-    right: -105,
-    bottom: -28,
-    transform: [{ rotate: '-13deg' }],
-  },
-  mountainMid: {
-    position: 'absolute',
-    width: 300,
-    height: 140,
-    borderRadius: 55,
-    backgroundColor: colors.olive500,
-    left: -98,
-    bottom: -30,
-    transform: [{ rotate: '18deg' }],
-  },
-  mountainFront: {
-    position: 'absolute',
-    width: 270,
-    height: 115,
-    borderRadius: 50,
-    backgroundColor: colors.olive900,
-    right: -92,
-    bottom: -50,
-    transform: [{ rotate: '10deg' }],
-  },
-  path: {
-    position: 'absolute',
-    width: 48,
-    height: 145,
-    borderRadius: 30,
-    backgroundColor: colors.limestone,
-    left: '47%',
-    bottom: -84,
-    transform: [{ rotate: '19deg' }],
-  },
-  olives: {
-    position: 'absolute',
-    left: -5,
-    bottom: -3,
-    width: 110,
-    height: 78,
-  },
-  oliveLeafOne: {
-    position: 'absolute',
-    width: 50,
-    height: 16,
-    borderRadius: 25,
-    left: 8,
-    top: 19,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-28deg' }],
-  },
-  oliveLeafTwo: {
-    position: 'absolute',
-    width: 54,
-    height: 17,
-    borderRadius: 25,
-    left: 46,
-    top: 34,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '25deg' }],
-  },
-  oliveFruitOne: {
-    position: 'absolute',
-    width: 15,
-    height: 15,
-    borderRadius: 8,
-    left: 50,
-    top: 48,
-    backgroundColor: '#4E5727',
-  },
-  oliveFruitTwo: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    left: 67,
-    top: 55,
-    backgroundColor: '#6B493F',
-  },
   routeTypeBadge: {
     position: 'absolute',
     top: spacing[16],
@@ -224,16 +111,14 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     top: spacing[16],
     right: spacing[16],
-    backgroundColor: 'rgba(250,249,246,0.9)',
+    backgroundColor: 'rgba(250,249,246,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  favoriteRing: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.olive900,
+  favoriteGlyph: {
+    color: colors.olive900,
+    fontSize: 21,
+    fontWeight: '900',
   },
   developmentBadge: {
     position: 'absolute',

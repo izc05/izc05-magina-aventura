@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Mágina Aventura</title>
+  <desc id="desc">Símbolo oficial de Mágina Aventura: Sierra Mágina, sendero blanco y sol dorado.</desc>
+  <defs>
+    <linearGradient id="mountain" x1="130" y1="250" x2="900" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D5132"/>
+      <stop offset="1" stop-color="#2F4A2E"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="625" y1="150" x2="790" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#E2B64A"/>
+    </linearGradient>
+  </defs>
+  <g data-brand-mark="mountain-path-sun">
+    <circle cx="708" cy="285" r="116" fill="url(#sun)"/>
+    <path d="M70 770 208 638 286 548 360 508 431 414 548 270 643 371 715 337 786 404 846 374 957 520 1010 770Z" fill="url(#mountain)"/>
+    <path d="M548 299 526 383 541 426 585 470 634 499 662 518 638 541 596 553 544 551 491 556 437 571 392 593 365 621 371 648 405 671 451 690 490 713 517 744 530 770" fill="none" stroke="#FAF9F6" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M714 365 752 406 779 389 824 436 855 474" fill="none" stroke="#FAF9F6" stroke-width="28" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M278 560 316 526 349 563 375 556 402 583" fill="none" stroke="#FAF9F6" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M70 770 Q305 742 504 766 T1010 770" fill="#21482C" opacity=".42"/>
+  </g>
+</svg>

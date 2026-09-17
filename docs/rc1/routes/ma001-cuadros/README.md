@@ -13,35 +13,64 @@ Esta rama **NO modifica** la Master Spec RC1 ni el plan de integración aprobado
 - `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART2.md` — CP06–CP10 + descubrimientos opcionales.
 - `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART3.md` — final, XP, fotografía, procedencia, fuentes y gate de publicación.
 - `MA001_CONTENT_CONTRACT_AUDIT_v1.md` — cruce de MA-001 contra el Adventure Content Contract para localizar campos pendientes.
+- `MA001_FIELD_DAY_RUNBOOK_v0_1.md` — protocolo humano para la futura jornada de validación física.
 
 ## Documentos globales relacionados
 
 - `docs/product/BIBLIA_MAGINA_AVENTURA_CANONICA.md`
 - `docs/product/MAGINA_AVENTURA_ADVENTURE_CONTENT_CONTRACT_v1.md`
+- `docs/product/MAGINA_AVENTURA_ADVENTURE_CONTENT_CONTRACT_v1_1_DRAFT_DELTA.md`
 
-## Datos de control
+## Datos estructurados MA-001
 
-- `data/routes/ma001-cuadros/control/MA001_Cuadros_LasVinas_CONTROL_summary.json`
+- `data/routes/ma001-cuadros/MA001_CUADROS_DATA_RECORD_v0_1.json` — registro estructurado base.
+- `data/routes/ma001-cuadros/MA001_ROUTE_MASTER_v0_2.json` — Route Master de trabajo que conecta identidad, tracks, narrativa, checkpoints, gates y requisitos de admin.
+- `data/routes/ma001-cuadros/MA001_ROUTE_SEGMENTS_v0_1.json` — nueve segmentos físicos del recorrido.
+- `data/routes/ma001-cuadros/validation/MA001_FIELD_VALIDATION_TEMPLATE_v0_1.json` — formulario estructurado para validación física.
+- `data/routes/ma001-cuadros/media/MA001_MEDIA_MANIFEST_v0_1.json` — inventario de imágenes requeridas, roles y gate multimedia.
+- `data/routes/ma001-cuadros/control/MA001_Cuadros_LasVinas_CONTROL_summary.json` — resumen técnico del track comunitario de control.
 
 El track comunitario de Wikiloc se considera exclusivamente `CONTROL_ONLY`. La geometría canónica deberá proceder del track oficial contrastado y de la posterior validación de campo.
 
 ## Estado
 
 - Identidad: definida.
+- Biblia de producto: definida.
+- Content Contract: v1 + delta v1.1 en validación.
+- Route Master: v0.2 creado.
 - Track de control: analizado.
 - Track oficial: localizado, incorporación/contraste pendiente.
+- Segmentos: 9 segmentos de trabajo definidos.
 - Checkpoints: candidatos avanzados.
 - Narrativa: avanzada.
-- Imágenes: shot list definida; producción/permiso pendiente.
+- Imágenes: manifiesto definido; producción/permiso pendiente.
 - Juego: XP e insignias en modo piloto.
+- Plantilla de validación física: lista.
+- Runbook de salida de campo: listo.
 - Validación física: pendiente.
 - Publicación: bloqueada hasta reapertura oficial y validación.
 
-## Próximo paso
+## Gates actuales
 
-- incorporar los gaps generales detectados por la auditoría al Content Contract;
-- normalizar MA-001 a registros de datos reutilizables;
-- probar después una segunda aventura distinta para validar escalabilidad.
+`MA001_PUBLICATION = BLOCKED_MULTIPLE`
+
+Bloqueos:
+
+1. reapertura oficial pendiente de confirmar;
+2. track oficial pendiente de incorporar/contrastar;
+3. FIELD_TRACK pendiente;
+4. checkpoints obligatorios pendientes de PASS;
+5. multimedia obligatoria pendiente de captura.
+
+## Próximos pasos
+
+1. obtener e incorporar el track oficial íntegro;
+2. preparar comparación `OFFICIAL_TRACK ↔ CONTROL_TRACK`;
+3. cuando exista reapertura, ejecutar el Field Day Runbook;
+4. comparar `OFFICIAL_TRACK ↔ CONTROL_TRACK ↔ FIELD_TRACK`;
+5. resolver radios, coordenadas y POI pendientes;
+6. congelar reglas de completado tras prueba real;
+7. probar el contrato con MA-002 sin añadir lógica específica.
 
 ## Principio
 

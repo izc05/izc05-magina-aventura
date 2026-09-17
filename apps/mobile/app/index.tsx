@@ -11,8 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRoutes } from '../src/features/routes/fixtures';
-import { difficultyLabel, durationLabel } from '../src/features/routes/route-utils';
-import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
+import { colors, radius, spacing, typography } from '../src/theme/tokens';
+import { HeroTerritory } from '../src/components/ui/HeroTerritory';
+import { RouteCard } from '../src/components/ui/RouteCard';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 const navItems = [
@@ -46,18 +47,11 @@ export default function RoutesHomeScreen() {
           </View>
         </View>
 
-        <View style={styles.hero}>
-          <View style={styles.sun} />
-          <View style={styles.mountainBack} />
-          <View style={styles.mountainFront} />
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroKicker}>TU PRÓXIMA AVENTURA</Text>
-            <Text style={styles.heroTitle}>Camina. Descubre.{`\n`}Conquista Mágina.</Text>
-            <Text style={styles.heroBody}>
-              Rutas reales, retos y descubrimientos que solo se desbloquean caminando.
-            </Text>
-          </View>
-        </View>
+        <HeroTerritory 
+          kicker="TU PRÓXIMA AVENTURA" 
+          title={`Camina. Descubre.\nConquista Mágina.`}
+          body="Rutas reales, retos y descubrimientos que solo se desbloquean caminando."
+        />
 
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>⌕</Text>
@@ -93,54 +87,10 @@ export default function RoutesHomeScreen() {
           <Text style={styles.sectionAction}>Ver todas</Text>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Abrir ${route.title}`}
-          style={styles.routeCard}
-          onPress={() =>
-            router.push({
-              pathname: '/routes/[slug]',
-              params: { slug: route.slug },
-            })
-          }
-        >
-          <View style={styles.routeVisual}>
-            <View style={styles.routeGlow} />
-            <View style={styles.routeMountainBack} />
-            <View style={styles.routeMountainFront} />
-            <View style={styles.difficultyBadge}>
-              <Text style={styles.difficultyText}>{difficultyLabel(route.difficulty)}</Text>
-            </View>
-            {route.developmentFixture ? (
-              <View style={styles.developmentBadge}>
-                <Text style={styles.developmentText}>DATOS DE DESARROLLO</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.routeContent}>
-            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
-            <Text style={styles.routeTitle}>{route.title}</Text>
-
-            <View style={styles.metricsRow}>
-              <Metric value={`${route.distanceKm.toFixed(1)} km`} label="Distancia" />
-              <Metric value={`+${route.elevationGainM} m`} label="Desnivel" />
-              <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
-            </View>
-
-            <View style={styles.rewardRow}>
-              <View style={styles.rewardCopy}>
-                <Text style={styles.rewardLabel}>RECOMPENSAS DE AVENTURA</Text>
-                <Text style={styles.rewardValue}>
-                  {route.rewardPreview.discoveries} descubrimientos · +{route.rewardPreview.xp} XP · +{route.rewardPreview.olives} 🫒
-                </Text>
-              </View>
-              <View style={styles.arrowButton}>
-                <Text style={styles.arrow}>→</Text>
-              </View>
-            </View>
-          </View>
-        </Pressable>
+        <RouteCard 
+          route={route} 
+          onPress={() => router.push({ pathname: '/routes/[slug]', params: { slug: route.slug } })} 
+        />
 
         <View style={styles.challengeCard}>
           <View style={styles.challengeIcon}>
@@ -158,22 +108,21 @@ export default function RoutesHomeScreen() {
 
       <View style={styles.bottomNav}>
         {navItems.map(([icon, label], index) => (
-          <View key={label} style={styles.navItem}>
+          <Pressable 
+            key={label} 
+            style={styles.navItem}
+            onPress={() => {
+              if (label === 'Perfil') {
+                router.push('/profile');
+              }
+            }}
+          >
             <Text style={[styles.navIcon, index === 0 && styles.navActive]}>{icon}</Text>
             <Text style={[styles.navLabel, index === 0 && styles.navActive]}>{label}</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
     </SafeAreaView>
-  );
-}
-
-function Metric({ value, label }: { value: string; label: string }) {
-  return (
-    <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
   );
 }
 
@@ -198,49 +147,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileInitial: { color: colors.white, fontSize: 18, fontWeight: '800' },
-  hero: {
-    height: 280,
-    overflow: 'hidden',
-    borderRadius: radius.lg,
-    backgroundColor: colors.olive900,
-    padding: spacing[24],
-    justifyContent: 'flex-end',
-  },
-  sun: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.aoveGold,
-    opacity: 0.9,
-    right: 28,
-    top: 30,
-  },
-  mountainBack: {
-    position: 'absolute',
-    width: 340,
-    height: 170,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '20deg' }],
-    right: -120,
-    bottom: -75,
-    borderRadius: 48,
-  },
-  mountainFront: {
-    position: 'absolute',
-    width: 300,
-    height: 130,
-    backgroundColor: colors.olive500,
-    opacity: 0.82,
-    transform: [{ rotate: '-12deg' }],
-    left: -100,
-    bottom: -65,
-    borderRadius: 44,
-  },
-  heroCopy: { maxWidth: 300 },
-  heroKicker: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.7, marginBottom: spacing[8] },
-  heroTitle: { color: colors.white, fontSize: typography.display, fontWeight: '900', lineHeight: 35 },
-  heroBody: { color: colors.limestone, fontSize: 14, lineHeight: 20, marginTop: spacing[12], maxWidth: 270 },
   searchBox: {
     height: 54,
     borderRadius: radius.md,
@@ -276,85 +182,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   sectionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
   sectionAction: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
-  routeCard: { overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.white, ...shadow.card },
-  routeVisual: { height: 188, backgroundColor: colors.sky, overflow: 'hidden' },
-  routeGlow: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.aoveGold,
-    opacity: 0.75,
-    right: 28,
-    top: 26,
-  },
-  routeMountainBack: {
-    position: 'absolute',
-    width: 300,
-    height: 150,
-    backgroundColor: colors.olive700,
-    transform: [{ rotate: '13deg' }],
-    left: -60,
-    bottom: -90,
-    borderRadius: 40,
-  },
-  routeMountainFront: {
-    position: 'absolute',
-    width: 270,
-    height: 140,
-    backgroundColor: colors.olive900,
-    transform: [{ rotate: '-14deg' }],
-    right: -70,
-    bottom: -85,
-    borderRadius: 40,
-  },
-  difficultyBadge: {
-    position: 'absolute',
-    top: spacing[16],
-    left: spacing[16],
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing[12],
-    paddingVertical: spacing[8],
-  },
-  difficultyText: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
-  developmentBadge: {
-    position: 'absolute',
-    right: spacing[12],
-    bottom: spacing[12],
-    borderRadius: radius.pill,
-    backgroundColor: colors.ink,
-    paddingHorizontal: spacing[8],
-    paddingVertical: spacing[4],
-  },
-  developmentText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
-  routeContent: { padding: spacing[20] },
-  municipality: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  routeTitle: { color: colors.ink, fontSize: 23, fontWeight: '900', marginTop: spacing[4] },
-  metricsRow: { flexDirection: 'row', gap: spacing[12], marginTop: spacing[20] },
-  metric: { flex: 1 },
-  metricValue: { color: colors.ink, fontSize: typography.metric, fontWeight: '900' },
-  metricLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
-  rewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing[20],
-    paddingTop: spacing[16],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  rewardCopy: { flex: 1, paddingRight: spacing[12] },
-  rewardLabel: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
-  rewardValue: { color: colors.ink, fontSize: 13, fontWeight: '700', marginTop: spacing[4] },
-  arrowButton: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.pill,
-    backgroundColor: colors.olive900,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrow: { color: colors.white, fontSize: 20, fontWeight: '800' },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,

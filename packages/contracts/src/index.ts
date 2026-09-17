@@ -7,3 +7,4 @@ export * from './catalog';
 export * from './activity-validation';
 
 export * from './offline-package';
+export * from './weather';

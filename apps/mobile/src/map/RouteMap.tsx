@@ -2,9 +2,16 @@ import { Camera, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-nati
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../theme/tokens';
+import { getRouteMapLayout } from './map-layout';
 import type { RouteMapProps } from './map-types';
 
-export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) {
+export function RouteMap({
+  payload,
+  mapStyle,
+  developmentMode,
+  layout = 'embedded',
+}: RouteMapProps) {
+  const mapLayout = getRouteMapLayout(layout);
   const initialViewState = payload
     ? {
         bounds: payload.bounds,
@@ -24,7 +31,16 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
     : null;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          height: mapLayout.height,
+          margin: mapLayout.margin,
+          borderRadius: mapLayout.borderRadius,
+        },
+      ]}
+    >
       <Map style={styles.map} mapStyle={mapStyle as any}>
         <Camera initialViewState={initialViewState as any} />
 
@@ -60,13 +76,22 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
       </Map>
 
       {!payload ? (
-        <View style={styles.notice}>
+        <View
+          style={[
+            styles.notice,
+            {
+              left: mapLayout.noticeInset,
+              right: mapLayout.noticeInset,
+              bottom: mapLayout.noticeInset,
+            },
+          ]}
+        >
           <Text style={styles.noticeText}>Track verificado no disponible todavía</Text>
         </View>
       ) : null}
 
       {developmentMode ? (
-        <View style={styles.devBadge}>
+        <View style={[styles.devBadge, { top: mapLayout.noticeInset, right: mapLayout.noticeInset }]}>
           <Text style={styles.devText}>DESARROLLO</Text>
         </View>
       ) : null}
@@ -76,27 +101,19 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
 
 const styles = StyleSheet.create({
   container: {
-    height: 260,
-    margin: spacing[20],
     overflow: 'hidden',
-    borderRadius: radius.lg,
     backgroundColor: colors.limestone,
   },
   map: { flex: 1 },
   notice: {
     position: 'absolute',
-    left: spacing[12],
-    right: spacing[12],
-    bottom: spacing[12],
     padding: spacing[12],
     borderRadius: radius.md,
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(250,249,246,0.94)',
   },
   noticeText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
   devBadge: {
     position: 'absolute',
-    top: spacing[12],
-    right: spacing[12],
     paddingHorizontal: spacing[8],
     paddingVertical: spacing[4],
     borderRadius: radius.pill,

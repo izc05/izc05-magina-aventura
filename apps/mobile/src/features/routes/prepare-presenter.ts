@@ -23,6 +23,9 @@ const offlineCopy: Record<PrepareOfflineState, string> = {
   'not-downloaded': 'No descargado',
   ready: 'Listo sin conexión',
   stale: 'Actualización disponible',
+  downloading: 'Descargando',
+  verifying: 'Verificando',
+  failed: 'Error en paquete',
   unavailable: 'No disponible',
   error: 'Error de lectura',
 };

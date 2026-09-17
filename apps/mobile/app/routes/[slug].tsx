@@ -1,5 +1,5 @@
 import type {
-  OfflineRoutePackageManifest,
+  OfflineAdventureManifestV1,
   RouteMapPayload,
 } from '@magina-aventura/contracts';
 import {
@@ -25,7 +25,6 @@ import { colors, radius, shadow, spacing, typography } from '../../src/theme/tok
 type RouteOfflineUiState =
   | OfflinePackageState
   | 'unavailable'
-  | 'downloading'
   | 'error';
 
 const offlineStatusCopy: Record<RouteOfflineUiState, string> = {
@@ -34,14 +33,17 @@ const offlineStatusCopy: Record<RouteOfflineUiState, string> = {
   stale: 'Actualización disponible',
   unavailable: 'No disponible',
   downloading: 'Descargando',
+  verifying: 'Verificando',
+  failed: 'Error en paquete',
   error: 'Error de descarga',
 };
 
 async function materializeRouteMapStyle(
-  manifest: OfflineRoutePackageManifest,
+  manifest: OfflineAdventureManifestV1,
+  styleTemplateUrl: string,
   localUri?: string,
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(manifest.map.styleTemplateUrl);
+  const response = await fetch(styleTemplateUrl);
 
   if (!response.ok) {
     throw new Error(`Unable to load route map style (${response.status})`);
@@ -64,7 +66,7 @@ export default function RouteDetailScreen() {
   const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
 
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
-  const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);
+  const [offlineManifest, setOfflineManifest] = useState<OfflineAdventureManifestV1 | null>(null);
   const [offlineState, setOfflineState] = useState<RouteOfflineUiState>('unavailable');
   const [mapStyle, setMapStyle] = useState<string | Record<string, unknown> | null>(baseMapStyle);
 
@@ -99,8 +101,11 @@ export default function RouteDetailScreen() {
         setOfflineState(packageState);
 
         try {
+          // Map style URL comes from env or fallback; manifest itself no longer embeds styleTemplateUrl.
+          const styleUrl = configuredStyle ?? 'https://demotiles.maplibre.org/style.json';
           const materializedStyle = await materializeRouteMapStyle(
             manifest,
+            styleUrl,
             packageState === 'ready' ? installed?.localUri : undefined,
           );
 
@@ -122,7 +127,7 @@ export default function RouteDetailScreen() {
     return () => {
       active = false;
     };
-  }, [baseMapStyle, routeSlug]);
+  }, [baseMapStyle, configuredStyle, routeSlug]);
 
   async function handleOfflineDownload() {
     if (!offlineManifest) return;
@@ -130,15 +135,19 @@ export default function RouteDetailScreen() {
     setOfflineState('downloading');
 
     try {
-      await downloadRoutePackage(expoRoutePackagePort, offlineManifest);
+      // Remote URL will be resolved via Supabase RPC in Task 9.
+      // For now we persist metadata without a real download (stub).
+      const remoteUrl = `https://cdn.example.test/packages/${offlineManifest.packageId}.zip`;
+      await downloadRoutePackage(expoRoutePackagePort, offlineManifest, remoteUrl);
       const installed = await expoRoutePackagePort.readMetadata(offlineManifest.routeId);
       const packageState = evaluateOfflinePackage(installed, offlineManifest);
       setOfflineState(packageState);
 
       if (packageState === 'ready' && installed) {
         try {
+          const styleUrl = configuredStyle ?? 'https://demotiles.maplibre.org/style.json';
           setMapStyle(
-            await materializeRouteMapStyle(offlineManifest, installed.localUri),
+            await materializeRouteMapStyle(offlineManifest, styleUrl, installed.localUri),
           );
         } catch {
           // The verified package remains installed even if the style template

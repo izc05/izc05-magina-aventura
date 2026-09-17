@@ -1,5 +1,5 @@
 import type {
-  OfflineRoutePackageManifest,
+  OfflineAdventureManifestV1,
   RouteDetail,
   RouteMapPayload,
 } from '@magina-aventura/contracts';
@@ -31,18 +31,19 @@ const fallbackMapStyle: Record<string, unknown> = {
 };
 
 async function resolveActiveMapStyle(
-  manifest: OfflineRoutePackageManifest | null,
+  manifest: OfflineAdventureManifestV1 | null,
 ): Promise<string | Record<string, unknown>> {
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
   const baseStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : fallbackMapStyle);
 
   if (!manifest) return baseStyle;
+  if (!configuredStyle) return baseStyle;
 
   const installed = await expoRoutePackagePort.readMetadata(manifest.routeId);
   const state = evaluateOfflinePackage(installed, manifest);
 
   try {
-    const response = await fetch(manifest.map.styleTemplateUrl);
+    const response = await fetch(configuredStyle);
     if (!response.ok) return baseStyle;
     const styleJson = await response.text();
     return materializeMapStyle(

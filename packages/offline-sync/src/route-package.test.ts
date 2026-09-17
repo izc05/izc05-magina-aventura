@@ -1,24 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { OfflineRoutePackageManifest } from '@magina-aventura/contracts';
+import type { OfflineAdventureManifestV1 } from '@magina-aventura/contracts';
 
 import { evaluateOfflinePackage, offlinePackageFileName, resolvePmtilesUri } from './route-package';
 
-const manifest: OfflineRoutePackageManifest = {
-  manifestVersion: 1,
-  routeId: 'route-1',
-  contentVersion: 3,
+const validHash = 'abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234';
+
+const manifest: OfflineAdventureManifestV1 = {
+  schemaVersion: 'offline-package.v1',
+  packageId: 'pkg-abc',
+  routeId: '00000000-0000-0000-0000-000000000001',
+  routeVersionId: '00000000-0000-0000-0000-000000000002',
   geometryVersion: 2,
-  map: {
-    id: 'asset-1',
-    objectKey: 'routes/route-1/geometry/2/basemap.pmtiles',
-    remoteUrl: 'https://cdn.example.test/map.pmtiles',
-    styleTemplateUrl: 'https://cdn.example.test/style.json',
-    byteSize: 1000,
-    md5: 'abc',
-    minZoom: 10,
-    maxZoom: 16,
-    bounds: [-3.5, 37.6, -3.4, 37.8],
-  },
+  mapAssetVersion: 1,
+  createdAt: '2026-09-17T00:00:00Z',
+  contentHash: validHash,
+  safetySnapshotUpdatedAt: null,
+  weatherSnapshotUpdatedAt: null,
 };
 
 describe('route offline package', () => {
@@ -30,12 +27,13 @@ describe('route offline package', () => {
     expect(
       evaluateOfflinePackage(
         {
-          routeId: 'route-1',
-          contentVersion: 3,
-          geometryVersion: 1,
+          packageId: 'pkg-abc',
+          routeId: '00000000-0000-0000-0000-000000000001',
+          routeVersionId: '00000000-0000-0000-0000-000000000002',
+          geometryVersion: 1, // wrong
           byteSize: 1000,
-          md5: 'abc',
-          localUri: 'file:///route.pmtiles',
+          contentHash: validHash,
+          localUri: 'file:///route.zip',
         },
         manifest,
       ),
@@ -46,20 +44,49 @@ describe('route offline package', () => {
     expect(
       evaluateOfflinePackage(
         {
-          routeId: 'route-1',
-          contentVersion: 3,
+          packageId: 'pkg-abc',
+          routeId: '00000000-0000-0000-0000-000000000001',
+          routeVersionId: '00000000-0000-0000-0000-000000000002',
           geometryVersion: 2,
           byteSize: 1000,
-          md5: 'abc',
-          localUri: 'file:///route.pmtiles',
+          contentHash: validHash,
+          localUri: 'file:///route.zip',
         },
         manifest,
       ),
     ).toBe('ready');
   });
 
-  it('builds deterministic file name and local source', () => {
-    expect(offlinePackageFileName(manifest)).toBe('route-route-1-g2.pmtiles');
-    expect(resolvePmtilesUri(manifest, 'file:///route.pmtiles')).toBe('pmtiles://file:///route.pmtiles');
+  it('marks packageId mismatch as stale', () => {
+    expect(
+      evaluateOfflinePackage(
+        {
+          packageId: 'pkg-old',
+          routeId: '00000000-0000-0000-0000-000000000001',
+          routeVersionId: '00000000-0000-0000-0000-000000000002',
+          geometryVersion: 2,
+          byteSize: 1000,
+          contentHash: validHash,
+          localUri: 'file:///route.zip',
+        },
+        manifest,
+      ),
+    ).toBe('stale');
+  });
+
+  it('builds deterministic file name', () => {
+    expect(offlinePackageFileName(manifest)).toBe(
+      `route-00000000-0000-0000-0000-000000000001-pkg-abc.zip`,
+    );
+  });
+
+  it('resolves local pmtiles URI', () => {
+    expect(resolvePmtilesUri(manifest, 'file:///route.zip')).toBe(
+      'pmtiles://file:///route.zip/map.pmtiles',
+    );
+  });
+
+  it('throws when trying to resolve remote URI without local file', () => {
+    expect(() => resolvePmtilesUri(manifest)).toThrow('Remote PMTiles not supported');
   });
 });

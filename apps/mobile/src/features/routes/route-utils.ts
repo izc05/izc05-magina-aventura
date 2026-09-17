@@ -8,9 +8,10 @@ export function getDevelopmentRouteBySlug(
   return developmentRoutes.find((route) => route.slug === normalizedSlug);
 }
 
-export function difficultyLabel(difficulty: AdventureRouteCard['difficulty']): string {
-  if (difficulty === 1 || difficulty === 'easy') return 'Fácil';
-  if (difficulty === 4 || difficulty === 5 || difficulty === 'hard') return 'Difícil';
+export function difficultyLabel(difficulty: string | number | null | undefined): string {
+  if (difficulty === 'easy' || difficulty === 1) return 'Fácil';
+  if (difficulty === 'hard' || difficulty === 4 || difficulty === 5) return 'Difícil';
+  if (difficulty == null) return 'Desconocida';
   return 'Moderada';
 }
 
@@ -22,4 +23,3 @@ export function durationLabel(minutes: number): string {
   if (rest === 0) return `${hours} h`;
   return `${hours} h ${rest} min`;
 }
-

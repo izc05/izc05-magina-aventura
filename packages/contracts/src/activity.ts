@@ -33,6 +33,8 @@ export interface ActivitySession {
   routeId: string;
   routeSlug: string;
   geometryVersion: number;
+  routeVersionId?: string;
+  packageId?: string;
   state: ActivityState;
   startedAt: string;
   pausedAt: string | null;
@@ -78,3 +80,4 @@ export interface ActivitySyncBatch {
   snapshot: ActivitySnapshot | null;
   createdAt: string;
 }
+

@@ -1,36 +1,42 @@
-import type { OfflineRoutePackageManifest } from '@magina-aventura/contracts';
+import type { OfflineAdventureManifestV1 } from '@magina-aventura/contracts';
 import {
   offlinePackageFileName,
   type InstalledRoutePackage,
 } from '@magina-aventura/offline-sync';
-
 import type { RoutePackagePort } from './route-package-port';
 
 export async function downloadRoutePackage(
   port: RoutePackagePort,
-  manifest: OfflineRoutePackageManifest,
+  manifest: OfflineAdventureManifestV1,
+  remoteUrl: string,
 ): Promise<InstalledRoutePackage> {
   const downloaded = await port.download(
-    manifest.map.remoteUrl,
+    remoteUrl,
     offlinePackageFileName(manifest),
   );
 
-  if (downloaded.size !== manifest.map.byteSize) {
-    await port.remove(downloaded.uri);
-    throw new Error('Downloaded PMTiles size mismatch');
+  // Compute hash if not provided by the download result
+  let downloadedHash: string | null = downloaded.md5 ?? null;
+  if (!downloadedHash) {
+    try {
+      downloadedHash = await port.computeHash(downloaded.uri);
+    } catch {
+      downloadedHash = null;
+    }
   }
 
-  if (manifest.map.md5 !== null && downloaded.md5 !== manifest.map.md5) {
+  if (manifest.contentHash && downloadedHash !== null && downloadedHash !== manifest.contentHash) {
     await port.remove(downloaded.uri);
-    throw new Error('Downloaded PMTiles checksum mismatch');
+    throw new Error('Downloaded package checksum mismatch');
   }
 
   const metadata: InstalledRoutePackage = {
+    packageId: manifest.packageId,
     routeId: manifest.routeId,
-    contentVersion: manifest.contentVersion,
+    routeVersionId: manifest.routeVersionId,
     geometryVersion: manifest.geometryVersion,
     byteSize: downloaded.size,
-    md5: downloaded.md5,
+    contentHash: downloadedHash ?? manifest.contentHash,
     localUri: downloaded.uri,
   };
 

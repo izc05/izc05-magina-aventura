@@ -5,3 +5,5 @@ export * from './activity';
 export * from './catalog';
 
 export * from './activity-validation';
+
+export * from './offline-package';

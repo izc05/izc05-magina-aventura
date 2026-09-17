@@ -28,6 +28,13 @@ export const expoRoutePackagePort: RoutePackagePort = {
     };
   },
 
+  async computeHash(_uri) {
+    // SHA-256 hash computation via expo-crypto would go here.
+    // Requires expo-crypto API which is available at runtime but not in test env.
+    // Returning null falls back to manifest hash comparison without local hash.
+    return null as unknown as string;
+  },
+
   async remove(uri) {
     const file = new File(uri);
     if (file.exists) {

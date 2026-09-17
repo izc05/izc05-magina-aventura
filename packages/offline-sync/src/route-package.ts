@@ -1,51 +1,54 @@
-import type { OfflineRoutePackageManifest } from '@magina-aventura/contracts';
+import type { OfflineAdventureManifestV1 } from '@magina-aventura/contracts';
 
 export interface InstalledRoutePackage {
+  packageId: string;
   routeId: string;
-  contentVersion: number;
+  routeVersionId: string;
   geometryVersion: number;
   byteSize: number;
-  md5: string | null;
+  contentHash: string;
   localUri: string;
 }
 
-export type OfflinePackageState = 'not-downloaded' | 'ready' | 'stale';
+export type OfflinePackageState =
+  | 'not-downloaded'
+  | 'downloading'
+  | 'verifying'
+  | 'ready'
+  | 'failed'
+  | 'stale';
 
 export function evaluateOfflinePackage(
   installed: InstalledRoutePackage | null,
-  manifest: OfflineRoutePackageManifest,
+  manifest: OfflineAdventureManifestV1,
 ): OfflinePackageState {
   if (!installed) return 'not-downloaded';
 
-  const checksumMatches = manifest.map.md5 === null || installed.md5 === manifest.map.md5;
   const matches =
+    installed.packageId === manifest.packageId &&
     installed.routeId === manifest.routeId &&
-    installed.contentVersion === manifest.contentVersion &&
+    installed.routeVersionId === manifest.routeVersionId &&
     installed.geometryVersion === manifest.geometryVersion &&
-    installed.byteSize === manifest.map.byteSize &&
-    checksumMatches;
+    installed.contentHash === manifest.contentHash;
 
   return matches ? 'ready' : 'stale';
 }
 
-export function offlinePackageFileName(manifest: OfflineRoutePackageManifest): string {
-  return `route-${manifest.routeId}-g${manifest.geometryVersion}.pmtiles`;
+export function offlinePackageFileName(manifest: OfflineAdventureManifestV1): string {
+  return `route-${manifest.routeId}-${manifest.packageId}.zip`;
 }
 
 export function resolvePmtilesUri(
-  manifest: OfflineRoutePackageManifest,
+  manifest: OfflineAdventureManifestV1,
   localUri?: string,
 ): string {
   if (localUri) {
     if (!localUri.startsWith('file://')) {
       throw new Error('PMTiles local URI must use file://');
     }
-    return `pmtiles://${localUri}`;
+    return `pmtiles://${localUri}/map.pmtiles`;
   }
 
-  if (!manifest.map.remoteUrl.startsWith('https://')) {
-    throw new Error('PMTiles remote URL must use HTTPS');
-  }
-
-  return `pmtiles://${manifest.map.remoteUrl}`;
+  // No remote PMTiles fallback in V1 manifest; package must be downloaded first
+  throw new Error('Remote PMTiles not supported in V1 offline manifest');
 }

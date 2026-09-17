@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
-import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
+import { useRouteBySlug } from '../../src/features/routes/use-route-catalog';
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
 import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
@@ -57,7 +57,7 @@ async function materializeRouteMapStyle(
 export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
-  const route = getDevelopmentRouteBySlug(slug);
+  const route = useRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
@@ -181,13 +181,13 @@ export default function RouteDetailScreen() {
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </Pressable>
-          {route.developmentFixture ? (
+          {(route.developmentFixture ?? false) ? (
             <View style={styles.devBadge}>
               <Text style={styles.devBadgeText}>DATOS DE DESARROLLO</Text>
             </View>
           ) : null}
           <View style={styles.heroCopy}>
-            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
+            <Text style={styles.municipality}>{route.municipalityNames.join(", ").toUpperCase()}</Text>
             <Text style={styles.title}>{route.title}</Text>
             <Text style={styles.difficulty}>{detail.difficulty}</Text>
           </View>
@@ -214,7 +214,7 @@ export default function RouteDetailScreen() {
           <RouteMap
             payload={mapPayload}
             mapStyle={mapStyle}
-            developmentMode={route.developmentFixture}
+            developmentMode={route.developmentFixture ?? false}
           />
         ) : (
           <View style={styles.mapUnavailable}>
@@ -226,7 +226,7 @@ export default function RouteDetailScreen() {
         )}
 
         <Text style={styles.sectionTitle}>Tu aventura</Text>
-        <Text style={styles.body}>{route.description}</Text>
+        <Text style={styles.body}>{(route as any).description ?? ""}</Text>
 
         <View style={styles.rewardCard}>
           <Text style={styles.rewardEyebrow}>RECOMPENSAS DE ESTA AVENTURA</Text>
@@ -236,7 +236,7 @@ export default function RouteDetailScreen() {
 
         <View style={styles.safetyCard}>
           <Text style={styles.safetyTitle}>Seguridad</Text>
-          {route.safetyNotes.map((note) => (
+          {((route.safetyHeadline ? [route.safetyHeadline] : []) as string[]).map((note) => (
             <Text key={note} style={styles.safetyNote}>• {note}</Text>
           ))}
         </View>

@@ -1,51 +1,41 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AdventureRouteCard } from '../routes/route-types';
+import type { MobileRouteView } from '../routes/mobile-route-view';
 import {
   filterHomeRoutes,
   resolveBottomNavSelection,
   type HomeDifficultyFilter,
 } from './prebeta-ux';
 
-const routes: AdventureRouteCard[] = [
+const routes: MobileRouteView[] = [
   {
     id: 'easy-1',
     slug: 'pinar-de-canava',
-    title: 'Pinar de Cánava',
-    municipalityId: 'jimena',
-    municipalityName: 'Jimena',
+    title: 'Pinar de Cnava',
+    municipalityNames: ['Jimena'],
     distanceKm: 4.2,
     elevationGainM: 160,
     durationMinutes: 80,
-    difficulty: 'easy',
-    rewardPreview: { xp: 0, olives: 0, discoveries: 0 },
-    contentVersion: 1,
-    description: '',
-    safetyNotes: [],
-    startLatitude: 0,
-    startLongitude: 0,
-    geometryVersion: 1,
-    offlineAvailable: false,
+    difficulty: 1,
+    operationalStatus: 'OPEN',
+    safetyHeadline: null,
+    discoveriesCount: 0,
+    rewardsAvailable: false,
     developmentFixture: true,
   },
   {
     id: 'moderate-1',
     slug: 'sendero-de-cuadros',
     title: 'Sendero de Cuadros',
-    municipalityId: 'bedmar',
-    municipalityName: 'Bedmar y Garcíez',
+    municipalityNames: ['Bedmar y Garcez'],
     distanceKm: 8.7,
     elevationGainM: 412,
     durationMinutes: 150,
-    difficulty: 'moderate',
-    rewardPreview: { xp: 0, olives: 0, discoveries: 0 },
-    contentVersion: 1,
-    description: '',
-    safetyNotes: [],
-    startLatitude: 0,
-    startLongitude: 0,
-    geometryVersion: 1,
-    offlineAvailable: false,
+    difficulty: 2,
+    operationalStatus: 'OPEN',
+    safetyHeadline: null,
+    discoveriesCount: 0,
+    rewardsAvailable: false,
     developmentFixture: true,
   },
 ];

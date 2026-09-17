@@ -9,8 +9,8 @@ export function getDevelopmentRouteBySlug(
 }
 
 export function difficultyLabel(difficulty: AdventureRouteCard['difficulty']): string {
-  if (difficulty === 'easy') return 'Fácil';
-  if (difficulty === 'hard') return 'Difícil';
+  if (difficulty === 1 || difficulty === 'easy') return 'Fácil';
+  if (difficulty === 4 || difficulty === 5 || difficulty === 'hard') return 'Difícil';
   return 'Moderada';
 }
 
@@ -22,3 +22,4 @@ export function durationLabel(minutes: number): string {
   if (rest === 0) return `${hours} h`;
   return `${hours} h ${rest} min`;
 }
+

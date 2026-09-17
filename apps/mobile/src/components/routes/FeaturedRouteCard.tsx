@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { presentFeaturedRoute } from '../../features/routes/route-card-presenter';
-import type { AdventureRouteCard } from '../../features/routes/route-types';
+import type { MobileRouteView } from '../../features/routes/mobile-route-view';
 import { colors, radius, shadow, spacing, typography } from '../../theme/tokens';
 
 type FeaturedRouteCardProps = Readonly<{
-  route: AdventureRouteCard;
+  route: MobileRouteView;
   onPress: () => void;
 }>;
 
@@ -39,10 +39,10 @@ export function FeaturedRouteCard({ route, onPress }: FeaturedRouteCardProps) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
+        <Text style={styles.municipality}>{route.municipalityNames.join(", ").toUpperCase()}</Text>
         <Text style={styles.title}>{route.title}</Text>
         <Text style={styles.description} numberOfLines={2}>
-          {route.description}
+          {route.safetyHeadline ?? "Sin descripcin"}
         </Text>
 
         <View style={styles.metrics}>
@@ -273,3 +273,4 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
+

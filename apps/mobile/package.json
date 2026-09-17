@@ -18,6 +18,7 @@
   "dependencies": {
     "@magina-aventura/activity-engine": "workspace:*",
     "@magina-aventura/contracts": "workspace:*",
+    "@magina-aventura/domain": "workspace:*",
     "@magina-aventura/offline-sync": "workspace:*",
     "@maplibre/maplibre-react-native": "^11.3.10",
     "expo": "~57.0.10",

@@ -15,7 +15,7 @@ import {
   resolveBottomNavSelection,
   type HomeDifficultyFilter,
 } from '../src/features/prebeta/prebeta-ux';
-import { developmentRoutes } from '../src/features/routes/fixtures';
+import { useRouteCatalog } from '../src/features/routes/use-route-catalog';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
@@ -46,9 +46,10 @@ export default function RoutesHomeScreen() {
     };
   }, []);
 
+  const { routes: catalogRoutes } = useRouteCatalog();
   const filteredRoutes = useMemo(
-    () => filterHomeRoutes(developmentRoutes, query, difficultyFilter),
-    [query, difficultyFilter],
+    () => filterHomeRoutes(catalogRoutes, query, difficultyFilter),
+    [catalogRoutes, query, difficultyFilter],
   );
 
   function resetFilters() {

@@ -1,4 +1,4 @@
-import type { AdventureRouteCard } from './route-types';
+import type { MobileRouteView } from './mobile-route-view';
 import { difficultyLabel, durationLabel } from './route-utils';
 
 export type FeaturedRoutePresentation = Readonly<{
@@ -9,16 +9,16 @@ export type FeaturedRoutePresentation = Readonly<{
   rewards: string;
 }>;
 
-export function presentFeaturedRoute(route: AdventureRouteCard): FeaturedRoutePresentation {
+export function presentFeaturedRoute(route: MobileRouteView): FeaturedRoutePresentation {
   const betaDataPending = route.developmentFixture === true;
 
   return {
-    distance: `${route.distanceKm.toFixed(1).replace('.', ',')} km`,
-    elevation: betaDataPending ? 'Pendiente' : `+${route.elevationGainM} m`,
-    duration: durationLabel(route.durationMinutes),
-    difficulty: difficultyLabel(route.difficulty),
+    distance: route.distanceKm ? route.distanceKm.toFixed(1).replace('.', ',') + ' km' : 'Pendiente',
+    elevation: betaDataPending || route.elevationGainM == null ? 'Pendiente' : '+' + route.elevationGainM + ' m',
+    duration: durationLabel(route.durationMinutes ?? 0),
+    difficulty: difficultyLabel(route.difficulty as any),
     rewards: betaDataPending
-      ? 'Recompensas pendientes de validación'
-      : `${route.rewardPreview.discoveries} descubrimientos · +${route.rewardPreview.xp} XP · +${route.rewardPreview.olives} aceitunas`,
+      ? 'Recompensas pendientes de validacion'
+      : route.rewardsAvailable ? route.discoveriesCount + ' descubrimientos disponibles' : 'Sin recompensas',
   };
 }

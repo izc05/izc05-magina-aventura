@@ -16,6 +16,9 @@ importers:
       '@magina-aventura/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@magina-aventura/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@magina-aventura/offline-sync':
         specifier: workspace:*
         version: link:../../packages/offline-sync

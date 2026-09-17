@@ -24,3 +24,7 @@
 - **Evidencia:** git log --all demuestra que lookup-tools.mjs nunca existió en el historial, haciendo del test un artefacto huérfano e inválido introducido en 4f46876a.
 - **Cobertura equivalente:** pps/admin/tests/lookups.test.mjs cubre la lógica funcional de las opciones amigables (ej. outeOptions, municipalityOptions) importando desde src/core/lookups.mjs.
 
+
+| 9 | Mobile Route View | N/A | N/A | 55613593e8503a009e9bf6be0ca189cdba21f6ff | READY | Task 4 | Replacing pre-beta fixtures with canonical catalog view |
+- Task 4 Review: Replaced development routes with useRouteCatalog. Mapped catalog completeness accurately.
+- GATE: IMPLEMENTED_PENDING_DB_VALIDATION

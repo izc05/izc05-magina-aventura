@@ -1,6 +1,13 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    
+    "paths": {
+      "@magina-aventura/domain": ["../../packages/domain/src/index.ts"],
+      "@magina-aventura/contracts": ["../../packages/contracts/src/index.ts"],
+      "@magina-aventura/offline-sync": ["../../packages/offline-sync/src/index.ts"],
+      "@magina-aventura/activity-engine": ["../../packages/activity-engine/src/index.ts"]
+    },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
@@ -12,3 +19,5 @@
     "expo-env.d.ts"
   ]
 }
+
+

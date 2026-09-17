@@ -141,7 +141,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
     },
 
     async start(
-      route: RouteDetail,
+      route: { id: string; slug: string; geometryVersion?: number },
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState> {
       await initializeStores();
@@ -154,7 +154,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
         activityId: dependencies.createActivityId(),
         routeId: route.id,
         routeSlug: route.slug,
-        geometryVersion: route.geometryVersion,
+        geometryVersion: (route.geometryVersion ?? 0),
         state: 'DRAFT',
         startedAt: at,
         pausedAt: null,
@@ -194,7 +194,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
     },
 
     async recover(
-      route: RouteDetail,
+      route: { id: string; slug: string; geometryVersion?: number },
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState | null> {
       await initializeStores();
@@ -302,3 +302,4 @@ export function createActivityController(dependencies: ActivityControllerDepende
 }
 
 export type ActivityController = ReturnType<typeof createActivityController>;
+

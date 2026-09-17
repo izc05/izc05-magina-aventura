@@ -1,5 +1,5 @@
 import type { BottomNavigationItem } from '../../theme/branding';
-import type { AdventureRouteCard, RouteDifficulty } from '../routes/route-types';
+import type { MobileRouteView } from '../routes/mobile-route-view';
 
 export const HOME_DIFFICULTY_FILTERS = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 
@@ -9,10 +9,10 @@ export type BottomNavSelection =
   | Readonly<{ kind: 'navigate'; href: '/' }>
   | Readonly<{ kind: 'coming-soon'; label: Exclude<BottomNavigationItem, 'Rutas'> }>;
 
-const difficultyByFilter: Record<Exclude<HomeDifficultyFilter, 'Todos'>, RouteDifficulty> = {
-  Fácil: 'easy',
-  Moderada: 'moderate',
-  Difícil: 'hard',
+const difficultyByFilter: Record<Exclude<HomeDifficultyFilter, 'Todos'>, number> = {
+  Fácil: 1,
+  Moderada: 2,
+  Difícil: 4,
 };
 
 function normalizeSearchValue(value: string): string {
@@ -24,10 +24,10 @@ function normalizeSearchValue(value: string): string {
 }
 
 export function filterHomeRoutes(
-  routes: readonly AdventureRouteCard[],
+  routes: readonly MobileRouteView[],
   query: string,
   filter: HomeDifficultyFilter,
-): AdventureRouteCard[] {
+): MobileRouteView[] {
   const normalizedQuery = normalizeSearchValue(query);
   const difficulty = filter === 'Todos' ? null : difficultyByFilter[filter];
 
@@ -36,7 +36,7 @@ export function filterHomeRoutes(
     if (!normalizedQuery) return true;
 
     const searchableText = normalizeSearchValue(
-      `${route.title} ${route.municipalityName} ${route.slug}`,
+      `${route.title} ${route.municipalityNames.join(" ")} ${route.slug}`,
     );
 
     return searchableText.includes(normalizedQuery);

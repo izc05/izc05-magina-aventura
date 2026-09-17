@@ -14,14 +14,15 @@ import {
   type PrepareOfflineState,
   type ReadinessTone,
 } from '../../../src/features/routes/prepare-presenter';
-import { durationLabel, getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
+import { durationLabel } from '../../../src/features/routes/route-utils';
+import { useRouteBySlug } from '../../../src/features/routes/use-route-catalog';
 import { expoRoutePackagePort } from '../../../src/offline/expo-route-package-port';
 import { colors, radius, shadow, spacing, typography } from '../../../src/theme/tokens';
 
 export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
-  const route = getDevelopmentRouteBySlug(slug);
+  const route = useRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
   const [permissions, setPermissions] = useState<LocationPermissionState>();
@@ -137,13 +138,13 @@ export default function PrepareRouteAdventureScreen() {
           <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
           <Text style={styles.title}>Prepara tu aventura</Text>
           <Text style={styles.routeName}>{currentRoute.title}</Text>
-          <Text style={styles.routePlace}>{currentRoute.municipalityName}</Text>
+          <Text style={styles.routePlace}>{currentRoute.municipalityNames.join(", ")}</Text>
         </View>
 
         <View style={styles.summaryCard}>
-          <Metric value={`${currentRoute.distanceKm.toFixed(1).replace('.', ',')} km`} label="Distancia" />
+          <Metric value={`${(currentRoute.distanceKm ?? 0).toFixed(1).replace('.', ',')} km`} label="Distancia" />
           <Metric value={`+${currentRoute.elevationGainM} m`} label="Desnivel" />
-          <Metric value={durationLabel(currentRoute.durationMinutes)} label="Duración" />
+          <Metric value={durationLabel(currentRoute.durationMinutes ?? 0)} label="Duración" />
         </View>
 
         <Text style={styles.sectionEyebrow}>ANTES DE EMPEZAR</Text>
@@ -291,3 +292,5 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: colors.ink, fontWeight: '800' },
   notFoundTitle: { color: colors.ink, fontSize: 21, fontWeight: '900', marginTop: spacing[20] },
 });
+
+

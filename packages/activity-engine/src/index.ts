@@ -1,5 +1,6 @@
 export * from './config';
 export * from './engine';
+export * from './exploration';
 export * from './filter-location';
 export * from './metrics';
 export * from './off-route';

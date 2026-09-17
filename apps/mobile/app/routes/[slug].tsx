@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AdventureLandscape } from '../../src/components/visuals/AdventureLandscape';
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
@@ -175,9 +176,7 @@ export default function RouteDetailScreen() {
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <View style={styles.sun} />
-          <View style={styles.mountainBack} />
-          <View style={styles.mountainFront} />
+          <AdventureLandscape variant="detail" />
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </Pressable>
@@ -189,7 +188,12 @@ export default function RouteDetailScreen() {
           <View style={styles.heroCopy}>
             <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
             <Text style={styles.title}>{route.title}</Text>
-            <Text style={styles.difficulty}>{detail.difficulty}</Text>
+            <View style={styles.heroMetaRow}>
+              <View style={styles.difficultyPill}>
+                <Text style={styles.difficulty}>{detail.difficulty}</Text>
+              </View>
+              <Text style={styles.heroMeta}>SIERRA MÁGINA · JAÉN</Text>
+            </View>
           </View>
         </View>
 
@@ -225,6 +229,7 @@ export default function RouteDetailScreen() {
           </View>
         )}
 
+        <Text style={styles.sectionEyebrow}>SOBRE ESTA RUTA</Text>
         <Text style={styles.sectionTitle}>Tu aventura</Text>
         <Text style={styles.body}>{route.description}</Text>
 
@@ -235,7 +240,13 @@ export default function RouteDetailScreen() {
         </View>
 
         <View style={styles.safetyCard}>
-          <Text style={styles.safetyTitle}>Seguridad</Text>
+          <View style={styles.safetyHeader}>
+            <View style={styles.safetyIcon}><Text style={styles.safetyIconText}>!</Text></View>
+            <View style={styles.safetyHeaderCopy}>
+              <Text style={styles.safetyEyebrow}>ANTES DE SALIR</Text>
+              <Text style={styles.safetyTitle}>Seguridad</Text>
+            </View>
+          </View>
           {route.safetyNotes.map((note) => (
             <Text key={note} style={styles.safetyNote}>• {note}</Text>
           ))}
@@ -288,7 +299,9 @@ export default function RouteDetailScreen() {
         ) : null}
 
         <Pressable
-          style={styles.primaryButton}
+          accessibilityRole="button"
+          accessibilityLabel={`Preparar aventura ${route.title}`}
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
           onPress={() =>
             router.push({
               pathname: '/routes/[slug]/prepare',
@@ -296,7 +309,10 @@ export default function RouteDetailScreen() {
             })
           }
         >
-          <Text style={styles.primaryButtonText}>Preparar aventura</Text>
+          <View>
+            <Text style={styles.primaryButtonText}>Preparar aventura</Text>
+            <Text style={styles.primaryButtonCaption}>Revisar GPS, permisos y disponibilidad offline</Text>
+          </View>
           <Text style={styles.primaryButtonArrow}>→</Text>
         </Pressable>
       </ScrollView>
@@ -307,49 +323,124 @@ export default function RouteDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.warmBackground },
   content: { paddingBottom: spacing[40] },
-  hero: { height: 330, overflow: 'hidden', backgroundColor: colors.olive900, padding: spacing[20], justifyContent: 'flex-end' },
-  sun: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: colors.aoveGold, right: 28, top: 42, opacity: 0.92 },
-  mountainBack: { position: 'absolute', width: 360, height: 180, borderRadius: 50, backgroundColor: colors.olive700, right: -120, bottom: -65, transform: [{ rotate: '18deg' }] },
-  mountainFront: { position: 'absolute', width: 320, height: 150, borderRadius: 50, backgroundColor: colors.olive500, left: -100, bottom: -80, transform: [{ rotate: '-12deg' }] },
-  backButton: { position: 'absolute', top: spacing[16], left: spacing[16], width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  hero: {
+    height: 330,
+    overflow: 'hidden',
+    backgroundColor: colors.olive900,
+    padding: spacing[20],
+    justifyContent: 'flex-end',
+  },
+  backButton: {
+    position: 'absolute',
+    top: spacing[16],
+    left: spacing[16],
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(250,249,246,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backText: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
-  devBadge: { position: 'absolute', top: spacing[20], right: spacing[16], borderRadius: radius.pill, backgroundColor: colors.ink, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
+  devBadge: {
+    position: 'absolute',
+    top: spacing[20],
+    right: spacing[16],
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(23,32,25,0.82)',
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[8],
+  },
   devBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  heroCopy: { maxWidth: 320 },
+  heroCopy: { maxWidth: 330, zIndex: 2 },
   municipality: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: colors.white, fontSize: typography.display, fontWeight: '900', marginTop: spacing[4] },
-  difficulty: { color: colors.limestone, fontSize: 14, fontWeight: '700', marginTop: spacing[8] },
-  statsCard: { marginHorizontal: spacing[20], marginTop: -24, padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', ...shadow.card },
+  title: { color: colors.white, fontSize: typography.display, lineHeight: 38, fontWeight: '900', marginTop: spacing[4] },
+  heroMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[8], marginTop: spacing[12] },
+  difficultyPill: { borderRadius: radius.pill, backgroundColor: 'rgba(250,249,246,0.14)', paddingHorizontal: spacing[12], paddingVertical: 7 },
+  difficulty: { color: colors.white, fontSize: 11, fontWeight: '900' },
+  heroMeta: { color: colors.limestone, fontSize: 8, fontWeight: '800', letterSpacing: 1.1 },
+  statsCard: {
+    marginHorizontal: spacing[20],
+    marginTop: -24,
+    padding: spacing[20],
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...shadow.card,
+  },
   stat: { flex: 1 },
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
-  mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  mapUnavailable: {
+    margin: spacing[20],
+    padding: spacing[20],
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
-  sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
+  sectionEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginHorizontal: spacing[20] },
+  sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20], marginTop: 4 },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },
   rewardEyebrow: { color: colors.aoveGold, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   rewardTitle: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: spacing[8] },
   rewardBody: { color: colors.limestone, fontSize: 13, marginTop: spacing[8] },
-  safetyCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  safetyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
+  safetyCard: {
+    marginHorizontal: spacing[20],
+    marginBottom: spacing[20],
+    borderRadius: radius.lg,
+    padding: spacing[16],
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  safetyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing[4] },
+  safetyIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.goldWash, alignItems: 'center', justifyContent: 'center' },
+  safetyIconText: { color: colors.earth, fontSize: 18, fontWeight: '900' },
+  safetyHeaderCopy: { marginLeft: spacing[12] },
+  safetyEyebrow: { color: colors.earth, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
+  safetyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: 1 },
   safetyNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing[16], gap: spacing[8] },
   infoCard: { width: '48%', borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   infoIcon: { color: colors.olive700, fontSize: 20, fontWeight: '900' },
   infoTitle: { color: colors.ink, fontSize: 14, fontWeight: '900', marginTop: spacing[8] },
   infoCopy: { color: colors.muted, fontSize: 11, marginTop: spacing[4] },
-  offlineActionCard: { marginHorizontal: spacing[20], marginTop: spacing[20], padding: spacing[16], borderRadius: radius.lg, backgroundColor: colors.limestone, flexDirection: 'row', alignItems: 'center', gap: spacing[12] },
+  offlineActionCard: {
+    marginHorizontal: spacing[20],
+    marginTop: spacing[20],
+    padding: spacing[16],
+    borderRadius: radius.lg,
+    backgroundColor: colors.limestone,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[12],
+  },
   offlineActionCopy: { flex: 1 },
   offlineActionEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   offlineActionTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: spacing[4] },
   offlineActionBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[4] },
   offlineButton: { borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
   offlineButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
-  primaryButton: { marginHorizontal: spacing[20], marginTop: spacing[24], minHeight: 58, borderRadius: radius.md, paddingHorizontal: spacing[20], backgroundColor: colors.olive900, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  primaryButton: {
+    marginHorizontal: spacing[20],
+    marginTop: spacing[24],
+    minHeight: 72,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing[20],
+    backgroundColor: colors.olive900,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  primaryButtonPressed: { opacity: 0.8 },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
+  primaryButtonCaption: { color: colors.limestone, fontSize: 9, marginTop: 3 },
   primaryButtonArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },
   notFound: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },
   notFoundTitle: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },

@@ -3,10 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../src/theme/tokens';
+import { useAuth } from '../src/context/AuthContext';
 import { CollectionCard } from '../src/components/progression/CollectionCard';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -23,12 +25,15 @@ export default function ProfileScreen() {
         <View style={styles.passportCard}>
           <View style={styles.passportHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
+              <Text style={styles.avatarText}>{user?.email?.[0].toUpperCase() ?? 'A'}</Text>
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>Aventurero</Text>
+              <Text style={styles.userName}>{user?.email?.split('@')[0] ?? 'Aventurero'}</Text>
               <Text style={styles.userTitle}>Explorador Principiante</Text>
             </View>
+            <Pressable onPress={signOut} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Salir</Text>
+            </Pressable>
           </View>
           
           <View style={styles.levelSection}>
@@ -119,6 +124,9 @@ const styles = StyleSheet.create({
   badge: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   badgeLocked: { backgroundColor: colors.warmBackground, borderColor: 'transparent', opacity: 0.5 },
   badgeIcon: { fontSize: 28 },
+  
+  logoutButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.1)' },
+  logoutText: { color: colors.white, fontSize: 12, fontWeight: '700' },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 });

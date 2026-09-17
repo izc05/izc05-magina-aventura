@@ -1,0 +1,237 @@
+{
+  "manifest_version": "0.1",
+  "adventure_id": "MA-001",
+  "status": "SHOT_LIST_READY_CAPTURE_PENDING",
+  "principles": [
+    "Prefer own field photography for publication.",
+    "Community images require explicit permission and moderation.",
+    "Institutional or third-party media require compatible reuse terms before publication.",
+    "Every major checkpoint needs at least one recognisable context image captured from a safe public position.",
+    "Navigation images must prioritise recognition over aesthetics."
+  ],
+  "required_assets": [
+    {
+      "media_key": "MA001-COVER-01",
+      "role": "COVER",
+      "target": "ADVENTURE",
+      "checkpoint_id": null,
+      "description": "Panorámica potente y reconocible del valle de Cuadros o combinación visual Torreón/valle.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP00-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP00",
+      "description": "Área Recreativa / entrada al valle desde el punto real de inicio.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP00-NAV",
+      "role": "NAV",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP00",
+      "description": "Panel y señalización oficial de inicio, legibles.",
+      "orientation": "LANDSCAPE_OR_PORTRAIT",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-ADelfal-CONTEXT",
+      "role": "CONTEXT",
+      "target": "DISCOVERY",
+      "checkpoint_id": "CP00",
+      "description": "Río Cuadros y adelfal vistos desde el sendero, sin acercamiento inseguro.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP01-NAV",
+      "role": "NAV",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP01",
+      "description": "Cruce completo mostrando claramente los ramales y la señalización.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP02-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP02",
+      "description": "Nacimiento/surgencia de Los Sistillos o elemento inequívocamente validado como tal.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_FIELD_LOCATION"
+    },
+    {
+      "media_key": "MA001-CP03-CONTEXT",
+      "role": "CONTEXT",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP03",
+      "description": "Tramo representativo donde cambia el carácter del recorrido y comienza la subida.",
+      "orientation": "LANDSCAPE",
+      "required": false,
+      "status": "PENDING_FIELD_LOCATION"
+    },
+    {
+      "media_key": "MA001-CORNICABRA-DETAIL",
+      "role": "DETAIL",
+      "target": "DISCOVERY",
+      "checkpoint_id": "CP03",
+      "description": "Cornicabra correctamente identificada en el entorno del itinerario.",
+      "orientation": "PORTRAIT",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP04-PANORAMA",
+      "role": "REFERENCE_VIEW",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP04",
+      "description": "Panorámica de alta resolución desde el mejor punto seguro para futura interacción por hotspots.",
+      "orientation": "LANDSCAPE_WIDE",
+      "required": true,
+      "status": "PENDING_FIELD_LOCATION"
+    },
+    {
+      "media_key": "MA001-CP05-CONTEXT",
+      "role": "CONTEXT",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP05",
+      "description": "Contraste visible entre vegetación mediterránea y paisaje cultivado.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP06-REFERENCE",
+      "role": "REFERENCE_VIEW",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP06",
+      "description": "Afloramiento o estratos geológicos visibles desde el checkpoint exacto; base para superposición didáctica.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_FIELD_LOCATION"
+    },
+    {
+      "media_key": "MA001-CP07-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP07",
+      "description": "Fuente/Pilar de Fresneda o Fresnedilla con contexto suficiente para reconocer el lugar.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP07-SIGN",
+      "role": "EVIDENCE",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP07",
+      "description": "Señalización de potabilidad/no potabilidad si existe.",
+      "orientation": "PORTRAIT",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP08-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP08",
+      "description": "Torreón completo desde un punto seguro y reconocible.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP08-PANORAMA",
+      "role": "REFERENCE_VIEW",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP08",
+      "description": "Panorama del valle desde el entorno del Torreón para interacción '¿Por qué aquí?'.",
+      "orientation": "LANDSCAPE_WIDE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP09-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP09",
+      "description": "Exterior del Santuario desde espacio público, sin interferir con actos religiosos.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP10-HERO",
+      "role": "HERO",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP10",
+      "description": "Cueva del Agua desde el punto exterior seguro que permita completar la aventura.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-CP10-SAFETY",
+      "role": "EVIDENCE",
+      "target": "CHECKPOINT",
+      "checkpoint_id": "CP10",
+      "description": "Acceso, firme y cualquier superficie resbaladiza o riesgo relevante.",
+      "orientation": "LANDSCAPE",
+      "required": true,
+      "status": "PENDING_CAPTURE"
+    },
+    {
+      "media_key": "MA001-MOLINO-EVIDENCE",
+      "role": "EVIDENCE",
+      "target": "POI",
+      "poi_id": "poi-casa-molino",
+      "description": "Elemento visible que permita confirmar o descartar la identificación del molino.",
+      "orientation": "LANDSCAPE",
+      "required": false,
+      "status": "FIELD_PENDING"
+    },
+    {
+      "media_key": "MA001-TUNEL-EVIDENCE",
+      "role": "EVIDENCE",
+      "target": "POI",
+      "poi_id": "poi-tunel-control",
+      "description": "Fotografía contextual del elemento denominado 'Túnel' en el track de control para identificarlo correctamente.",
+      "orientation": "LANDSCAPE",
+      "required": false,
+      "status": "HOLD_UNTIL_FIELD_IDENTIFICATION"
+    }
+  ],
+  "capture_metadata_required": [
+    "captured_at",
+    "lat",
+    "lon",
+    "author",
+    "publication_permission",
+    "checkpoint_id_or_poi_id",
+    "usage_role"
+  ],
+  "capture_metadata_recommended": [
+    "route_distance_m",
+    "capture_heading_deg",
+    "capture_pitch_deg",
+    "alt_text",
+    "caption"
+  ],
+  "minimum_publication_media_gate": {
+    "cover_required": true,
+    "all_required_checkpoint_assets_complete": true,
+    "navigation_assets_complete": true,
+    "rights_review_pass": true,
+    "unsafe_or_unverified_third_party_media_allowed": false
+  }
+}

@@ -28,3 +28,7 @@
 | 9 | Mobile Route View | N/A | N/A | 55613593e8503a009e9bf6be0ca189cdba21f6ff | READY | Task 4 | Replacing pre-beta fixtures with canonical catalog view |
 - Task 4 Review: Replaced development routes with useRouteCatalog. Mapped catalog completeness accurately.
 - GATE: IMPLEMENTED_PENDING_DB_VALIDATION
+
+| 10 | Validation & Progression | N/A | N/A | 6538a7b166e35134ad1b1175fbf883df85403480 | PENDING TESTS | Task 5 | Activity validation state and progression schema |
+- Task 5 Review: Added validation tables, progression ledger, atomic RPC and pgTAP tests.
+- GATE: IMPLEMENTED_PENDING_DB_VALIDATION

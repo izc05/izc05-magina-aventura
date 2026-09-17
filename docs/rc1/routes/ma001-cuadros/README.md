@@ -9,7 +9,9 @@ Esta rama **NO modifica** la Master Spec RC1 ni el plan de integración aprobado
 ## Documentos
 
 - `MA001_CUADROS_FICHA_MAESTRA_RC1.md` — identidad, track, checkpoints, POI, imágenes, juego, 3D, seguridad y checklist físico.
-- `MA001_CUADROS_GUION_JUGABLE_RC1_v02.md` — guion jugable detallado; documento de trabajo producido en la fase de diseño de contenido.
+- `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART1.md` — concepto, activaciones y CP00–CP05.
+- `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART2.md` — CP06–CP10 + descubrimientos opcionales.
+- `MA001_CUADROS_GUION_JUGABLE_RC1_v02_PART3.md` — final, XP, fotografía, procedencia, fuentes y gate de publicación.
 - `MA001_CONTENT_CONTRACT_AUDIT_v1.md` — cruce de MA-001 contra el Adventure Content Contract para localizar campos pendientes.
 
 ## Documentos globales relacionados
@@ -34,6 +36,12 @@ El track comunitario de Wikiloc se considera exclusivamente `CONTROL_ONLY`. La g
 - Juego: XP e insignias en modo piloto.
 - Validación física: pendiente.
 - Publicación: bloqueada hasta reapertura oficial y validación.
+
+## Próximo paso
+
+- incorporar los gaps generales detectados por la auditoría al Content Contract;
+- normalizar MA-001 a registros de datos reutilizables;
+- probar después una segunda aventura distinta para validar escalabilidad.
 
 ## Principio
 

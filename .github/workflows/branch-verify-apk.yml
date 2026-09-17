@@ -1,12 +1,18 @@
-name: Branch verify and APK
+name: Verify and build Android APK
 
 on:
   push:
     branches:
+      - main
       - fix/antigravity-stabilization
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  EXPO_PUBLIC_SUPABASE_URL: https://klchkjsdybbgritxkswp.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_neY7nXnGfgjhMa4rIv2AmQ_5DMnJY54
 
 jobs:
   verify-and-build:
@@ -33,21 +39,10 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: |
-          set -o pipefail
-          pnpm typecheck 2>&1 | tee typecheck.log
-
-      - name: Upload typecheck diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: typecheck-diagnostics
-          path: typecheck.log
-          if-no-files-found: error
-          retention-days: 3
+        run: pnpm typecheck
 
       - name: Unit tests
         run: pnpm test
@@ -56,15 +51,14 @@ jobs:
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
-      - name: Build debug APK
+      - name: Build standalone release APK
         working-directory: apps/mobile/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: magina-aventura-debug-apk
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: magina-aventura-android-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14

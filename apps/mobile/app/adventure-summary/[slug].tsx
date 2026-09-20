@@ -6,7 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { activityRuntime } from '../../src/activity/activity-runtime';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
+import { presentExploration } from '../../src/features/adventure/exploration-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
+import { getRuntimeRouteMapRepository } from '../../src/features/routes/runtime-route-map-repository';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
 
 export default function AdventureSummaryScreen() {
@@ -14,6 +16,7 @@ export default function AdventureSummaryScreen() {
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const [trackCount, setTrackCount] = useState(0);
+  const [adventureDefinition, setAdventureDefinition] = useState<Awaited<ReturnType<ReturnType<typeof getRuntimeRouteMapRepository>['getAdventureDefinition']>>>(null);
   const state = activityRuntime.current();
 
   useEffect(() => {
@@ -21,6 +24,11 @@ export default function AdventureSummaryScreen() {
     void activityRuntime.loadTrack().then((track) => {
       if (active) setTrackCount(track.length);
     });
+    if (route) {
+      void getRuntimeRouteMapRepository().getAdventureDefinition(route.slug).then((definition) => {
+        if (active) setAdventureDefinition(definition);
+      });
+    }
     return () => {
       active = false;
     };
@@ -29,6 +37,10 @@ export default function AdventureSummaryScreen() {
   const presentation = useMemo(
     () => (route ? presentActiveAdventure(route, state) : null),
     [route, state],
+  );
+  const exploration = useMemo(
+    () => presentExploration(adventureDefinition, state, null),
+    [adventureDefinition, state],
   );
 
   if (!route || !presentation) {
@@ -56,7 +68,7 @@ export default function AdventureSummaryScreen() {
             <Text style={styles.badgeText}>{isRealFinished ? 'ACTIVIDAD GPS FINALIZADA' : 'RESUMEN LOCAL'}</Text>
           </View>
           <Text style={styles.eyebrow}>MÁGINA AVENTURA</Text>
-          <Text style={styles.title}>Aventura completada</Text>
+          <Text style={styles.title}>{isRealFinished ? 'Aventura completada' : 'Aventura recuperada'}</Text>
           <Text style={styles.routeTitle}>{route.title}</Text>
           <Text style={styles.place}>{route.municipalityName}</Text>
         </View>
@@ -78,7 +90,7 @@ export default function AdventureSummaryScreen() {
         <View style={styles.statusGrid}>
           <StatusCard label="Estado" value={isRealFinished ? 'Finalizada' : 'No recuperada'} />
           <StatusCard label="Guardado" value="SQLite local" />
-          <StatusCard label="Recompensa" value="Pendiente" />
+          <StatusCard label="Exploración" value={exploration.progressLabel} />
         </View>
 
         <View style={styles.rewardCard}>
@@ -86,6 +98,16 @@ export default function AdventureSummaryScreen() {
           <Text style={styles.rewardValue}>{presentation.rewardPreview}</Text>
           <Text style={styles.rewardBody}>
             No se concede todavía. XP y aceitunas necesitarán validación de actividad en el backend para evitar duplicados o recorridos falsos.
+          </Text>
+        </View>
+
+        <View style={styles.explorationCard}>
+          <Text style={styles.explorationEyebrow}>EXPLORACIÓN REGISTRADA</Text>
+          <Text style={styles.explorationTitle}>{exploration.completedCount}/{exploration.totalCount} objetivos completados</Text>
+          <Text style={styles.explorationBody}>
+            {exploration.latestEventTitle
+              ? `Último registro: ${exploration.latestEventTitle}. El progreso queda asociado a esta versión exacta de la aventura.`
+              : 'Todavía no hay checkpoints o discoveries registrados en esta actividad.'}
           </Text>
         </View>
 
@@ -143,6 +165,10 @@ const styles = StyleSheet.create({
   rewardEyebrow: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   rewardValue: { color: colors.white, fontSize: 19, fontWeight: '900', marginTop: spacing[8] },
   rewardBody: { color: colors.limestone, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  explorationCard: { marginHorizontal: spacing[20], marginTop: spacing[20], borderRadius: radius.lg, backgroundColor: colors.oliveWash, padding: spacing[20], borderWidth: 1, borderColor: colors.border },
+  explorationEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  explorationTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: spacing[8] },
+  explorationBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   primaryButton: { marginHorizontal: spacing[20], marginTop: spacing[24], minHeight: 58, borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[20], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   primaryButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   primaryButtonArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },

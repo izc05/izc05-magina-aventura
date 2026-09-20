@@ -248,6 +248,22 @@ export default function ActiveAdventureScreen() {
         </View>
       ) : null}
 
+      {isPaused ? (
+        <View style={styles.pauseBanner}>
+          <View style={styles.pauseIcon}>
+            <Text style={styles.pauseIconText}>Ⅱ</Text>
+          </View>
+          <View style={styles.pauseCopy}>
+            <Text style={styles.pauseEyebrow}>PAUSA · PROGRESO PROTEGIDO</Text>
+            <Text style={styles.pauseTitle}>El GPS está detenido</Text>
+            <Text style={styles.pauseMeta}>SQLite ha guardado tu recorrido hasta aquí</Text>
+          </View>
+          <Pressable style={styles.resumePill} onPress={() => void togglePause()}>
+            <Text style={styles.resumePillText}>Seguir</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       <View style={styles.bottomCard}>
         <Text style={styles.bottomEyebrow}>{isPaused ? 'PROGRESO PROTEGIDO' : 'ESTADO DE LA AVENTURA'}</Text>
         <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
@@ -415,6 +431,18 @@ const styles = StyleSheet.create({
   celebrationBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[12], textAlign: 'center' },
   celebrationButton: { width: '100%', minHeight: 54, borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center', marginTop: spacing[20] },
   celebrationButtonText: { color: colors.white, fontSize: 14, fontWeight: '900' },
+  pauseBanner: {
+    position: 'absolute', top: 318, left: spacing[16], right: spacing[16], borderRadius: radius.lg,
+    backgroundColor: colors.olive900, padding: spacing[12], flexDirection: 'row', alignItems: 'center', ...shadow.card,
+  },
+  pauseIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.aoveGold, alignItems: 'center', justifyContent: 'center' },
+  pauseIconText: { color: colors.ink, fontSize: 18, fontWeight: '900' },
+  pauseCopy: { flex: 1, marginLeft: spacing[10] },
+  pauseEyebrow: { color: colors.aoveGold, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  pauseTitle: { color: colors.white, fontSize: 14, fontWeight: '900', marginTop: 3 },
+  pauseMeta: { color: colors.limestone, fontSize: 10, marginTop: 2 },
+  resumePill: { borderRadius: radius.pill, backgroundColor: colors.white, paddingHorizontal: spacing[12], paddingVertical: spacing[8], marginLeft: spacing[8] },
+  resumePillText: { color: colors.olive900, fontSize: 11, fontWeight: '900' },
   bottomCard: {
     position: 'absolute',
     left: spacing[16],

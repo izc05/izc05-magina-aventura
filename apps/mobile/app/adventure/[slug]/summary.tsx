@@ -83,7 +83,7 @@ export default function ActivitySummaryScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.limestone },
-  scrollContent: { padding: spacing[20], paddingBottom: spacing[120] },
+  scrollContent: { padding: spacing[20], paddingBottom: spacing[40] },
   header: { alignItems: 'center', marginTop: spacing[32], marginBottom: spacing[32] },
   eyebrow: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginBottom: spacing[8] },
   title: { color: colors.ink, fontSize: 24, fontWeight: '900', textAlign: 'center', marginBottom: spacing[4] },

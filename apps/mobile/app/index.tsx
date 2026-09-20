@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '../src/components/branding/AppHeader';
@@ -10,6 +10,7 @@ import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
 import { developmentRoutes } from '../src/features/routes/fixtures';
+import { devAdventureEngineTestRoute } from '../src/features/routes/dev-adventure-engine-test';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
@@ -121,6 +122,27 @@ export default function RoutesHomeScreen() {
             })
           }
         />
+
+        {__DEV__ ? (
+          <View style={styles.devHarnessCard}>
+            <Text style={styles.devHarnessEyebrow}>DEV ONLY · TEST DATA</Text>
+            <Text style={styles.devHarnessTitle}>Adventure Engine v2 harness</Text>
+            <Text style={styles.devHarnessBody}>
+              Ruta sintética aislada para probar checkpoints, recovery y finalización.
+            </Text>
+            <Pressable
+              style={styles.devHarnessButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/routes/[slug]',
+                  params: { slug: devAdventureEngineTestRoute.slug },
+                })
+              }
+            >
+              <Text style={styles.devHarnessButtonText}>Abrir simulador TEST DATA</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={styles.challengeCard}>
           <View style={styles.challengeIcon}>
@@ -609,6 +631,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.aoveGold,
     marginTop: spacing[8],
   },
+  devHarnessCard: {
+    marginTop: spacing[20],
+    borderRadius: radius.lg,
+    backgroundColor: colors.goldWash,
+    borderWidth: 1,
+    borderColor: colors.aoveGold,
+    padding: spacing[16],
+  },
+  devHarnessEyebrow: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  devHarnessTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: spacing[4] },
+  devHarnessBody: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: spacing[4] },
+  devHarnessButton: {
+    minHeight: 44,
+    marginTop: spacing[12],
+    borderRadius: radius.md,
+    backgroundColor: colors.olive900,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  devHarnessButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
   bottomNavWrap: {
     position: 'absolute',
     left: 0,

@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
+import { getRuntimeRouteMapRepository } from '../../src/features/routes/runtime-route-map-repository';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { RouteMap } from '../../src/map/RouteMap';
@@ -58,6 +58,7 @@ export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const routeMapRepository = getRuntimeRouteMapRepository();
   const routeSlug = route?.slug ?? '';
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
@@ -76,8 +77,8 @@ export default function RouteDetailScreen() {
     async function loadRouteMapState() {
       try {
         const [payload, manifest] = await Promise.all([
-          developmentRouteMapRepository.getMapPayload(routeSlug),
-          developmentRouteMapRepository.getOfflineManifest(routeSlug),
+          routeMapRepository.getMapPayload(routeSlug),
+          routeMapRepository.getOfflineManifest(routeSlug),
         ]);
 
         if (!active) return;

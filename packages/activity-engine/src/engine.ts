@@ -172,6 +172,7 @@ export function reduceActivity(
   const shouldPersistSnapshot = dueByCount || dueByTime;
 
   return {
+    ...state,
     session: {
       ...state.session,
       lastProcessedSequence: sample.sequence,

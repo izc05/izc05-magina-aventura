@@ -1,7 +1,8 @@
-import { createActivityController } from './activity-controller';
+import { createActivityController, type ActivityController } from './activity-controller';
 import { expoLocationProvider } from './expo-location-provider';
 import { sqliteActivityStore } from './sqlite-activity-store';
 import { sqliteBackgroundLocationInbox } from './sqlite-background-location-inbox';
+import { createSimulatedLocationProvider } from './simulated-location-provider';
 
 function createActivityId(): string {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -18,10 +19,27 @@ function createActivityId(): string {
   throw new Error('Secure UUID generation is unavailable');
 }
 
-export const activityRuntime = createActivityController({
-  store: sqliteActivityStore,
-  inbox: sqliteBackgroundLocationInbox,
-  locationProvider: expoLocationProvider,
-  createActivityId,
-  now: () => new Date().toISOString(),
-});
+export function createActivityRuntime(
+  locationProvider = expoLocationProvider,
+): ActivityController {
+  return createActivityController({
+    store: sqliteActivityStore,
+    inbox: sqliteBackgroundLocationInbox,
+    locationProvider,
+    createActivityId,
+    now: () => new Date().toISOString(),
+  });
+}
+
+export const activityRuntime = createActivityRuntime();
+
+/** Explicit DEV-only simulator runtime; never selected for a production slug. */
+export const devSimulationLocationProvider = createSimulatedLocationProvider();
+export const devSimulationRuntime = createActivityRuntime(devSimulationLocationProvider);
+
+export function getActivityRuntime(slug?: string): ActivityController {
+  if (__DEV__ && slug === 'dev-adventure-engine-test') {
+    return devSimulationRuntime;
+  }
+  return activityRuntime;
+}

@@ -170,8 +170,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
   }
 
   async function startLocation(activityId: string): Promise<void> {
-    await dependencies.locationProvider.start(activityId, (point) => {
-      void dependencies.inbox.append(activityId, [point]).then(() => refresh());
+    await dependencies.locationProvider.start(activityId, async (point) => {
+      await dependencies.inbox.append(activityId, [point]);
+      await refresh();
     });
   }
 

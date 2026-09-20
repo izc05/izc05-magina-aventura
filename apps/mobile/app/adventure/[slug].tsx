@@ -4,7 +4,14 @@ import { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { activityRuntime } from '../../src/activity/activity-runtime';
+import { getActivityRuntime } from '../../src/activity/activity-runtime';
+import {
+  devSimulationLocationProvider,
+} from '../../src/activity/activity-runtime';
+import {
+  devAdventureEngineTestPositions,
+  DEV_ADVENTURE_ENGINE_TEST_SLUG,
+} from '../../src/features/routes/dev-adventure-engine-test';
 import { useActiveAdventure } from '../../src/activity/use-active-adventure';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
@@ -15,6 +22,7 @@ export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const runtime = getActivityRuntime(route?.slug);
   const {
     engineState,
     setEngineState,
@@ -43,8 +51,8 @@ export default function ActiveAdventureScreen() {
     setErrorMessage(null);
     try {
       const next = isPaused
-        ? await activityRuntime.resume()
-        : await activityRuntime.pause();
+        ? await runtime.resume()
+        : await runtime.pause();
       setEngineState(next);
     } catch (error) {
       setErrorMessage(
@@ -59,7 +67,7 @@ export default function ActiveAdventureScreen() {
     if (!engineState) return;
     setErrorMessage(null);
     try {
-      const finished = await activityRuntime.finish();
+      const finished = await runtime.finish();
       setEngineState(finished);
       router.replace({
         pathname: '/adventure-summary/[slug]',
@@ -90,13 +98,35 @@ export default function ActiveAdventureScreen() {
     );
   }
 
+  async function emitTestPosition(position: readonly [number, number]) {
+    if (!__DEV__ || currentRoute.slug !== DEV_ADVENTURE_ENGINE_TEST_SLUG) return;
+    try {
+      await devSimulationLocationProvider.emit({
+        timestampMs: Date.now(),
+        latitude: position[1],
+        longitude: position[0],
+        accuracyMeters: 5,
+        altitudeMeters: 100,
+        speedMps: 1,
+        headingDegrees: 90,
+      });
+      setEngineState(await runtime.refresh());
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo simular la posición.');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
 
       <ActiveAdventureMap
         payload={mapPayload}
-        mapStyle={mapStyle}
+        mapStyle={mapStyle ?? {
+          version: 8,
+          sources: {},
+          layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#E7E1D6' } }],
+        }}
         track={trackFeature}
         currentPoint={currentPoint}
         fallbackCenter={[currentRoute.startLongitude, currentRoute.startLatitude]}
@@ -164,6 +194,25 @@ export default function ActiveAdventureScreen() {
             <Text style={styles.persistNote}>
               Puedes bloquear la pantalla. Android seguirá guardando posiciones en SQLite y el track se sincronizará después.
             </Text>
+            {__DEV__ && currentRoute.slug === DEV_ADVENTURE_ENGINE_TEST_SLUG ? (
+              <View style={styles.simulatorPanel}>
+                <Text style={styles.simulatorTitle}>DEV · SIMULADOR TEST DATA</Text>
+                <View style={styles.simulatorRow}>
+                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint1)}>
+                    <Text style={styles.simulatorButtonText}>CP1</Text>
+                  </Pressable>
+                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint2)}>
+                    <Text style={styles.simulatorButtonText}>CP2</Text>
+                  </Pressable>
+                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.discovery)}>
+                    <Text style={styles.simulatorButtonText}>DISC</Text>
+                  </Pressable>
+                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint3)}>
+                    <Text style={styles.simulatorButtonText}>CP3</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
           </>
         )}
       </View>
@@ -310,4 +359,21 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     marginTop: spacing[12],
   },
+  simulatorPanel: {
+    marginTop: spacing[12],
+    paddingTop: spacing[10],
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  simulatorTitle: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  simulatorRow: { flexDirection: 'row', gap: spacing[4], marginTop: spacing[8] },
+  simulatorButton: {
+    flex: 1,
+    minHeight: 34,
+    borderRadius: radius.sm,
+    backgroundColor: colors.goldWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  simulatorButtonText: { color: colors.earth, fontSize: 10, fontWeight: '900' },
 });

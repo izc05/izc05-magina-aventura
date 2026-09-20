@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { activityRuntime } from '../../../src/activity/activity-runtime';
+import { getActivityRuntime } from '../../../src/activity/activity-runtime';
 import type { LocationPermissionState } from '../../../src/activity/location-provider';
 import { BrandMark } from '../../../src/components/branding/BrandMark';
-import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
+import { getRuntimeRouteMapRepository } from '../../../src/features/routes/runtime-route-map-repository';
 import {
   presentPreparation,
   type PrepareOfflineState,
@@ -22,6 +22,8 @@ export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const runtime = getActivityRuntime(route?.slug);
+  const routeMapRepository = getRuntimeRouteMapRepository();
   const routeSlug = route?.slug ?? '';
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
   const [permissions, setPermissions] = useState<LocationPermissionState>();
@@ -34,7 +36,7 @@ export default function PrepareRouteAdventureScreen() {
 
     async function loadState() {
       try {
-        const permissionState = await activityRuntime.getPermissionState();
+        const permissionState = await runtime.getPermissionState();
         if (active) setPermissions(permissionState);
       } catch {
         if (active) setPermissions(undefined);
@@ -43,7 +45,7 @@ export default function PrepareRouteAdventureScreen() {
       if (!routeSlug) return;
 
       try {
-        const manifest = await developmentRouteMapRepository.getOfflineManifest(routeSlug);
+        const manifest = await routeMapRepository.getOfflineManifest(routeSlug);
         if (!active) return;
         if (!manifest) {
           setOfflineState('unavailable');
@@ -89,12 +91,12 @@ export default function PrepareRouteAdventureScreen() {
     setWarningMessage(null);
 
     try {
-      let nextPermissions = await activityRuntime.getPermissionState();
+      let nextPermissions = await runtime.getPermissionState();
       if (
         !nextPermissions.servicesEnabled ||
         !nextPermissions.foregroundGranted
       ) {
-        nextPermissions = await activityRuntime.requestPermissions();
+        nextPermissions = await runtime.requestPermissions();
         setPermissions(nextPermissions);
       }
 
@@ -113,8 +115,8 @@ export default function PrepareRouteAdventureScreen() {
       }
 
       const [definition, payload] = await Promise.all([
-        developmentRouteMapRepository.getAdventureDefinition(route!.slug),
-        developmentRouteMapRepository.getMapPayload(route!.slug),
+        routeMapRepository.getAdventureDefinition(route!.slug),
+        routeMapRepository.getMapPayload(route!.slug),
       ]);
       if (!definition) {
         throw new Error(
@@ -123,7 +125,7 @@ export default function PrepareRouteAdventureScreen() {
       }
       const routeLine = payload?.line.geometry.coordinates ?? [];
 
-      await activityRuntime.start(definition, route!, routeLine);
+      await runtime.start(definition, route!, routeLine);
       router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');

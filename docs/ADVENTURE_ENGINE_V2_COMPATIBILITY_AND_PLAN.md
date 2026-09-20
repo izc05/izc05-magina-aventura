@@ -154,6 +154,24 @@ El almacenamiento SQLite usa `activity_schema_migrations` y migraciones numerada
 
 La pantalla de preparación permite foreground-only cuando Android concede ubicación foreground pero deniega background. Se presenta como aviso de modo limitado, no como error, y el provider continúa usando el inbox SQLite durable mediante el watcher foreground. Con background concedido muestra: “Seguimiento continuo incluso con pantalla bloqueada.”
 
+### Fase 4B — Android Test Harness (implementada)
+
+Se añadió una aventura sintética completamente separada: `dev-adventure-engine-test`, con `routeId` `dev-route-engine-test-001`, `geometryVersion` `1`, coordenadas claramente marcadas como **TEST DATA**, tres checkpoints, un discovery, prerrequisitos encadenados y policy de proximidad. No usa MA-001, Cuadros, Bedmar ni recompensas definitivas.
+
+El contenido se sirve únicamente mediante `createDevAdventureEngineTestRepository()` o mediante el selector de runtime cuando `__DEV__` es verdadero. El repositorio real continúa devolviendo `null`; un slug desconocido tampoco recibe fallback. `createRuntimeRouteMapRepository(false)` está cubierto por test y permanece fail-closed.
+
+#### Activación en Android DEV
+
+1. Instalar el APK debug generado por CI y abrir la aplicación en modo development.
+2. En la pantalla principal aparecerá **DEV ONLY · TEST DATA / Adventure Engine v2 harness**. Ese bloque no se renderiza en producción.
+3. Abrir el simulador, iniciar la aventura desde Preparación y conceder ubicación foreground. El harness muestra explícitamente **Modo limitado** porque el provider simulado modela foreground-only.
+4. En la pantalla activa usar `CP1`, `CP2`, `DISC` y `CP3`. Cada botón emite una posición al `SimulatedLocationProvider`; desde ahí se usa el pipeline real `LocationSample → normalize → Activity Engine → Exploration Engine → inbox SQLite → UI`.
+5. Usar `Pausar`, volver a abrir/recovery, `Reanudar` y finalmente `Finalizar`. El desbloqueo no finaliza la actividad; solamente `Finalizar` mueve la sesión a `FINISHED`.
+
+También puede abrirse directamente `/routes/dev-adventure-engine-test` en el router DEV. El test automatizado equivalente está en `apps/mobile/src/activity/dev-adventure-engine-test.e2e.test.ts` y usa exactamente el mismo provider simulado, controller, stores e inbox, cambiando solamente el almacenamiento por implementaciones de memoria para aislar el test.
+
+La cobertura verifica inicio, pinning de slug/version, foreground-only, CP1, deduplicación de CP1, prerrequisitos CP2 → discovery → CP3, ausencia de finalización automática, pausa, recovery, continuación, persistencia del track, rechazo de otra versión y finalización explícita.
+
 ### Fase 4 — HUD Android canónico
 
 Extender `presentActiveAdventure`, `useActiveAdventure` y la pantalla Android existente con:
@@ -214,6 +232,7 @@ El controller aplica exploración después de normalizar cada muestra, tanto des
 - La sincronización de observaciones y su validación servidor `VERIFIED` requieren el contrato de API correspondiente.
 - El modo foreground-only depende del ciclo de vida de la aplicación; el usuario debe conservar la app activa para minimizar pérdida de tracking.
 - El runner SQLite ya registra versiones; una migración editorial separada sería necesaria para recuperar actividades históricas creadas antes del binding de AdventureDefinition, pues no se inventa su versión.
+- El harness DEV sólo usa contenido sintético y un provider simulado; no prueba el comportamiento OEM de un GNSS real. Las pruebas Android de bloqueo, terminación del proceso, batería y conectividad real siguen pendientes.
 - HUD Android, inventario visual, Babylon Android, cámara y ARCore se mantienen deliberadamente fuera de Fases 1–3.
 
 No se ha modificado `main`, no se ha tocado ni cerrado PR #35 y no se ha inventado contenido de MA-001.

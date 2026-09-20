@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -46,6 +46,24 @@ export default function ActiveAdventureScreen() {
     () => presentExploration(adventureDefinition, engineState, mapPayload),
     [adventureDefinition, engineState, mapPayload],
   );
+  const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const seenObservationKey = useRef<string | null>(null);
+  const latestObservation = engineState?.explorationObservations?.at(-1);
+  const latestObservationKey = latestObservation
+    ? `${latestObservation.targetKey}:${latestObservation.sampleSequence}`
+    : null;
+
+  useEffect(() => {
+    if (!latestObservationKey) return;
+    if (seenObservationKey.current === null) {
+      seenObservationKey.current = latestObservationKey;
+      return;
+    }
+    if (seenObservationKey.current !== latestObservationKey) {
+      seenObservationKey.current = latestObservationKey;
+      setCelebrationVisible(true);
+    }
+  }, [latestObservationKey]);
 
   if (!route || !presentation) return null;
   const currentRoute = route;
@@ -208,6 +226,28 @@ export default function ActiveAdventureScreen() {
         </View>
       ) : null}
 
+      {celebrationVisible && exploration.latestEventTitle ? (
+        <View style={styles.celebrationBackdrop}>
+          <View style={styles.celebrationCard}>
+            <View style={styles.celebrationSeal}>
+              <Text style={styles.celebrationSealText}>
+                {exploration.latestEventKind === 'discovery' ? '◇' : '✓'}
+              </Text>
+            </View>
+            <Text style={styles.celebrationEyebrow}>
+              {exploration.latestEventKind === 'discovery' ? 'NUEVO DESCUBRIMIENTO' : 'CHECKPOINT ALCANZADO'}
+            </Text>
+            <Text style={styles.celebrationTitle}>{exploration.latestEventTitle}</Text>
+            <Text style={styles.celebrationBody}>
+              Tu progreso se ha guardado en este dispositivo. Sigue la ruta para continuar la aventura.
+            </Text>
+            <Pressable style={styles.celebrationButton} onPress={() => setCelebrationVisible(false)}>
+              <Text style={styles.celebrationButtonText}>Continuar ruta</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.bottomCard}>
         <Text style={styles.bottomEyebrow}>{isPaused ? 'PROGRESO PROTEGIDO' : 'ESTADO DE LA AVENTURA'}</Text>
         <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
@@ -360,6 +400,21 @@ const styles = StyleSheet.create({
   eventEyebrow: { color: colors.earth, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
   eventTitle: { color: colors.ink, fontSize: 13, fontWeight: '900', marginTop: 2 },
   eventMeta: { color: colors.earth, fontSize: 10, marginTop: 2 },
+  celebrationBackdrop: {
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+    backgroundColor: 'rgba(23,32,25,0.42)', alignItems: 'center', justifyContent: 'center', padding: spacing[24],
+  },
+  celebrationCard: {
+    width: '100%', borderRadius: radius.xl, backgroundColor: colors.warmBackground,
+    padding: spacing[24], alignItems: 'center', ...shadow.floating,
+  },
+  celebrationSeal: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.aoveGold, alignItems: 'center', justifyContent: 'center' },
+  celebrationSealText: { color: colors.ink, fontSize: 38, fontWeight: '900' },
+  celebrationEyebrow: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginTop: spacing[20], textAlign: 'center' },
+  celebrationTitle: { color: colors.ink, fontSize: 24, fontWeight: '900', marginTop: spacing[8], textAlign: 'center' },
+  celebrationBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[12], textAlign: 'center' },
+  celebrationButton: { width: '100%', minHeight: 54, borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center', marginTop: spacing[20] },
+  celebrationButtonText: { color: colors.white, fontSize: 14, fontWeight: '900' },
   bottomCard: {
     position: 'absolute',
     left: spacing[16],

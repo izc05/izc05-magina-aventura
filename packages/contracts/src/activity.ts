@@ -30,6 +30,10 @@ export interface LocationSample {
 
 export interface ActivitySession {
   activityId: string;
+  /** Adventure editorial identity pinned when the activity starts. */
+  adventureSlug: string;
+  /** Exact immutable AdventureDefinition version pinned at start. */
+  adventureVersion: number;
   routeId: string;
   routeSlug: string;
   geometryVersion: number;

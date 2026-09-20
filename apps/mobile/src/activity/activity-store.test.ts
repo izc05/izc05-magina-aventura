@@ -11,6 +11,8 @@ import {
 function session(state: ActivitySession['state'] = 'ACTIVE'): ActivitySession {
   return {
     activityId: 'activity-store-test',
+    adventureSlug: 'synthetic-adventure',
+    adventureVersion: 2,
     routeId: 'route-test',
     routeSlug: 'synthetic-route',
     geometryVersion: 2,

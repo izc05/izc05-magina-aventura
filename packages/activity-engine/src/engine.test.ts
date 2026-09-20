@@ -17,6 +17,8 @@ const routeLine: GeoJsonPosition[] = [
 function session(): ActivitySession {
   return {
     activityId: 'activity-engine-test',
+    adventureSlug: 'synthetic-adventure',
+    adventureVersion: 1,
     routeId: 'route-test',
     routeSlug: 'synthetic-route',
     geometryVersion: 1,

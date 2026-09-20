@@ -1,6 +1,10 @@
 import type { RouteMapRepository } from './route-map-repository';
 
 export const developmentRouteMapRepository: RouteMapRepository = {
+  async getAdventureDefinition() {
+    return null;
+  },
+
   async getMapPayload() {
     return null;
   },

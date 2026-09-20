@@ -1,4 +1,4 @@
-import type { RouteDetail } from '@magina-aventura/contracts';
+import type { AdventureDefinition, RouteDetail } from '@magina-aventura/contracts';
 import type { ExplorationTarget } from '@magina-aventura/activity-engine';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -32,6 +32,30 @@ const route: RouteDetail = {
   geometryVersion: 1,
   offlineAvailable: false,
   developmentFixture: true,
+};
+
+const adventureDefinition: AdventureDefinition = {
+  slug: 'synthetic-adventure',
+  version: 1,
+  routeId: route.id,
+  geometryVersion: route.geometryVersion,
+  gpx: { uri: 'test://route.gpx', sha256: 'test-gpx' },
+  offlineMap: {
+    manifestUri: 'test://manifest.json',
+    styleTemplateUri: 'test://style.json',
+    contentHash: 'test-map',
+  },
+  explorationPolicy: {
+    maxAccuracyMeters: 20,
+    requiredConsecutiveSamples: 1,
+    maxEvidenceGapSeconds: 15,
+  },
+  checkpoints: [],
+  discoveries: [],
+  missions: [],
+  assets: [],
+  scenes3d: [],
+  progression: { xpRulesetVersion: 1, rewards: [] },
 };
 
 function createProvider(): LocationProvider & {
@@ -79,7 +103,7 @@ describe('ActivityController', () => {
       now: () => '2026-09-16T10:00:00.000Z',
     });
 
-    const started = await controller.start(route);
+    const started = await controller.start(adventureDefinition, route);
     expect(started.session.state).toBe('ACTIVE');
     expect(provider.start).toHaveBeenCalledWith('activity-1', expect.any(Function));
 
@@ -122,7 +146,7 @@ describe('ActivityController', () => {
       now: () => '2026-09-16T10:00:00.000Z',
     });
 
-    await first.start(route);
+    await first.start(adventureDefinition, route);
     await new MemoryBackgroundLocationInbox(inboxDb).append('activity-recovery', [
       rawPoint(Date.parse('2026-09-16T10:00:05.000Z'), 37.82, -3.41),
       rawPoint(Date.parse('2026-09-16T10:00:12.000Z'), 37.82006, -3.41),
@@ -138,13 +162,39 @@ describe('ActivityController', () => {
       now: () => '2026-09-16T10:01:00.000Z',
     });
 
-    const recovered = await second.recover(route);
+    const recovered = await second.recover(adventureDefinition, route);
     expect(recovered?.session.activityId).toBe('activity-recovery');
     expect(recovered?.session.state).toBe('ACTIVE');
     expect(recovered?.snapshot.validDistanceMeters).toBeCloseTo(
       beforeRestart?.snapshot.validDistanceMeters ?? 0,
       3,
     );
+  });
+
+  it('refuses recovery with a newer AdventureDefinition version', async () => {
+    const storeDb = createMemoryActivityStoreDatabase();
+    const inboxDb = createMemoryBackgroundLocationInboxDatabase();
+    const provider = createProvider();
+    const first = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'activity-pinned-definition',
+      now: () => '2026-09-16T10:00:00.000Z',
+    });
+    await first.start(adventureDefinition, route);
+
+    const restarted = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'unused',
+      now: () => '2026-09-16T10:01:00.000Z',
+    });
+
+    await expect(
+      restarted.recover({ ...adventureDefinition, version: 2 }, route),
+    ).rejects.toThrow(/exact AdventureDefinition version/);
   });
 
   it('persists exploration evidence without finishing the activity and recovers it offline', async () => {
@@ -161,13 +211,9 @@ describe('ActivityController', () => {
       longitude: -3.41,
       triggerRadiusMeters: 30,
     };
-    const exploration = {
-      targets: [target],
-      policy: {
-        maxAccuracyMeters: 20,
-        requiredConsecutiveSamples: 1,
-        maxEvidenceGapSeconds: 15,
-      },
+    const definitionWithTarget: AdventureDefinition = {
+      ...adventureDefinition,
+      checkpoints: [target],
     };
 
     const first = createActivityController({
@@ -176,10 +222,9 @@ describe('ActivityController', () => {
       locationProvider: provider,
       createActivityId: () => 'activity-exploration',
       now: () => '2026-09-16T10:00:00.000Z',
-      exploration,
     });
 
-    await first.start(route);
+    await first.start(definitionWithTarget, route);
     await new MemoryBackgroundLocationInbox(inboxDb).append('activity-exploration', [
       rawPoint(Date.parse('2026-09-16T10:00:05.000Z'), 37.82, -3.41),
       rawPoint(Date.parse('2026-09-16T10:00:10.000Z'), 37.82, -3.41),
@@ -197,9 +242,8 @@ describe('ActivityController', () => {
       locationProvider: provider,
       createActivityId: () => 'unused',
       now: () => '2026-09-16T10:01:00.000Z',
-      exploration,
     });
-    const recovered = await restarted.recover(route);
+    const recovered = await restarted.recover(definitionWithTarget, route);
 
     expect(recovered?.session.state).toBe('ACTIVE');
     expect(recovered?.exploration?.unlockedTargetKeys).toEqual([

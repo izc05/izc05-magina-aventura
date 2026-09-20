@@ -8,6 +8,8 @@ function recoveredActivity(): RecoveredActivity {
   return {
     session: {
       activityId: 'activity-background',
+      adventureSlug: 'synthetic-adventure',
+      adventureVersion: 1,
       routeId: 'route-1',
       routeSlug: 'route-1',
       geometryVersion: 1,

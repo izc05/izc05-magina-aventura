@@ -27,6 +27,7 @@ export default function PrepareRouteAdventureScreen() {
   const [permissions, setPermissions] = useState<LocationPermissionState>();
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -85,13 +86,13 @@ export default function PrepareRouteAdventureScreen() {
     if (busy) return;
     setBusy(true);
     setErrorMessage(null);
+    setWarningMessage(null);
 
     try {
       let nextPermissions = await activityRuntime.getPermissionState();
       if (
         !nextPermissions.servicesEnabled ||
-        !nextPermissions.foregroundGranted ||
-        !nextPermissions.backgroundGranted
+        !nextPermissions.foregroundGranted
       ) {
         nextPermissions = await activityRuntime.requestPermissions();
         setPermissions(nextPermissions);
@@ -106,15 +107,23 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
       if (!nextPermissions.backgroundGranted) {
-        setErrorMessage(
-          'Modo foreground-only: la aventura puede continuar, pero el tracking puede detenerse al bloquear o abandonar la app.',
+        setWarningMessage(
+          'Modo limitado. Puedes realizar la aventura, pero mantén la aplicación activa para conservar el seguimiento.',
         );
       }
 
-      const payload = await developmentRouteMapRepository.getMapPayload(route!.slug);
+      const [definition, payload] = await Promise.all([
+        developmentRouteMapRepository.getAdventureDefinition(route!.slug),
+        developmentRouteMapRepository.getMapPayload(route!.slug),
+      ]);
+      if (!definition) {
+        throw new Error(
+          'La definición versionada de esta aventura no está disponible en el paquete offline.',
+        );
+      }
       const routeLine = payload?.line.geometry.coordinates ?? [];
 
-      await activityRuntime.start(route!, routeLine);
+      await activityRuntime.start(definition, route!, routeLine);
       router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');
@@ -148,7 +157,9 @@ export default function PrepareRouteAdventureScreen() {
         <Text style={styles.sectionEyebrow}>COMPROBACIÓN REAL DEL TELÉFONO</Text>
         <Text style={styles.sectionTitle}>¿Estamos listos?</Text>
         <Text style={styles.sectionBody}>
-          La aventura solo arranca cuando Android permite ubicación y seguimiento con la pantalla bloqueada.
+          {permissions?.foregroundGranted && !permissions.backgroundGranted
+            ? 'Modo limitado. Puedes realizar la aventura, pero mantén la aplicación activa para conservar el seguimiento.'
+            : 'Seguimiento continuo incluso con pantalla bloqueada.'}
         </Text>
 
         <View style={styles.readinessCard}>
@@ -176,6 +187,11 @@ export default function PrepareRouteAdventureScreen() {
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         ) : null}
+        {warningMessage ? (
+          <View style={styles.warningCard}>
+            <Text style={styles.warningText}>{warningMessage}</Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -190,7 +206,11 @@ export default function PrepareRouteAdventureScreen() {
               {busy ? 'Preparando GPS…' : presentation.canStartGps ? 'Iniciar aventura' : 'Preparar GPS e iniciar'}
             </Text>
             <Text style={styles.startButtonCaption}>
-              {presentation.canStartGps ? 'Tracking real · segundo plano activo' : 'Android pedirá los permisos necesarios'}
+              {presentation.canStartGps
+                ? permissions?.backgroundGranted
+                  ? 'Tracking real · segundo plano activo'
+                  : 'Tracking real · mantén la aplicación activa'
+                : 'Android pedirá los permisos necesarios'}
             </Text>
           </View>
           <Text style={styles.startArrow}>→</Text>
@@ -280,6 +300,8 @@ const styles = StyleSheet.create({
   infoBody: { color: colors.limestone, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   errorCard: { marginHorizontal: spacing[20], borderRadius: radius.md, backgroundColor: colors.goldWash, padding: spacing[16] },
   errorText: { color: colors.earth, fontSize: 12, fontWeight: '800', lineHeight: 18 },
+  warningCard: { marginHorizontal: spacing[20], borderRadius: radius.md, backgroundColor: colors.goldWash, padding: spacing[16] },
+  warningText: { color: colors.earth, fontSize: 12, fontWeight: '800', lineHeight: 18 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.white, padding: spacing[16], borderTopWidth: 1, borderTopColor: colors.border },
   startButton: { minHeight: 68, borderRadius: radius.lg, backgroundColor: colors.olive900, paddingHorizontal: spacing[20], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   startButtonPressed: { opacity: 0.75 },

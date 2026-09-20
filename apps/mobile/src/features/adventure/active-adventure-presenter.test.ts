@@ -8,6 +8,8 @@ function activeState(routeId: string, routeSlug: string): ActivityEngineState {
   return {
     session: {
       activityId: 'activity-real',
+      adventureSlug: 'synthetic-adventure',
+      adventureVersion: 1,
       routeId,
       routeSlug,
       geometryVersion: 1,

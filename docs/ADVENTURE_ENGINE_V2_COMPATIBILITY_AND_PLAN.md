@@ -1,6 +1,6 @@
 # Adventure Engine v2 — análisis de compatibilidad y plan de integración
 
-**Estado:** Fases 1–3 implementadas sobre la baseline; no se ha portado código ejecutable de PR #35.
+**Estado:** Fases 1–3 y Fase 4A (hardening + Adventure Runtime) implementadas sobre la baseline; no se ha portado código ejecutable de PR #35.
 
 **Rama creada:** `feat/adventure-engine-v2`
 
@@ -91,11 +91,11 @@ El contrato implementado en `packages/contracts/src/adventure-definition.ts` cub
 ```ts
 type AdventureDefinition = {
   slug: string;
-  contentVersion: number;
+  version: number;
   routeId: string;
   geometryVersion: number;
-  gpxAssetId: string;
-  offlineMapAssetId: string | null;
+  gpx: { uri: string; sha256: string };
+  offlineMap: { manifestUri: string; styleTemplateUri: string; contentHash: string };
   checkpoints: AdventureCheckpoint[];
   missions: AdventureMission[];
   discoveries: AdventureDiscovery[];
@@ -143,6 +143,16 @@ Añadir estado y observaciones de exploración a SQLite, con clave única por ac
 ### Fase 3 — integración del controller (implementada)
 
 Integrar el adaptador después de la normalización y persistencia de cada `LocationSample`. Usar el mismo camino para live, background inbox y recovery. Un unlock debe actualizar evidencia y UI; nunca llamar a `finish()`.
+
+### Fase 4A — hardening + Adventure Runtime (implementada)
+
+`AdventureDefinition` ahora valida UUIDs globales, coordenadas, radios, secuencia, versiones, identidades y claves duplicadas, prerrequisitos, dependencias propias y ciclos de cualquier longitud. `explorationConfigFromAdventureDefinition()` es la única entrada desde contenido editorial al `ActivityController`.
+
+Al iniciar una actividad, se fija en `ActivitySession` la tupla `{ adventureSlug, adventureVersion, routeId, routeSlug, geometryVersion }`. El controller comprueba que `routeId` y `geometryVersion` de la definición coinciden con la ruta seleccionada y rechaza recovery cuando la definición proporcionada no coincide exactamente con esa tupla. Por tanto, una v4 descargada no puede sustituir silenciosamente a una actividad ya iniciada con v3.
+
+El almacenamiento SQLite usa `activity_schema_migrations` y migraciones numeradas `001`, `002`, `003`, aplicadas en orden y dentro de transacciones exclusivas. La migración `003` añade el binding de aventura sin borrar las tablas o datos existentes. Las actividades históricas sin binding no se recuperan como si tuviesen una definición nueva: fallan de forma segura hasta que exista una migración editorial explícita.
+
+La pantalla de preparación permite foreground-only cuando Android concede ubicación foreground pero deniega background. Se presenta como aviso de modo limitado, no como error, y el provider continúa usando el inbox SQLite durable mediante el watcher foreground. Con background concedido muestra: “Seguimiento continuo incluso con pantalla bloqueada.”
 
 ### Fase 4 — HUD Android canónico
 
@@ -196,14 +206,14 @@ La rama contiene el Exploration Engine puro portado y endurecido en `packages/ac
 
 El estado se persiste junto a la actividad en SQLite mediante `apps/mobile/src/activity/migrations/002-exploration.ts`. Las tablas `activity_exploration_state` y `activity_exploration_observations` guardan `last_evaluated_sequence`, JSON de estado y una clave primaria `(activity_id, target_key)`. El store en memoria implementa el mismo contrato para tests; no se usa `localStorage`.
 
-El controller aplica exploración después de normalizar cada muestra, tanto desde el inbox background como desde el watcher foreground-only y recovery. Un unlock no cambia `ActivityState` a `FINISHED`, no concede XP, inventario ni recompensa, y no se sincroniza como recompensa definitiva. `packages/contracts/src/adventure-definition.ts` deja preparado el contrato versionado para que GPX, mapa offline, targets, misiones, assets, escenas y progresión provengan de contenido editorial/backend; no contiene datos de MA-001.
+El controller aplica exploración después de normalizar cada muestra, tanto desde el inbox background como desde el watcher foreground-only y recovery. Un unlock no cambia `ActivityState` a `FINISHED`, no concede XP, inventario ni recompensa, y no se sincroniza como recompensa definitiva. `packages/contracts/src/adventure-definition.ts` valida el contrato versionado para que GPX, mapa offline, targets, misiones, assets, escenas y progresión provengan de contenido editorial/backend; no contiene datos de MA-001.
 
 ## Riesgos pendientes
 
 - La definición real de MA-001, su GPX, mapa offline, radios y UUIDs aún no está conectada.
 - La sincronización de observaciones y su validación servidor `VERIFIED` requieren el contrato de API correspondiente.
 - El modo foreground-only depende del ciclo de vida de la aplicación; el usuario debe conservar la app activa para minimizar pérdida de tracking.
-- Las tablas SQLite se crean mediante migración idempotente en inicialización; todavía no existe un runner general de versiones/migraciones para futuras alteraciones.
+- El runner SQLite ya registra versiones; una migración editorial separada sería necesaria para recuperar actividades históricas creadas antes del binding de AdventureDefinition, pues no se inventa su versión.
 - HUD Android, inventario visual, Babylon Android, cámara y ARCore se mantienen deliberadamente fuera de Fases 1–3.
 
 No se ha modificado `main`, no se ha tocado ni cerrado PR #35 y no se ha inventado contenido de MA-001.

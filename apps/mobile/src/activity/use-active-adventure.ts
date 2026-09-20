@@ -77,7 +77,8 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
 
     async function load() {
       try {
-        const [payload, manifest] = await Promise.all([
+        const [definition, payload, manifest] = await Promise.all([
+          developmentRouteMapRepository.getAdventureDefinition(currentRoute.slug),
           developmentRouteMapRepository.getMapPayload(currentRoute.slug),
           developmentRouteMapRepository.getOfflineManifest(currentRoute.slug),
         ]);
@@ -87,9 +88,11 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
         setMapStyle(await resolveActiveMapStyle(manifest));
 
         const line = payload?.line.geometry.coordinates ?? [];
-        const recovered =
-          activityRuntime.current() ??
-          (await activityRuntime.recover(currentRoute, line));
+        const current = activityRuntime.current();
+        if (!current && !definition) {
+          throw new Error('La versión exacta de esta aventura no está disponible sin conexión.');
+        }
+        const recovered = current ?? (await activityRuntime.recover(definition!, currentRoute, line));
         if (!active) return;
 
         setEngineState(recovered);

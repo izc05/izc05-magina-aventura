@@ -66,8 +66,8 @@ function backgroundCheck(permissionState?: LocationPermissionState): ReadinessCh
     return {
       id: 'background',
       label: 'GPS en segundo plano',
-      state: 'Dar permiso',
-      tone: 'pending',
+      state: 'Modo limitado',
+      tone: 'review',
     };
   }
 
@@ -87,8 +87,7 @@ export function presentPreparation(
   const offlineStateCopy = offlineReady ? 'Listo' : offlineCopy[offlineState];
   const canStartGps = Boolean(
     permissionState?.servicesEnabled &&
-      permissionState.foregroundGranted &&
-      permissionState.backgroundGranted,
+      permissionState.foregroundGranted,
   );
 
   return {

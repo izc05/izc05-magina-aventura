@@ -1,17 +1,18 @@
 import type {
+  AdventureDefinition,
   ActivitySession,
   GeoJsonPosition,
   RouteDetail,
 } from '@magina-aventura/contracts';
+import { validateAdventureDefinition } from '@magina-aventura/contracts';
 import {
   createInitialEngineState,
   createExplorationState,
   evaluateExplorationSample,
+  explorationConfigFromAdventureDefinition,
   normalizeLocationSample,
   reduceActivity,
   type ActivityEngineState,
-  type ExplorationPolicy,
-  type ExplorationTarget,
 } from '@magina-aventura/activity-engine';
 
 import type {
@@ -35,10 +36,6 @@ export interface ActivityControllerDependencies {
   locationProvider: LocationProvider;
   createActivityId(): string;
   now(): string;
-  exploration?: {
-    targets: ExplorationTarget[];
-    policy: ExplorationPolicy;
-  };
 }
 
 function ensureReadyForAdventure(state: LocationPermissionState): void {
@@ -50,11 +47,35 @@ function ensureReadyForAdventure(state: LocationPermissionState): void {
   }
 }
 
-function emptyExploration(): ExplorationPersistence {
-  return {
-    state: createExplorationState(),
-    observations: [],
-  };
+function validateDefinitionForRoute(
+  definition: AdventureDefinition,
+  route: RouteDetail,
+): AdventureDefinition {
+  const validated = validateAdventureDefinition(definition);
+  if (validated.routeId !== route.id) {
+    throw new Error('AdventureDefinition routeId does not match the selected route');
+  }
+  if (validated.geometryVersion !== route.geometryVersion) {
+    throw new Error('AdventureDefinition geometryVersion does not match the selected route');
+  }
+  return validated;
+}
+
+function validateDefinitionForRecovery(
+  definition: AdventureDefinition,
+  session: ActivitySession,
+  route: RouteDetail,
+): AdventureDefinition {
+  const validated = validateDefinitionForRoute(definition, route);
+  if (
+    validated.slug !== session.adventureSlug ||
+    validated.version !== session.adventureVersion ||
+    validated.routeId !== session.routeId ||
+    validated.geometryVersion !== session.geometryVersion
+  ) {
+    throw new Error('The exact AdventureDefinition version for this activity is unavailable');
+  }
+  return validated;
 }
 
 function explorationFromEngine(state: ActivityEngineState): ExplorationPersistence {
@@ -105,6 +126,7 @@ function rehydrateEngineState(
 export function createActivityController(dependencies: ActivityControllerDependencies) {
   let engineState: ActivityEngineState | null = null;
   let routeLine: readonly GeoJsonPosition[] = [];
+  let explorationConfig: ReturnType<typeof explorationConfigFromAdventureDefinition> | null = null;
   let initialized = false;
   const syncQueue = createActivitySyncQueue({
     store: dependencies.store,
@@ -115,7 +137,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
     state: ActivityEngineState,
     sample: RecoveredActivity['samplesAfterSnapshot'][number],
   ): ActivityEngineState {
-    const config = dependencies.exploration;
+    const config = explorationConfig;
     if (!config) {
       return {
         ...state,
@@ -217,10 +239,13 @@ export function createActivityController(dependencies: ActivityControllerDepende
     },
 
     async start(
+      definition: AdventureDefinition,
       route: RouteDetail,
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState> {
       await initializeStores();
+      const validatedDefinition = validateDefinitionForRoute(definition, route);
+      explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
       const permissions = await dependencies.locationProvider.requestAdventurePermissions();
       ensureReadyForAdventure(permissions);
 
@@ -228,6 +253,8 @@ export function createActivityController(dependencies: ActivityControllerDepende
       const at = dependencies.now();
       const session: ActivitySession = {
         activityId: dependencies.createActivityId(),
+        adventureSlug: validatedDefinition.slug,
+        adventureVersion: validatedDefinition.version,
         routeId: route.id,
         routeSlug: route.slug,
         geometryVersion: route.geometryVersion,
@@ -276,6 +303,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
     },
 
     async recover(
+      definition: AdventureDefinition,
       route: RouteDetail,
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState | null> {
@@ -287,6 +315,12 @@ export function createActivityController(dependencies: ActivityControllerDepende
         return null;
       }
 
+      const validatedDefinition = validateDefinitionForRecovery(
+        definition,
+        recovered.session,
+        route,
+      );
+      explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
       engineState = rehydrateEngineState(recovered, routeLine, applyExploration);
       if (engineState.session.state === 'ACTIVE') {
         await startLocation(engineState.session.activityId);

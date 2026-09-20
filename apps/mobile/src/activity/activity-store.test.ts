@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ActivitySession, ActivitySnapshot, LocationSample } from '@magina-aventura/contracts';
+import type { ExplorationObservation } from '@magina-aventura/activity-engine';
 
 import type { ActivityStore } from './activity-store';
 import {
@@ -108,5 +109,34 @@ describe('ActivityStore recovery contract', () => {
 
     expect(await store.loadActiveSession()).toBeNull();
     expect((await store.loadTrack('activity-store-test')).length).toBe(2);
+  });
+
+  it('persists exploration state and deduplicates the same activity target', async () => {
+    const store = new MemoryActivityStore();
+    await store.createSession(session(), snapshot(0));
+    const observation: ExplorationObservation = {
+      targetId: '00000000-0000-4000-8000-000000000021',
+      targetKey: 'checkpoint:00000000-0000-4000-8000-000000000021',
+      kind: 'checkpoint',
+      observedAt: '2026-09-16T08:00:10.000Z',
+      sampleSequence: 2,
+      distanceMeters: 4,
+      accuracyMeters: 7,
+    };
+    const exploration = {
+      state: {
+        progressByTargetKey: {},
+        unlockedTargetKeys: [observation.targetKey],
+        lastEvaluatedSequence: 2,
+      },
+      observations: [observation, { ...observation, sampleSequence: 3 }],
+    };
+
+    await store.appendBatch('activity-store-test', [], null, exploration);
+    const recovered = await store.loadActiveSession();
+
+    expect(recovered?.exploration.state.lastEvaluatedSequence).toBe(2);
+    expect(recovered?.exploration.state.unlockedTargetKeys).toEqual([observation.targetKey]);
+    expect(recovered?.exploration.observations).toHaveLength(1);
   });
 });

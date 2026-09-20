@@ -1,4 +1,5 @@
 import type { RouteDetail } from '@magina-aventura/contracts';
+import type { ExplorationTarget } from '@magina-aventura/activity-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -80,7 +81,7 @@ describe('ActivityController', () => {
 
     const started = await controller.start(route);
     expect(started.session.state).toBe('ACTIVE');
-    expect(provider.start).toHaveBeenCalledWith('activity-1');
+    expect(provider.start).toHaveBeenCalledWith('activity-1', expect.any(Function));
 
     await inbox.append('activity-1', [
       rawPoint(Date.parse('2026-09-16T10:00:05.000Z'), 37.82, -3.41),
@@ -144,5 +145,65 @@ describe('ActivityController', () => {
       beforeRestart?.snapshot.validDistanceMeters ?? 0,
       3,
     );
+  });
+
+  it('persists exploration evidence without finishing the activity and recovers it offline', async () => {
+    const storeDb = createMemoryActivityStoreDatabase();
+    const inboxDb = createMemoryBackgroundLocationInboxDatabase();
+    const provider = createProvider();
+    const target: ExplorationTarget = {
+      id: '00000000-0000-4000-8000-000000000011',
+      kind: 'checkpoint',
+      sequence: 1,
+      required: true,
+      prerequisiteTargetKeys: [],
+      latitude: 37.82,
+      longitude: -3.41,
+      triggerRadiusMeters: 30,
+    };
+    const exploration = {
+      targets: [target],
+      policy: {
+        maxAccuracyMeters: 20,
+        requiredConsecutiveSamples: 1,
+        maxEvidenceGapSeconds: 15,
+      },
+    };
+
+    const first = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'activity-exploration',
+      now: () => '2026-09-16T10:00:00.000Z',
+      exploration,
+    });
+
+    await first.start(route);
+    await new MemoryBackgroundLocationInbox(inboxDb).append('activity-exploration', [
+      rawPoint(Date.parse('2026-09-16T10:00:05.000Z'), 37.82, -3.41),
+      rawPoint(Date.parse('2026-09-16T10:00:10.000Z'), 37.82, -3.41),
+    ]);
+    const evaluated = await first.refresh();
+    expect(evaluated?.exploration?.unlockedTargetKeys).toEqual([
+      'checkpoint:00000000-0000-4000-8000-000000000011',
+    ]);
+    expect(evaluated?.session.state).toBe('ACTIVE');
+    expect(evaluated?.explorationObservations).toHaveLength(1);
+
+    const restarted = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'unused',
+      now: () => '2026-09-16T10:01:00.000Z',
+      exploration,
+    });
+    const recovered = await restarted.recover(route);
+
+    expect(recovered?.session.state).toBe('ACTIVE');
+    expect(recovered?.exploration?.unlockedTargetKeys).toEqual([
+      'checkpoint:00000000-0000-4000-8000-000000000011',
+    ]);
   });
 });

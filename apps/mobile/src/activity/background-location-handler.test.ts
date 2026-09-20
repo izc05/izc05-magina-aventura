@@ -38,6 +38,14 @@ function recoveredActivity(): RecoveredActivity {
       createdAt: '2026-09-16T10:00:00.000Z',
     },
     samplesAfterSnapshot: [],
+    exploration: {
+      state: {
+        progressByTargetKey: {},
+        unlockedTargetKeys: [],
+        lastEvaluatedSequence: 0,
+      },
+      observations: [],
+    },
   };
 }
 

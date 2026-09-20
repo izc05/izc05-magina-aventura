@@ -1,6 +1,6 @@
 # Adventure Engine v2 — análisis de compatibilidad y plan de integración
 
-**Estado:** análisis solamente; no se ha portado código de PR #35 ni se han hecho cambios estructurales.
+**Estado:** Fases 1–3 implementadas sobre la baseline; no se ha portado código ejecutable de PR #35.
 
 **Rama creada:** `feat/adventure-engine-v2`
 
@@ -84,9 +84,9 @@ SQLite inbox -> ActivityController / recovery
 
 El task de background sigue limitado a persistir entregas nativas en el inbox. El motor y la exploración se ejecutan al drenar el inbox desde el runtime, igual que en live/recovery, para que los tres caminos tengan comportamiento determinista.
 
-## Contrato de aventura data-driven propuesto
+## Contrato de aventura data-driven
 
-La forma exacta se implementará después de revisar los contratos de PR #26 y PR #7 en conjunto, pero debe cubrir al menos:
+El contrato implementado en `packages/contracts/src/adventure-definition.ts` cubre al menos:
 
 ```ts
 type AdventureDefinition = {
@@ -124,7 +124,7 @@ Reglas obligatorias:
 
 Crear la rama desde `origin/feat/integration-gps-visual-v1@60efff07…`. Mantener PR #35 intacto como donante y no comparar la implementación v2 contra `main` para decidir compatibilidad. Documentar la frontera Android/Web.
 
-### Fase 1 — incorporar exploración de PR #7
+### Fase 1 — incorporar exploración de PR #7 (implementada)
 
 Portar sólo `exploration/types`, `proximity`, `observation`, exports y tests de PR #7. Resolver sus imports contra el activity engine/geo ya presentes en PR #26. No portar cambios de GPS ni ramas completas.
 
@@ -136,11 +136,11 @@ Antes de conectar UI, endurecer:
 - Secuencia monotónica y deduplicación de muestras.
 - Tests de límites, replay y colisiones de IDs.
 
-### Fase 2 — persistencia y recovery
+### Fase 2 — persistencia y recovery (implementada)
 
 Añadir estado y observaciones de exploración a SQLite, con clave única por actividad/target/observación y `lastEvaluatedSequence`. El runtime debe persistir de forma coherente con la muestra procesada. Recovery debe reevaluar sólo muestras posteriores a la secuencia confirmada.
 
-### Fase 3 — integración del controller
+### Fase 3 — integración del controller (implementada)
 
 Integrar el adaptador después de la normalización y persistencia de cada `LocationSample`. Usar el mismo camino para live, background inbox y recovery. Un unlock debe actualizar evidencia y UI; nunca llamar a `finish()`.
 
@@ -180,17 +180,30 @@ Mantener el módulo 3D fuera del camino crítico de tracking. Definir un adaptad
 - Tests Android reales: permisos, bloqueo, terminación, reapertura, OEM, batería, conectividad y PMTiles/estilo offline.
 - Spike separado de Babylon: compatibilidad, memoria, GPU, batería y fallback.
 
-## Preguntas abiertas antes de implementar
+## Decisiones aprobadas aplicadas
 
-1. ¿Se aprueba un modo foreground-only si se niega background, o el arranque exige siempre background?
-2. ¿Cuál será la fuente editorial/versionada de posiciones y radios de discoveries?
-3. ¿Los IDs de checkpoint/discovery son globalmente únicos o se adopta formalmente `kind:id`?
-4. ¿Qué significa `required`, cuál es el orden y qué prerequisitos tendrá una aventura?
-5. ¿Quién versiona y aprueba la policy de precisión/radio/muestras/gap?
-6. ¿Qué endpoint y worker validarán batches, y cómo se resuelve el `activityId` actual frente a la exigencia UUID del backend?
-7. ¿Qué reglas convierten `VERIFIED` en XP, inventario, aceitunas y logros?
-8. ¿Se quiere mantener Babylon sólo como experimento web durante v2 o iniciar un spike de renderer Android separado?
+- Si background es rechazado, se inicia foreground-only con advertencia; el watcher foreground entra en el mismo inbox durable.
+- Checkpoints y discoveries usan UUID global y claves persistidas `checkpoint:<uuid>` / `discovery:<uuid>`.
+- `sequence`, `required` y `prerequisiteTargetKeys` son campos explícitos de `AdventureDefinition`; no se infieren desde arrays.
+- La policy se inyecta por aventura y se valida contra límites seguros del motor.
+- `activityId` se genera como UUID local mediante Web Crypto.
+- Las recompensas definitivas quedan fuera del cliente y requieren estado servidor `VERIFIED`.
+- Babylon, HUD, inventario visual y AR nativa siguen fuera de estas fases.
 
-## Estado actual de esta rama
+## Implementación de Fases 1–3
 
-Sólo se ha creado la rama desde la baseline solicitada y se ha añadido este documento de análisis. No se han portado archivos de PR #35, no se ha modificado `main`, no se ha tocado PR #35 y no se ha inventado contenido de MA-001.
+La rama contiene el Exploration Engine puro portado y endurecido en `packages/activity-engine/src/exploration/`. La evaluación consume únicamente `LocationSample` normalizado del motor real de PR #26, valida policy y targets, procesa muestras en orden monotónico, rechaza replay, aplica prerequisitos explícitos y emite observaciones provisionales idempotentes por `activityId + targetKey`.
+
+El estado se persiste junto a la actividad en SQLite mediante `apps/mobile/src/activity/migrations/002-exploration.ts`. Las tablas `activity_exploration_state` y `activity_exploration_observations` guardan `last_evaluated_sequence`, JSON de estado y una clave primaria `(activity_id, target_key)`. El store en memoria implementa el mismo contrato para tests; no se usa `localStorage`.
+
+El controller aplica exploración después de normalizar cada muestra, tanto desde el inbox background como desde el watcher foreground-only y recovery. Un unlock no cambia `ActivityState` a `FINISHED`, no concede XP, inventario ni recompensa, y no se sincroniza como recompensa definitiva. `packages/contracts/src/adventure-definition.ts` deja preparado el contrato versionado para que GPX, mapa offline, targets, misiones, assets, escenas y progresión provengan de contenido editorial/backend; no contiene datos de MA-001.
+
+## Riesgos pendientes
+
+- La definición real de MA-001, su GPX, mapa offline, radios y UUIDs aún no está conectada.
+- La sincronización de observaciones y su validación servidor `VERIFIED` requieren el contrato de API correspondiente.
+- El modo foreground-only depende del ciclo de vida de la aplicación; el usuario debe conservar la app activa para minimizar pérdida de tracking.
+- Las tablas SQLite se crean mediante migración idempotente en inicialización; todavía no existe un runner general de versiones/migraciones para futuras alteraciones.
+- HUD Android, inventario visual, Babylon Android, cámara y ARCore se mantienen deliberadamente fuera de Fases 1–3.
+
+No se ha modificado `main`, no se ha tocado ni cerrado PR #35 y no se ha inventado contenido de MA-001.

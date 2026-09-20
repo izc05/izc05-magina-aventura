@@ -12,6 +12,8 @@ function fakeAdapter(overrides: Partial<NativeLocationAdapter> = {}): NativeLoca
     hasStartedBackgroundUpdates: async () => false,
     startBackgroundUpdates: async () => undefined,
     stopBackgroundUpdates: async () => undefined,
+    startForegroundUpdates: async () => undefined,
+    stopForegroundUpdates: async () => undefined,
     ...overrides,
   };
 }
@@ -56,22 +58,20 @@ describe('LocationProvider permissions', () => {
     expect(startedActivities).toEqual(['activity-123']);
   });
 
-  it('refuses background tracking when background permission is denied', async () => {
-    let starts = 0;
+  it('falls back to foreground tracking when background permission is denied', async () => {
+    let foregroundStarts = 0;
     const provider = createLocationProvider(
       fakeAdapter({
         getForegroundPermission: async () => 'granted',
         getBackgroundPermission: async () => 'denied',
-        startBackgroundUpdates: async () => {
-          starts += 1;
+        startForegroundUpdates: async () => {
+          foregroundStarts += 1;
         },
       }),
     );
 
-    await expect(provider.start('activity-denied')).rejects.toThrow(
-      'Background location permission is required',
-    );
-    expect(starts).toBe(0);
+    await provider.start('activity-denied', () => undefined);
+    expect(foregroundStarts).toBe(1);
   });
 
   it('refuses tracking when device location services are disabled', async () => {

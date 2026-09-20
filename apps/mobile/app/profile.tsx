@@ -25,7 +25,7 @@ export default function ProfileScreen() {
         <View style={styles.passportCard}>
           <View style={styles.passportHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{user?.email?.[0].toUpperCase() ?? 'A'}</Text>
+              <Text style={styles.avatarText}>{user?.email?.[0]?.toUpperCase() ?? 'A'}</Text>
             </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{user?.email?.split('@')[0] ?? 'Aventurero'}</Text>

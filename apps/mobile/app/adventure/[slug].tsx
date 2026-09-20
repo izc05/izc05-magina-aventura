@@ -14,6 +14,7 @@ import {
 } from '../../src/features/routes/dev-adventure-engine-test';
 import { useActiveAdventure } from '../../src/activity/use-active-adventure';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
+import { presentExploration } from '../../src/features/adventure/exploration-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { ActiveAdventureMap } from '../../src/map/ActiveAdventureMap';
 import { colors, radius, shadow, spacing } from '../../src/theme/tokens';
@@ -25,6 +26,7 @@ export default function ActiveAdventureScreen() {
   const runtime = getActivityRuntime(route?.slug);
   const {
     engineState,
+    adventureDefinition,
     setEngineState,
     track,
     trackFeature,
@@ -39,6 +41,10 @@ export default function ActiveAdventureScreen() {
   const presentation = useMemo(
     () => (route ? presentActiveAdventure(route, engineState) : null),
     [route, engineState],
+  );
+  const exploration = useMemo(
+    () => presentExploration(adventureDefinition, engineState, mapPayload),
+    [adventureDefinition, engineState, mapPayload],
   );
 
   if (!route || !presentation) return null;
@@ -155,10 +161,55 @@ export default function ActiveAdventureScreen() {
               : 'Buscando señal GPS…'}
           </Text>
         </View>
+        <View style={styles.explorationProgressRow}>
+          <View style={styles.explorationProgressTrack}>
+            <View
+              style={[
+                styles.explorationProgressFill,
+                {
+                  width: exploration.totalCount
+                    ? `${Math.round((exploration.completedCount / exploration.totalCount) * 100)}%`
+                    : '0%',
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.explorationProgressLabel}>{exploration.progressLabel}</Text>
+        </View>
       </View>
 
+      <View style={styles.objectiveCard}>
+        <View style={styles.objectiveIcon}>
+          <Text style={styles.objectiveIconText}>
+            {exploration.nextKind === 'discovery' ? '◇' : exploration.nextKind === 'complete' ? '✓' : '◎'}
+          </Text>
+        </View>
+        <View style={styles.objectiveCopy}>
+          <Text style={styles.objectiveEyebrow}>
+            {exploration.nextKind === 'discovery' ? 'SIGUIENTE DISCOVERY' : 'SIGUIENTE CHECKPOINT'}
+          </Text>
+          <Text style={styles.explorationObjectiveName}>{exploration.nextTitle}</Text>
+          <Text style={styles.explorationObjectiveMeta}>{exploration.nextMeta}</Text>
+        </View>
+      </View>
+
+      {exploration.latestEventTitle ? (
+        <View style={styles.eventCard}>
+          <View style={styles.eventSeal}>
+            <Text style={styles.eventSealText}>{exploration.latestEventKind === 'discovery' ? '◇' : '✓'}</Text>
+          </View>
+          <View style={styles.eventCopy}>
+            <Text style={styles.eventEyebrow}>
+              {exploration.latestEventKind === 'discovery' ? 'DESCUBRIMIENTO REGISTRADO' : 'CHECKPOINT ALCANZADO'}
+            </Text>
+            <Text style={styles.eventTitle}>{exploration.latestEventTitle}</Text>
+            <Text style={styles.eventMeta}>{exploration.latestEventMeta}</Text>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.bottomCard}>
-        <Text style={styles.bottomEyebrow}>ESTADO DE LA AVENTURA</Text>
+        <Text style={styles.bottomEyebrow}>{isPaused ? 'PROGRESO PROTEGIDO' : 'ESTADO DE LA AVENTURA'}</Text>
         <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
         <Text style={styles.objectiveMeta}>{presentation.objectiveMeta}</Text>
 
@@ -283,6 +334,32 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
   },
   gpsMeta: { color: colors.muted, fontSize: 9, fontWeight: '800' },
+  explorationProgressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[8], marginTop: spacing[12] },
+  explorationProgressTrack: { flex: 1, height: 5, borderRadius: radius.pill, backgroundColor: colors.oliveWash, overflow: 'hidden' },
+  explorationProgressFill: { height: 5, borderRadius: radius.pill, backgroundColor: colors.aoveGold },
+  explorationProgressLabel: { color: colors.muted, fontSize: 10, fontWeight: '900' },
+  objectiveCard: {
+    position: 'absolute', top: 226, left: spacing[16], right: spacing[16],
+    borderRadius: radius.lg, backgroundColor: 'rgba(255,255,255,0.97)', padding: spacing[12],
+    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, ...shadow.card,
+  },
+  objectiveIcon: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.oliveWash, alignItems: 'center', justifyContent: 'center' },
+  objectiveIconText: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
+  objectiveCopy: { flex: 1, marginLeft: spacing[12] },
+  objectiveEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  explorationObjectiveName: { color: colors.ink, fontSize: 16, fontWeight: '900', marginTop: 3 },
+  explorationObjectiveMeta: { color: colors.muted, fontSize: 11, fontWeight: '700', marginTop: 3 },
+  eventCard: {
+    position: 'absolute', top: 308, left: spacing[28], right: spacing[28], borderRadius: radius.md,
+    backgroundColor: colors.goldWash, padding: spacing[10], flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: '#E9DDAF',
+  },
+  eventSeal: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.aoveGold, alignItems: 'center', justifyContent: 'center' },
+  eventSealText: { color: colors.ink, fontSize: 17, fontWeight: '900' },
+  eventCopy: { flex: 1, marginLeft: spacing[10] },
+  eventEyebrow: { color: colors.earth, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  eventTitle: { color: colors.ink, fontSize: 13, fontWeight: '900', marginTop: 2 },
+  eventMeta: { color: colors.earth, fontSize: 10, marginTop: 2 },
   bottomCard: {
     position: 'absolute',
     left: spacing[16],

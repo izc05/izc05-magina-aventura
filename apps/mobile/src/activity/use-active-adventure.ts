@@ -1,4 +1,5 @@
 import type {
+  AdventureDefinition,
   OfflineRoutePackageManifest,
   RouteDetail,
   RouteMapPayload,
@@ -59,6 +60,7 @@ async function resolveActiveMapStyle(
 
 export function useActiveAdventure(route: RouteDetail | undefined) {
   const runtime = getActivityRuntime(route?.slug);
+  const [adventureDefinition, setAdventureDefinition] = useState<AdventureDefinition | null>(null);
   const [engineState, setEngineState] = useState<ActivityEngineState | null>(null);
   const [track, setTrack] = useState<LocationSample[]>([]);
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
@@ -87,6 +89,7 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
         if (!active) return;
 
         setMapPayload(payload);
+        setAdventureDefinition(definition);
         setMapStyle(await resolveActiveMapStyle(manifest));
 
         const line = payload?.line.geometry.coordinates ?? [];
@@ -142,6 +145,7 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
 
   return {
     engineState,
+    adventureDefinition,
     setEngineState,
     track,
     trackFeature,

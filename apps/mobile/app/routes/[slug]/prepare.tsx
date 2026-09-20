@@ -106,8 +106,9 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
       if (!nextPermissions.backgroundGranted) {
-        setErrorMessage('Activa “Permitir siempre” para registrar con la pantalla bloqueada.');
-        return;
+        setErrorMessage(
+          'Modo foreground-only: la aventura puede continuar, pero el tracking puede detenerse al bloquear o abandonar la app.',
+        );
       }
 
       const payload = await developmentRouteMapRepository.getMapPayload(route!.slug);

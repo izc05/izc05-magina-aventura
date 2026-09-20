@@ -24,6 +24,8 @@ const expoLocationApi: ExpoLocationApi = {
     ),
   stopLocationUpdatesAsync: (taskName) =>
     Location.stopLocationUpdatesAsync(taskName),
+  watchPositionAsync: (options, callback) =>
+    Location.watchPositionAsync(options as Location.LocationOptions, callback),
 };
 
 export const expoLocationAdapter = createExpoLocationAdapter(expoLocationApi);

@@ -1,4 +1,5 @@
 import type {
+  ForegroundLocationPoint,
   LocationPermissionStatus,
   NativeLocationAdapter,
 } from './location-provider';
@@ -24,6 +25,20 @@ export interface ExpoLocationApi {
     options: Record<string, unknown>,
   ): Promise<void>;
   stopLocationUpdatesAsync(taskName: string): Promise<void>;
+  watchPositionAsync(
+    options: Record<string, unknown>,
+    callback: (location: {
+      timestamp: number;
+      coords: {
+        latitude: number;
+        longitude: number;
+        accuracy: number | null;
+        altitude: number | null;
+        speed: number | null;
+        heading: number | null;
+      };
+    }) => void,
+  ): Promise<{ remove(): void }>;
 }
 
 function normalizePermission(status: string): LocationPermissionStatus {
@@ -34,6 +49,8 @@ function normalizePermission(status: string): LocationPermissionStatus {
 export function createExpoLocationAdapter(
   api: ExpoLocationApi,
 ): NativeLocationAdapter {
+  let foregroundSubscription: { remove(): void } | null = null;
+
   return {
     isServicesEnabled: () => api.hasServicesEnabledAsync(),
 
@@ -80,5 +97,28 @@ export function createExpoLocationAdapter(
 
     stopBackgroundUpdates: () =>
       api.stopLocationUpdatesAsync(ACTIVITY_LOCATION_TASK),
+
+    async startForegroundUpdates(onLocation: (point: ForegroundLocationPoint) => void) {
+      foregroundSubscription?.remove();
+      foregroundSubscription = await api.watchPositionAsync(
+        { accuracy: api.Accuracy.High, distanceInterval: 8, timeInterval: 5000 },
+        (location) => {
+          onLocation({
+            timestampMs: location.timestamp,
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            accuracyMeters: location.coords.accuracy ?? 999,
+            altitudeMeters: location.coords.altitude,
+            speedMps: location.coords.speed,
+            headingDegrees: location.coords.heading,
+          });
+        },
+      );
+    },
+
+    async stopForegroundUpdates() {
+      foregroundSubscription?.remove();
+      foregroundSubscription = null;
+    },
   };
 }

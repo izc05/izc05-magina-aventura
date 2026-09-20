@@ -6,9 +6,18 @@ import type {
   LocationRejectionReason,
   LocationSample,
 } from '@magina-aventura/contracts';
+import type {
+  ExplorationObservation,
+  ExplorationState,
+} from '@magina-aventura/activity-engine';
 import * as SQLite from 'expo-sqlite';
 
-import type { ActivityStore, RecoveredActivity } from './activity-store';
+import { EXPLORATION_MIGRATION } from './migrations/002-exploration';
+import type {
+  ActivityStore,
+  ExplorationPersistence,
+  RecoveredActivity,
+} from './activity-store';
 
 const DEFAULT_DATABASE_NAME = 'magina-aventura-activity.db';
 
@@ -29,6 +38,8 @@ type SnapshotRow = { payload_json: string };
 type SyncBatchRow = { payload_json: string };
 type SyncBatchActivityRow = { activity_id: string };
 type CountRow = { count: number };
+type ExplorationStateRow = { state_json: string; last_evaluated_sequence: number };
+type ExplorationObservationRow = { payload_json: string };
 
 type SampleRow = {
   sequence: number;
@@ -75,6 +86,68 @@ function sampleFromRow(row: SampleRow): LocationSample {
 
 function syncBatchFromRow(row: SyncBatchRow): ActivitySyncBatch {
   return JSON.parse(row.payload_json) as ActivitySyncBatch;
+}
+
+function explorationFromRows(
+  stateRow: ExplorationStateRow | null,
+  observationRows: ExplorationObservationRow[],
+): ExplorationPersistence {
+  const state: ExplorationState = stateRow
+    ? JSON.parse(stateRow.state_json) as ExplorationState
+    : {
+        progressByTargetKey: {},
+        unlockedTargetKeys: [],
+        lastEvaluatedSequence: 0,
+      };
+
+  return {
+    state: {
+      ...state,
+      lastEvaluatedSequence: stateRow?.last_evaluated_sequence ?? state.lastEvaluatedSequence,
+    },
+    observations: observationRows.map(
+      (row) => JSON.parse(row.payload_json) as ExplorationObservation,
+    ),
+  };
+}
+
+async function writeExploration(
+  db: SQLite.SQLiteDatabase,
+  activityId: string,
+  exploration: ExplorationPersistence,
+  updatedAt: string,
+): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO activity_exploration_state (
+      activity_id, state_json, last_evaluated_sequence, updated_at
+    ) VALUES (?, ?, ?, ?)
+    ON CONFLICT(activity_id) DO UPDATE SET
+      state_json = excluded.state_json,
+      last_evaluated_sequence = excluded.last_evaluated_sequence,
+      updated_at = excluded.updated_at`,
+    activityId,
+    JSON.stringify(exploration.state),
+    exploration.state.lastEvaluatedSequence,
+    updatedAt,
+  );
+
+  for (const observation of exploration.observations) {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO activity_exploration_observations (
+        activity_id, target_key, target_kind, target_id, observed_at,
+        sample_sequence, distance_m, accuracy_m, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      activityId,
+      observation.targetKey,
+      observation.kind,
+      observation.targetId,
+      observation.observedAt,
+      observation.sampleSequence,
+      observation.distanceMeters,
+      observation.accuracyMeters,
+      JSON.stringify(observation),
+    );
+  }
 }
 
 async function writeSession(
@@ -227,11 +300,20 @@ export class SQLiteActivityStore implements ActivityStore {
       CREATE INDEX IF NOT EXISTS activity_sync_batches_pending_idx
         ON activity_sync_batches(activity_id, state, sequence_start);
     `);
+    await db.execAsync(EXPLORATION_MIGRATION);
   }
 
   async createSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    exploration: ExplorationPersistence = {
+      state: {
+        progressByTargetKey: {},
+        unlockedTargetKeys: [],
+        lastEvaluatedSequence: 0,
+      },
+      observations: [],
+    },
   ): Promise<void> {
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
@@ -240,6 +322,7 @@ export class SQLiteActivityStore implements ActivityStore {
         lastProcessedSequence: snapshot.lastProcessedSequence,
       });
       await writeSnapshot(txn, snapshot);
+      await writeExploration(txn, session.activityId, exploration, snapshot.createdAt);
     });
   }
 
@@ -247,8 +330,9 @@ export class SQLiteActivityStore implements ActivityStore {
     activityId: string,
     samples: LocationSample[],
     snapshot: ActivitySnapshot | null,
+    exploration?: ExplorationPersistence,
   ): Promise<void> {
-    if (samples.length === 0 && !snapshot) return;
+    if (samples.length === 0 && !snapshot && !exploration) return;
 
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
@@ -264,6 +348,14 @@ export class SQLiteActivityStore implements ActivityStore {
            WHERE activity_id = ?`,
           snapshot.lastProcessedSequence,
           activityId,
+        );
+      }
+      if (exploration) {
+        await writeExploration(
+          txn,
+          activityId,
+          exploration,
+          snapshot?.createdAt ?? new Date().toISOString(),
         );
       }
     });
@@ -300,6 +392,16 @@ export class SQLiteActivityStore implements ActivityStore {
       sessionRow.activity_id,
       snapshot.lastProcessedSequence,
     );
+    const explorationStateRow = await db.getFirstAsync<ExplorationStateRow>(
+      `SELECT state_json, last_evaluated_sequence
+       FROM activity_exploration_state WHERE activity_id = ?`,
+      sessionRow.activity_id,
+    );
+    const explorationObservationRows = await db.getAllAsync<ExplorationObservationRow>(
+      `SELECT payload_json FROM activity_exploration_observations
+       WHERE activity_id = ? ORDER BY sample_sequence ASC`,
+      sessionRow.activity_id,
+    );
 
     return {
       session: {
@@ -308,12 +410,17 @@ export class SQLiteActivityStore implements ActivityStore {
       },
       snapshot,
       samplesAfterSnapshot: sampleRows.map(sampleFromRow),
+      exploration: explorationFromRows(
+        explorationStateRow,
+        explorationObservationRows,
+      ),
     };
   }
 
   async updateSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    exploration?: ExplorationPersistence,
   ): Promise<void> {
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
@@ -322,6 +429,9 @@ export class SQLiteActivityStore implements ActivityStore {
         lastProcessedSequence: snapshot.lastProcessedSequence,
       });
       await writeSnapshot(txn, snapshot);
+      if (exploration) {
+        await writeExploration(txn, session.activityId, exploration, snapshot.createdAt);
+      }
     });
   }
 
@@ -336,6 +446,21 @@ export class SQLiteActivityStore implements ActivityStore {
       activityId,
     );
     return rows.map(sampleFromRow);
+  }
+
+  async loadExploration(activityId: string): Promise<ExplorationPersistence> {
+    const db = await this.database();
+    const stateRow = await db.getFirstAsync<ExplorationStateRow>(
+      `SELECT state_json, last_evaluated_sequence
+       FROM activity_exploration_state WHERE activity_id = ?`,
+      activityId,
+    );
+    const observationRows = await db.getAllAsync<ExplorationObservationRow>(
+      `SELECT payload_json FROM activity_exploration_observations
+       WHERE activity_id = ? ORDER BY sample_sequence ASC`,
+      activityId,
+    );
+    return explorationFromRows(stateRow, observationRows);
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

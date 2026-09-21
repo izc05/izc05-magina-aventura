@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { activityRuntime } from '../../../src/activity/activity-runtime';
+import { getActivityRuntime } from '../../../src/activity/activity-runtime';
 import type { LocationPermissionState } from '../../../src/activity/location-provider';
 import { BrandMark } from '../../../src/components/branding/BrandMark';
-import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
+import { getRuntimeRouteMapRepository } from '../../../src/features/routes/runtime-route-map-repository';
 import {
   presentPreparation,
   type PrepareOfflineState,
@@ -22,18 +22,21 @@ export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const runtime = getActivityRuntime(route?.slug);
+  const routeMapRepository = getRuntimeRouteMapRepository();
   const routeSlug = route?.slug ?? '';
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
   const [permissions, setPermissions] = useState<LocationPermissionState>();
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function loadState() {
       try {
-        const permissionState = await activityRuntime.getPermissionState();
+        const permissionState = await runtime.getPermissionState();
         if (active) setPermissions(permissionState);
       } catch {
         if (active) setPermissions(undefined);
@@ -42,7 +45,7 @@ export default function PrepareRouteAdventureScreen() {
       if (!routeSlug) return;
 
       try {
-        const manifest = await developmentRouteMapRepository.getOfflineManifest(routeSlug);
+        const manifest = await routeMapRepository.getOfflineManifest(routeSlug);
         if (!active) return;
         if (!manifest) {
           setOfflineState('unavailable');
@@ -85,15 +88,15 @@ export default function PrepareRouteAdventureScreen() {
     if (busy) return;
     setBusy(true);
     setErrorMessage(null);
+    setWarningMessage(null);
 
     try {
-      let nextPermissions = await activityRuntime.getPermissionState();
+      let nextPermissions = await runtime.getPermissionState();
       if (
         !nextPermissions.servicesEnabled ||
-        !nextPermissions.foregroundGranted ||
-        !nextPermissions.backgroundGranted
+        !nextPermissions.foregroundGranted
       ) {
-        nextPermissions = await activityRuntime.requestPermissions();
+        nextPermissions = await runtime.requestPermissions();
         setPermissions(nextPermissions);
       }
 
@@ -106,14 +109,23 @@ export default function PrepareRouteAdventureScreen() {
         return;
       }
       if (!nextPermissions.backgroundGranted) {
-        setErrorMessage('Activa “Permitir siempre” para registrar con la pantalla bloqueada.');
-        return;
+        setWarningMessage(
+          'Modo limitado. Puedes realizar la aventura, pero mantén la aplicación activa para conservar el seguimiento.',
+        );
       }
 
-      const payload = await developmentRouteMapRepository.getMapPayload(route!.slug);
+      const [definition, payload] = await Promise.all([
+        routeMapRepository.getAdventureDefinition(route!.slug),
+        routeMapRepository.getMapPayload(route!.slug),
+      ]);
+      if (!definition) {
+        throw new Error(
+          'La definición versionada de esta aventura no está disponible en el paquete offline.',
+        );
+      }
       const routeLine = payload?.line.geometry.coordinates ?? [];
 
-      await activityRuntime.start(route!, routeLine);
+      await runtime.start(definition, route!, routeLine);
       router.replace({ pathname: '/adventure/[slug]', params: { slug: route!.slug } });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo iniciar el GPS.');
@@ -144,10 +156,25 @@ export default function PrepareRouteAdventureScreen() {
           <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
         </View>
 
+        <View style={styles.routeReadyCard}>
+          <View style={styles.routeReadyIcon}>
+            <Text style={styles.routeReadyIconText}>◎</Text>
+          </View>
+          <View style={styles.routeReadyCopy}>
+            <Text style={styles.routeReadyEyebrow}>AVENTURA VERSIONADA</Text>
+            <Text style={styles.routeReadyTitle}>Mapa y progreso preparados</Text>
+            <Text style={styles.routeReadyBody}>
+              El recorrido se fijará a esta geometría antes de iniciar el GPS y podrá continuar sin conexión.
+            </Text>
+          </View>
+        </View>
+
         <Text style={styles.sectionEyebrow}>COMPROBACIÓN REAL DEL TELÉFONO</Text>
         <Text style={styles.sectionTitle}>¿Estamos listos?</Text>
         <Text style={styles.sectionBody}>
-          La aventura solo arranca cuando Android permite ubicación y seguimiento con la pantalla bloqueada.
+          {permissions?.foregroundGranted && !permissions.backgroundGranted
+            ? 'Modo limitado. Puedes realizar la aventura, pero mantén la aplicación activa para conservar el seguimiento.'
+            : 'Seguimiento continuo incluso con pantalla bloqueada.'}
         </Text>
 
         <View style={styles.readinessCard}>
@@ -175,6 +202,11 @@ export default function PrepareRouteAdventureScreen() {
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         ) : null}
+        {warningMessage ? (
+          <View style={styles.warningCard}>
+            <Text style={styles.warningText}>{warningMessage}</Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -189,7 +221,11 @@ export default function PrepareRouteAdventureScreen() {
               {busy ? 'Preparando GPS…' : presentation.canStartGps ? 'Iniciar aventura' : 'Preparar GPS e iniciar'}
             </Text>
             <Text style={styles.startButtonCaption}>
-              {presentation.canStartGps ? 'Tracking real · segundo plano activo' : 'Android pedirá los permisos necesarios'}
+              {presentation.canStartGps
+                ? permissions?.backgroundGranted
+                  ? 'Tracking real · segundo plano activo'
+                  : 'Tracking real · mantén la aplicación activa'
+                : 'Android pedirá los permisos necesarios'}
             </Text>
           </View>
           <Text style={styles.startArrow}>→</Text>
@@ -249,6 +285,13 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[20], marginTop: -22, borderRadius: radius.lg,
     backgroundColor: colors.white, flexDirection: 'row', padding: spacing[16], ...shadow.card,
   },
+  routeReadyCard: { marginHorizontal: spacing[20], marginTop: spacing[16], borderRadius: radius.lg, backgroundColor: colors.oliveWash, padding: spacing[16], flexDirection: 'row', borderWidth: 1, borderColor: colors.border },
+  routeReadyIcon: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  routeReadyIconText: { color: colors.olive900, fontSize: 25, fontWeight: '900' },
+  routeReadyCopy: { flex: 1, marginLeft: spacing[12] },
+  routeReadyEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  routeReadyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: 3 },
+  routeReadyBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
   metric: { flex: 1, alignItems: 'center' },
   metricValue: { color: colors.ink, fontSize: 14, fontWeight: '900' },
   metricLabel: { color: colors.muted, fontSize: 9, marginTop: 4 },
@@ -279,6 +322,8 @@ const styles = StyleSheet.create({
   infoBody: { color: colors.limestone, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   errorCard: { marginHorizontal: spacing[20], borderRadius: radius.md, backgroundColor: colors.goldWash, padding: spacing[16] },
   errorText: { color: colors.earth, fontSize: 12, fontWeight: '800', lineHeight: 18 },
+  warningCard: { marginHorizontal: spacing[20], borderRadius: radius.md, backgroundColor: colors.goldWash, padding: spacing[16] },
+  warningText: { color: colors.earth, fontSize: 12, fontWeight: '800', lineHeight: 18 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.white, padding: spacing[16], borderTopWidth: 1, borderTopColor: colors.border },
   startButton: { minHeight: 68, borderRadius: radius.lg, backgroundColor: colors.olive900, paddingHorizontal: spacing[20], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   startButtonPressed: { opacity: 0.75 },

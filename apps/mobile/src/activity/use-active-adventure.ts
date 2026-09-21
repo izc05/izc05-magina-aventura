@@ -1,4 +1,5 @@
 import type {
+  AdventureDefinition,
   OfflineRoutePackageManifest,
   RouteDetail,
   RouteMapPayload,
@@ -12,10 +13,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ActivityEngineState } from '@magina-aventura/activity-engine';
 import type { LocationSample } from '@magina-aventura/contracts';
 
-import { developmentRouteMapRepository } from '../features/routes/development-route-map-repository';
+import { getRuntimeRouteMapRepository } from '../features/routes/runtime-route-map-repository';
 import { materializeMapStyle } from '../map/map-style';
 import { expoRoutePackagePort } from '../offline/expo-route-package-port';
-import { activityRuntime } from './activity-runtime';
+import { getActivityRuntime } from './activity-runtime';
 import { trackToGeoJson } from './track-geojson';
 
 const fallbackMapStyle: Record<string, unknown> = {
@@ -58,10 +59,13 @@ async function resolveActiveMapStyle(
 }
 
 export function useActiveAdventure(route: RouteDetail | undefined) {
+  const runtime = getActivityRuntime(route?.slug);
+  const [adventureDefinition, setAdventureDefinition] = useState<AdventureDefinition | null>(null);
   const [engineState, setEngineState] = useState<ActivityEngineState | null>(null);
   const [track, setTrack] = useState<LocationSample[]>([]);
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
-  const [mapStyle, setMapStyle] = useState<string | Record<string, unknown>>(fallbackMapStyle);
+  const [mapStyle, setMapStyle] = useState<string | Record<string, unknown> | null>(null);
+  const routeMapRepository = getRuntimeRouteMapRepository();
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -71,25 +75,29 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
     let active = true;
 
     async function refreshTrack() {
-      const nextTrack = await activityRuntime.loadTrack();
+      const nextTrack = await runtime.loadTrack();
       if (active) setTrack(nextTrack);
     }
 
     async function load() {
       try {
-        const [payload, manifest] = await Promise.all([
-          developmentRouteMapRepository.getMapPayload(currentRoute.slug),
-          developmentRouteMapRepository.getOfflineManifest(currentRoute.slug),
+        const [definition, payload, manifest] = await Promise.all([
+          routeMapRepository.getAdventureDefinition(currentRoute.slug),
+          routeMapRepository.getMapPayload(currentRoute.slug),
+          routeMapRepository.getOfflineManifest(currentRoute.slug),
         ]);
         if (!active) return;
 
         setMapPayload(payload);
+        setAdventureDefinition(definition);
         setMapStyle(await resolveActiveMapStyle(manifest));
 
         const line = payload?.line.geometry.coordinates ?? [];
-        const recovered =
-          activityRuntime.current() ??
-          (await activityRuntime.recover(currentRoute, line));
+        const current = runtime.current();
+        if (!current && !definition) {
+          throw new Error('La versión exacta de esta aventura no está disponible sin conexión.');
+        }
+        const recovered = current ?? (await runtime.recover(definition!, currentRoute, line));
         if (!active) return;
 
         setEngineState(recovered);
@@ -116,7 +124,7 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
       if (!active) return;
       void (async () => {
         try {
-          const refreshed = await activityRuntime.refresh();
+          const refreshed = await runtime.refresh();
           if (!active || !refreshed) return;
           setEngineState(refreshed);
           await refreshTrack();
@@ -137,6 +145,7 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
 
   return {
     engineState,
+    adventureDefinition,
     setEngineState,
     track,
     trackFeature,

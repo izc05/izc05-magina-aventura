@@ -2,6 +2,8 @@ import type { ActivitySession, LocationSample } from './activity';
 
 const session: ActivitySession = {
   activityId: 'activity-test-1',
+  adventureSlug: 'synthetic-adventure',
+  adventureVersion: 3,
   routeId: 'route-test-1',
   routeSlug: 'synthetic-route',
   geometryVersion: 3,
@@ -27,4 +29,5 @@ const sample: LocationSample = {
 };
 
 void session.geometryVersion;
+void session.adventureVersion;
 void sample.sequence;

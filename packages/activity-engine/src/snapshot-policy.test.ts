@@ -11,6 +11,8 @@ const routeLine: GeoJsonPosition[] = [
 
 const baseSession: ActivitySession = {
   activityId: 'snapshot-policy',
+  adventureSlug: 'synthetic-adventure',
+  adventureVersion: 1,
   routeId: 'route-test',
   routeSlug: 'synthetic-route',
   geometryVersion: 1,

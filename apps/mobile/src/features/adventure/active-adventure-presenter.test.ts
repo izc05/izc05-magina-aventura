@@ -8,6 +8,8 @@ function activeState(routeId: string, routeSlug: string): ActivityEngineState {
   return {
     session: {
       activityId: 'activity-real',
+      adventureSlug: 'synthetic-adventure',
+      adventureVersion: 1,
       routeId,
       routeSlug,
       geometryVersion: 1,
@@ -67,10 +69,10 @@ describe('active adventure presentation', () => {
       routeTitle: 'Sendero de Cuadros',
       place: 'Bedmar y Garcíez',
       modeLabel: 'GPS PREPARADO · SIN ACTIVIDAD',
-      progress: '0 %',
-      distance: '0,00 km',
-      elapsed: '00:00',
-      elevation: '+0 m',
+      progress: '—',
+      distance: '—',
+      elapsed: '—',
+      elevation: '—',
       objectiveTitle: 'Inicia la aventura',
       objectiveMeta: 'El track comenzará al activar el GPS',
       rewardPreview: '+750 XP · +120 aceitunas',

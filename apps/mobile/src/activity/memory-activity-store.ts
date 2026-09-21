@@ -4,13 +4,22 @@ import type {
   ActivitySyncBatch,
   LocationSample,
 } from '@magina-aventura/contracts';
+import type {
+  ExplorationObservation,
+  ExplorationState,
+} from '@magina-aventura/activity-engine';
 
-import type { ActivityStore, RecoveredActivity } from './activity-store';
+import type {
+  ActivityStore,
+  ExplorationPersistence,
+  RecoveredActivity,
+} from './activity-store';
 
 export interface MemoryActivityStoreDatabase {
   sessions: Map<string, ActivitySession>;
   samples: Map<string, Map<number, LocationSample>>;
   snapshots: Map<string, Map<number, ActivitySnapshot>>;
+  explorations: Map<string, ExplorationPersistence>;
   syncBatches: Map<string, ActivitySyncBatch>;
   syncedBatchIds: Set<string>;
 }
@@ -20,6 +29,7 @@ export function createMemoryActivityStoreDatabase(): MemoryActivityStoreDatabase
     sessions: new Map(),
     samples: new Map(),
     snapshots: new Map(),
+    explorations: new Map(),
     syncBatches: new Map(),
     syncedBatchIds: new Set(),
   };
@@ -39,6 +49,25 @@ function cloneSnapshot(snapshot: ActivitySnapshot): ActivitySnapshot {
     lastValidSample: snapshot.lastValidSample
       ? cloneSample(snapshot.lastValidSample)
       : null,
+  };
+}
+
+function cloneExploration(item: ExplorationPersistence): ExplorationPersistence {
+  const observationsByTarget = new Map(
+    item.observations.map((observation) => [observation.targetKey, observation]),
+  );
+  return {
+    state: {
+      progressByTargetKey: Object.fromEntries(
+        Object.entries(item.state.progressByTargetKey).map(([key, value]) => [
+          key,
+          { ...value },
+        ]),
+      ),
+      unlockedTargetKeys: [...item.state.unlockedTargetKeys],
+      lastEvaluatedSequence: item.state.lastEvaluatedSequence,
+    },
+    observations: [...observationsByTarget.values()].map((observation) => ({ ...observation })),
   };
 }
 
@@ -83,6 +112,15 @@ function latestSnapshot(
   return snapshot ? cloneSnapshot(snapshot) : null;
 }
 
+const emptyExploration: ExplorationPersistence = {
+  state: {
+    progressByTargetKey: {},
+    unlockedTargetKeys: [],
+    lastEvaluatedSequence: 0,
+  },
+  observations: [],
+};
+
 export class MemoryActivityStore implements ActivityStore {
   constructor(
     private readonly database: MemoryActivityStoreDatabase =
@@ -96,6 +134,7 @@ export class MemoryActivityStore implements ActivityStore {
   async createSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    exploration: ExplorationPersistence = emptyExploration,
   ): Promise<void> {
     this.database.sessions.set(session.activityId, cloneSession(session));
     ensureSampleMap(this.database, session.activityId);
@@ -103,12 +142,14 @@ export class MemoryActivityStore implements ActivityStore {
       snapshot.lastProcessedSequence,
       cloneSnapshot(snapshot),
     );
+    this.database.explorations.set(session.activityId, cloneExploration(exploration));
   }
 
   async appendBatch(
     activityId: string,
     samples: LocationSample[],
     snapshot: ActivitySnapshot | null,
+    exploration?: ExplorationPersistence,
   ): Promise<void> {
     const sampleMap = ensureSampleMap(this.database, activityId);
 
@@ -118,27 +159,28 @@ export class MemoryActivityStore implements ActivityStore {
       }
     }
 
-    if (!snapshot) return;
+    if (snapshot) {
+      ensureSnapshotMap(this.database, activityId).set(
+        snapshot.lastProcessedSequence,
+        cloneSnapshot(snapshot),
+      );
+      const session = this.database.sessions.get(activityId);
+      if (session) {
+        this.database.sessions.set(activityId, {
+          ...session,
+          lastProcessedSequence: snapshot.lastProcessedSequence,
+        });
+      }
+    }
 
-    ensureSnapshotMap(this.database, activityId).set(
-      snapshot.lastProcessedSequence,
-      cloneSnapshot(snapshot),
-    );
-
-    const session = this.database.sessions.get(activityId);
-    if (session) {
-      this.database.sessions.set(activityId, {
-        ...session,
-        lastProcessedSequence: snapshot.lastProcessedSequence,
-      });
+    if (exploration) {
+      this.database.explorations.set(activityId, cloneExploration(exploration));
     }
   }
 
   async loadActiveSession(): Promise<RecoveredActivity | null> {
     const activeSession = [...this.database.sessions.values()]
-      .filter(
-        (session) => session.state === 'ACTIVE' || session.state === 'PAUSED',
-      )
+      .filter((session) => session.state === 'ACTIVE' || session.state === 'PAUSED')
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
 
     if (!activeSession) return null;
@@ -146,9 +188,9 @@ export class MemoryActivityStore implements ActivityStore {
     const snapshot = latestSnapshot(this.database, activeSession.activityId);
     if (!snapshot) return null;
 
-    const samplesAfterSnapshot = [...(
-      this.database.samples.get(activeSession.activityId)?.values() ?? []
-    )]
+    const samplesAfterSnapshot = [
+      ...(this.database.samples.get(activeSession.activityId)?.values() ?? []),
+    ]
       .filter((sample) => sample.sequence > snapshot.lastProcessedSequence)
       .sort((left, right) => left.sequence - right.sequence)
       .map(cloneSample);
@@ -157,12 +199,14 @@ export class MemoryActivityStore implements ActivityStore {
       session: cloneSession(activeSession),
       snapshot,
       samplesAfterSnapshot,
+      exploration: await this.loadExploration(activeSession.activityId),
     };
   }
 
   async updateSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    exploration?: ExplorationPersistence,
   ): Promise<void> {
     this.database.sessions.set(session.activityId, {
       ...cloneSession(session),
@@ -172,12 +216,19 @@ export class MemoryActivityStore implements ActivityStore {
       snapshot.lastProcessedSequence,
       cloneSnapshot(snapshot),
     );
+    if (exploration) {
+      this.database.explorations.set(session.activityId, cloneExploration(exploration));
+    }
   }
 
   async loadTrack(activityId: string): Promise<LocationSample[]> {
     return [...(this.database.samples.get(activityId)?.values() ?? [])]
       .sort((left, right) => left.sequence - right.sequence)
       .map(cloneSample);
+  }
+
+  async loadExploration(activityId: string): Promise<ExplorationPersistence> {
+    return cloneExploration(this.database.explorations.get(activityId) ?? emptyExploration);
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

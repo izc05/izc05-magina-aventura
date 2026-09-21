@@ -5,6 +5,8 @@ describe('activity contracts', () => {
   it('pins a session to a route geometry version', () => {
     const session: ActivitySession = {
       activityId: 'activity-test-1',
+      adventureSlug: 'synthetic-adventure',
+      adventureVersion: 1,
       routeId: 'route-test-1',
       routeSlug: 'synthetic-route',
       geometryVersion: 3,

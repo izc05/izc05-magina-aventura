@@ -6,3 +6,4 @@ export * from './off-route';
 export * from './replay';
 export * from './route-progress';
 export * from './state-machine';
+export * from './exploration';

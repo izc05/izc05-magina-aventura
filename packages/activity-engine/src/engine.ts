@@ -18,6 +18,7 @@ import {
 } from './off-route';
 import { calculateRouteProgress } from './route-progress';
 import { transitionActivityState } from './state-machine';
+import type { ExplorationObservation, ExplorationState } from './exploration';
 
 export interface ActivityEngineState {
   session: ActivitySession;
@@ -28,6 +29,8 @@ export interface ActivityEngineState {
   lastSnapshotAt: string;
   acceptedSample: LocationSample | null;
   rejectedSample: LocationSample | null;
+  exploration?: ExplorationState;
+  explorationObservations?: ExplorationObservation[];
 }
 
 export function createInitialEngineState(
@@ -169,6 +172,7 @@ export function reduceActivity(
   const shouldPersistSnapshot = dueByCount || dueByTime;
 
   return {
+    ...state,
     session: {
       ...state.session,
       lastProcessedSequence: sample.sequence,

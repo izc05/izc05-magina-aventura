@@ -25,6 +25,7 @@ function expoApi() {
         starts.push({ taskName, options });
       },
       stopLocationUpdatesAsync: async () => undefined,
+      watchPositionAsync: async () => ({ remove: () => undefined }),
     },
   };
 }

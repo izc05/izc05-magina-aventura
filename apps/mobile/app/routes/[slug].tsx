@@ -13,7 +13,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
+import { getRuntimeRouteMapRepository } from '../../src/features/routes/runtime-route-map-repository';
+import { isQaHarnessEnabled } from '../../src/features/qa/qa-harness';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { RouteMap } from '../../src/map/RouteMap';
@@ -37,6 +38,12 @@ const offlineStatusCopy: Record<RouteOfflineUiState, string> = {
   error: 'Error de descarga',
 };
 
+const qaFallbackMapStyle: Record<string, unknown> = {
+  version: 8,
+  sources: {},
+  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#E7E1D6' } }],
+};
+
 async function materializeRouteMapStyle(
   manifest: OfflineRoutePackageManifest,
   localUri?: string,
@@ -58,10 +65,15 @@ export default function RouteDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
+  const routeMapRepository = getRuntimeRouteMapRepository();
   const routeSlug = route?.slug ?? '';
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
-  const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
+  const baseMapStyle = configuredStyle ?? (
+    isQaHarnessEnabled()
+      ? qaFallbackMapStyle
+      : (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null)
+  );
 
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
   const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);
@@ -76,8 +88,8 @@ export default function RouteDetailScreen() {
     async function loadRouteMapState() {
       try {
         const [payload, manifest] = await Promise.all([
-          developmentRouteMapRepository.getMapPayload(routeSlug),
-          developmentRouteMapRepository.getOfflineManifest(routeSlug),
+          routeMapRepository.getMapPayload(routeSlug),
+          routeMapRepository.getOfflineManifest(routeSlug),
         ]);
 
         if (!active) return;
@@ -211,11 +223,20 @@ export default function RouteDetailScreen() {
         </View>
 
         {mapStyle ? (
-          <RouteMap
-            payload={mapPayload}
-            mapStyle={mapStyle}
-            developmentMode={route.developmentFixture}
-          />
+          <View style={styles.mapSection}>
+            <View style={styles.mapSectionHeader}>
+              <View>
+                <Text style={styles.mapSectionEyebrow}>MAPA PROTAGONISTA</Text>
+                <Text style={styles.mapSectionTitle}>El recorrido que vas a descubrir</Text>
+              </View>
+              <Text style={styles.mapSectionMeta}>{mapPayload ? `v${mapPayload.geometryVersion}` : 'PREVIEW'}</Text>
+            </View>
+            <RouteMap
+              payload={mapPayload}
+              mapStyle={mapStyle}
+              developmentMode={route.developmentFixture}
+            />
+          </View>
         ) : (
           <View style={styles.mapUnavailable}>
             <Text style={styles.mapUnavailableTitle}>Mapa no configurado</Text>
@@ -327,6 +348,11 @@ const styles = StyleSheet.create({
   mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  mapSection: { marginTop: spacing[20] },
+  mapSectionHeader: { paddingHorizontal: spacing[20], marginBottom: spacing[10], flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing[12] },
+  mapSectionEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  mapSectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: spacing[4] },
+  mapSectionMeta: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

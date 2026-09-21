@@ -1,5 +1,15 @@
 export type LocationPermissionStatus = 'granted' | 'denied' | 'undetermined';
 
+export interface ForegroundLocationPoint {
+  timestampMs: number;
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+  altitudeMeters: number | null;
+  speedMps: number | null;
+  headingDegrees: number | null;
+}
+
 export interface LocationPermissionState {
   foregroundGranted: boolean;
   backgroundGranted: boolean;
@@ -15,12 +25,17 @@ export interface NativeLocationAdapter {
   hasStartedBackgroundUpdates(): Promise<boolean>;
   startBackgroundUpdates(activityId: string): Promise<void>;
   stopBackgroundUpdates(): Promise<void>;
+  startForegroundUpdates(onLocation: (point: ForegroundLocationPoint) => void): Promise<void>;
+  stopForegroundUpdates(): Promise<void>;
 }
 
 export interface LocationProvider {
   getPermissionState(): Promise<LocationPermissionState>;
   requestAdventurePermissions(): Promise<LocationPermissionState>;
-  start(activityId: string): Promise<void>;
+  start(
+    activityId: string,
+    onForegroundLocation?: (point: ForegroundLocationPoint) => void,
+  ): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -64,7 +79,7 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
       };
     },
 
-    async start(activityId: string): Promise<void> {
+    async start(activityId: string, onForegroundLocation): Promise<void> {
       const servicesEnabled = await adapter.isServicesEnabled();
       if (!servicesEnabled) {
         throw new Error('Location services are disabled');
@@ -76,19 +91,23 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
       }
 
       const background = await adapter.getBackgroundPermission();
-      if (!granted(background)) {
-        throw new Error('Background location permission is required');
+      if (granted(background)) {
+        const alreadyStarted = await adapter.hasStartedBackgroundUpdates();
+        if (alreadyStarted) return;
+        await adapter.startBackgroundUpdates(activityId);
+        return;
       }
 
-      const alreadyStarted = await adapter.hasStartedBackgroundUpdates();
-      if (alreadyStarted) return;
-      await adapter.startBackgroundUpdates(activityId);
+      if (!onForegroundLocation) {
+        throw new Error('Foreground location callback is required without background permission');
+      }
+      await adapter.startForegroundUpdates(onForegroundLocation);
     },
 
     async stop(): Promise<void> {
       const started = await adapter.hasStartedBackgroundUpdates();
-      if (!started) return;
-      await adapter.stopBackgroundUpdates();
+      if (started) await adapter.stopBackgroundUpdates();
+      await adapter.stopForegroundUpdates();
     },
   };
 }

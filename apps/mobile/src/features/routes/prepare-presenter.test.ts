@@ -39,6 +39,22 @@ describe('adventure preparation presentation', () => {
     });
   });
 
+  it('allows foreground-only tracking with a warning instead of an error', () => {
+    const presentation = presentPreparation('ready', {
+      servicesEnabled: true,
+      foregroundGranted: true,
+      backgroundGranted: false,
+    });
+
+    expect(presentation.canStartGps).toBe(true);
+    expect(presentation.checks[1]).toEqual({
+      id: 'background',
+      label: 'GPS en segundo plano',
+      state: 'Modo limitado',
+      tone: 'review',
+    });
+  });
+
   it('keeps permissions pending before they have been checked', () => {
     const presentation = presentPreparation('unavailable');
     expect(presentation.canStartGps).toBe(false);

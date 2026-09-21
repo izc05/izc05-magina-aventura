@@ -8,6 +8,8 @@ function recoveredActivity(): RecoveredActivity {
   return {
     session: {
       activityId: 'activity-background',
+      adventureSlug: 'synthetic-adventure',
+      adventureVersion: 1,
       routeId: 'route-1',
       routeSlug: 'route-1',
       geometryVersion: 1,
@@ -38,6 +40,14 @@ function recoveredActivity(): RecoveredActivity {
       createdAt: '2026-09-16T10:00:00.000Z',
     },
     samplesAfterSnapshot: [],
+    exploration: {
+      state: {
+        progressByTargetKey: {},
+        unlockedTargetKeys: [],
+        lastEvaluatedSequence: 0,
+      },
+      observations: [],
+    },
   };
 }
 

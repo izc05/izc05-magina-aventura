@@ -14,6 +14,8 @@ export const syntheticWalkRouteLine: GeoJsonPosition[] = [
 
 export const syntheticWalkSession: ActivitySession = {
   activityId: 'activity-synthetic-walk',
+  adventureSlug: 'synthetic-adventure',
+  adventureVersion: 1,
   routeId: 'route-synthetic-walk',
   routeSlug: 'synthetic-walk',
   geometryVersion: 1,

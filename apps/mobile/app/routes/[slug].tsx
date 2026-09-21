@@ -14,6 +14,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRuntimeRouteMapRepository } from '../../src/features/routes/runtime-route-map-repository';
+import { isQaHarnessEnabled } from '../../src/features/qa/qa-harness';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { RouteMap } from '../../src/map/RouteMap';
@@ -35,6 +36,12 @@ const offlineStatusCopy: Record<RouteOfflineUiState, string> = {
   unavailable: 'No disponible',
   downloading: 'Descargando',
   error: 'Error de descarga',
+};
+
+const qaFallbackMapStyle: Record<string, unknown> = {
+  version: 8,
+  sources: {},
+  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#E7E1D6' } }],
 };
 
 async function materializeRouteMapStyle(
@@ -62,7 +69,11 @@ export default function RouteDetailScreen() {
   const routeSlug = route?.slug ?? '';
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
-  const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
+  const baseMapStyle = configuredStyle ?? (
+    isQaHarnessEnabled()
+      ? qaFallbackMapStyle
+      : (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null)
+  );
 
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
   const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);

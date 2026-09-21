@@ -7,35 +7,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../src/components/branding/AppHeader';
 import { BottomNav } from '../src/components/navigation/BottomNav';
 import { FeaturedRouteCard } from '../src/components/routes/FeaturedRouteCard';
+import { resolveOnboardingBootstrap } from '../src/features/onboarding/bootstrap';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
-import { developmentRoutes } from '../src/features/routes/fixtures';
-import { devAdventureEngineTestRoute } from '../src/features/routes/dev-adventure-engine-test';
+import { getQaHarnessCard, getRuntimeRoutes } from '../src/features/qa/qa-harness';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 
 export default function RoutesHomeScreen() {
-  const route = developmentRoutes[0];
+  const route = getRuntimeRoutes()[0];
+  const QaHarnessCard = getQaHarnessCard();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    void expoOnboardingStorage
-      .hasSeen()
-      .then((seen) => {
+    void resolveOnboardingBootstrap(expoOnboardingStorage)
+      .then((nextScreen) => {
         if (!mounted) return;
-        if (!seen) {
+        if (nextScreen === 'onboarding') {
           router.replace('/onboarding');
           return;
         }
         setReady(true);
       })
-      .catch(() => {
-        if (mounted) setReady(true);
-      });
 
     return () => {
       mounted = false;
@@ -43,7 +40,21 @@ export default function RoutesHomeScreen() {
   }, []);
 
   if (!ready) return <LaunchScreen />;
-  if (!route) return null;
+  if (!route) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.emptyState}>
+          <AppHeader />
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyStateTitle}>Rutas verificadas próximamente</Text>
+            <Text style={styles.emptyStateBody}>
+              Esta compilación no muestra contenido provisional ni datos de prueba.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -123,25 +134,21 @@ export default function RoutesHomeScreen() {
           }
         />
 
-        {__DEV__ ? (
-          <View style={styles.devHarnessCard}>
-            <Text style={styles.devHarnessEyebrow}>DEV ONLY · TEST DATA</Text>
-            <Text style={styles.devHarnessTitle}>Adventure Engine v2 harness</Text>
-            <Text style={styles.devHarnessBody}>
-              Ruta sintética aislada para probar checkpoints, recovery y finalización.
-            </Text>
+        {QaHarnessCard && route?.developmentFixture ? (
+          <>
+            <QaHarnessCard />
             <Pressable
-              style={styles.devHarnessButton}
+              style={styles.qaHarnessButton}
               onPress={() =>
                 router.push({
                   pathname: '/routes/[slug]',
-                  params: { slug: devAdventureEngineTestRoute.slug },
+                  params: { slug: route.slug },
                 })
               }
             >
-              <Text style={styles.devHarnessButtonText}>Abrir simulador TEST DATA</Text>
+              <Text style={styles.qaHarnessButtonText}>Abrir simulador TEST DATA</Text>
             </Pressable>
-          </View>
+          </>
         ) : null}
 
         <View style={styles.challengeCard}>
@@ -232,6 +239,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.warmBackground,
   },
+  emptyState: { flex: 1, paddingHorizontal: spacing[20], paddingTop: spacing[20] },
+  emptyStateCard: {
+    marginTop: spacing[32],
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing[20],
+  },
+  emptyStateTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
+  emptyStateBody: { color: colors.muted, fontSize: 13, lineHeight: 20, marginTop: spacing[8] },
   content: {
     paddingHorizontal: spacing[20],
     paddingBottom: 126,
@@ -613,6 +631,15 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: spacing[4],
   },
+  qaHarnessButton: {
+    minHeight: 44,
+    marginTop: spacing[8],
+    borderRadius: radius.md,
+    backgroundColor: colors.olive900,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qaHarnessButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
   brandFooter: {
     alignItems: 'center',
     paddingTop: spacing[32],
@@ -631,26 +658,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.aoveGold,
     marginTop: spacing[8],
   },
-  devHarnessCard: {
-    marginTop: spacing[20],
-    borderRadius: radius.lg,
-    backgroundColor: colors.goldWash,
-    borderWidth: 1,
-    borderColor: colors.aoveGold,
-    padding: spacing[16],
-  },
-  devHarnessEyebrow: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  devHarnessTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: spacing[4] },
-  devHarnessBody: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: spacing[4] },
-  devHarnessButton: {
-    minHeight: 44,
-    marginTop: spacing[12],
-    borderRadius: radius.md,
-    backgroundColor: colors.olive900,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  devHarnessButtonText: { color: colors.white, fontSize: 12, fontWeight: '900' },
   bottomNavWrap: {
     position: 'absolute',
     left: 0,

@@ -1,8 +1,8 @@
 import { createActivityController, type ActivityController } from './activity-controller';
 import { expoLocationProvider } from './expo-location-provider';
+import { isQaAdventureRoute } from '../features/qa/qa-harness';
 import { sqliteActivityStore } from './sqlite-activity-store';
 import { sqliteBackgroundLocationInbox } from './sqlite-background-location-inbox';
-import { createSimulatedLocationProvider } from './simulated-location-provider';
 
 function createActivityId(): string {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -33,13 +33,10 @@ export function createActivityRuntime(
 
 export const activityRuntime = createActivityRuntime();
 
-/** Explicit DEV-only simulator runtime; never selected for a production slug. */
-export const devSimulationLocationProvider = createSimulatedLocationProvider();
-export const devSimulationRuntime = createActivityRuntime(devSimulationLocationProvider);
-
 export function getActivityRuntime(slug?: string): ActivityController {
-  if (__DEV__ && slug === 'dev-adventure-engine-test') {
-    return devSimulationRuntime;
+  if (isQaAdventureRoute(slug)) {
+    return require('./qa-simulation-runtime').qaSimulationRuntime as ActivityController;
   }
+
   return activityRuntime;
 }

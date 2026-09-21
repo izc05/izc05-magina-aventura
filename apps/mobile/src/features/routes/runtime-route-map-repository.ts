@@ -1,10 +1,8 @@
-import { createDevAdventureEngineTestRepository } from './dev-adventure-engine-test-repository';
 import { developmentRouteMapRepository } from './development-route-map-repository';
 import type { RouteMapRepository } from './route-map-repository';
+import { getQaAdventureHarness } from '../qa/qa-harness';
 
-const devRepository = createDevAdventureEngineTestRepository();
-
-/** Production remains fail-closed; synthetic content is selected only in DEV. */
+/** Production remains fail-closed; QA data is selected only by the QA gate. */
 export function getRuntimeRouteMapRepository(): RouteMapRepository {
-  return __DEV__ ? devRepository : developmentRouteMapRepository;
+  return getQaAdventureHarness()?.routeMapRepository ?? developmentRouteMapRepository;
 }

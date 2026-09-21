@@ -106,3 +106,67 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+      - name: Verify Phase 4C QA harness bundle isolation
+        working-directory: apps/mobile
+        run: pnpm qa:verify-product-bundle
+
+      - name: Generate Phase 4C QA Android project
+        working-directory: apps/mobile
+        env:
+          APP_VARIANT: phase4c-qa
+          EXPO_PUBLIC_ENABLE_QA_HARNESS: 'true'
+          EXPO_PUBLIC_BUILD_TYPE: phase4c-qa
+          EXPO_PUBLIC_GIT_SHA: ${{ github.sha }}
+          EXPO_PUBLIC_CI_RUN_NUMBER: ${{ github.run_number }}
+          EXPO_PUBLIC_APP_VERSION: '0.1.0'
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Build Android Phase 4C QA standalone APK
+        working-directory: apps/mobile/android
+        env:
+          APP_VARIANT: phase4c-qa
+          EXPO_PUBLIC_ENABLE_QA_HARNESS: 'true'
+          EXPO_PUBLIC_BUILD_TYPE: phase4c-qa
+          EXPO_PUBLIC_GIT_SHA: ${{ github.sha }}
+          EXPO_PUBLIC_CI_RUN_NUMBER: ${{ github.run_number }}
+          EXPO_PUBLIC_APP_VERSION: '0.1.0'
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Verify Phase 4C QA APK and prepare evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          evidence_dir="apps/mobile/android/app/build/phase4c-qa"
+          mkdir -p "$evidence_dir"
+
+          test -s "$apk"
+          unzip -Z1 "$apk" | grep -Eq '^assets/index\.android\.bundle$'
+          unzip -Z1 "$apk" | grep -Eq '^lib/[^/]+/libhermes\.so$'
+
+          cp "$apk" "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk"
+          sha256sum "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk" > "$evidence_dir/SHA256SUMS.txt"
+          cat > "$evidence_dir/BUILD_INFO.txt" <<EOF
+          commit=${{ github.sha }}
+          branch=${{ github.head_ref || github.ref_name }}
+          workflow_run=${{ github.run_number }}
+          build_type=phase4c-qa-standalone-release
+          generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          package_id=com.isivolt.maginaaventura.qa
+          version=$(jq -r '.expo.version' apps/mobile/app.json)
+          signing=debug-keystore-internal-qa-only-not-production
+          js_bundle=assets/index.android.bundle
+          hermes=embedded
+          EOF
+
+      - name: Upload Android Phase 4C QA standalone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: magina-aventura-phase4c-qa-standalone-${{ github.run_number }}
+          path: apps/mobile/android/app/build/phase4c-qa
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

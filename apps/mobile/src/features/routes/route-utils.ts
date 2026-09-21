@@ -1,15 +1,11 @@
-import { developmentRoutes } from './fixtures';
-import { devAdventureEngineTestRoute } from './dev-adventure-engine-test';
 import type { AdventureRouteCard } from './route-types';
+import { getRuntimeRouteBySlug } from '../qa/qa-harness';
 
 export function getDevelopmentRouteBySlug(
   slug: string | string[] | undefined,
 ): AdventureRouteCard | undefined {
   const normalizedSlug = Array.isArray(slug) ? slug[0] : slug;
-  if (__DEV__ && normalizedSlug === devAdventureEngineTestRoute.slug) {
-    return devAdventureEngineTestRoute;
-  }
-  return developmentRoutes.find((route) => route.slug === normalizedSlug);
+  return getRuntimeRouteBySlug(normalizedSlug);
 }
 
 export function difficultyLabel(difficulty: AdventureRouteCard['difficulty']): string {

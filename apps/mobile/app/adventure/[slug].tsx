@@ -6,12 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getActivityRuntime } from '../../src/activity/activity-runtime';
 import {
-  devSimulationLocationProvider,
-} from '../../src/activity/activity-runtime';
-import {
-  devAdventureEngineTestPositions,
-  DEV_ADVENTURE_ENGINE_TEST_SLUG,
-} from '../../src/features/routes/dev-adventure-engine-test';
+  emitQaTestPosition,
+  getQaSimulationPanel,
+  isQaAdventureRoute,
+  type QaTestPositionKey,
+} from '../../src/features/qa/qa-harness';
 import { useActiveAdventure } from '../../src/activity/use-active-adventure';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
 import { presentExploration } from '../../src/features/adventure/exploration-presenter';
@@ -25,6 +24,7 @@ export default function ActiveAdventureScreen() {
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const runtime = getActivityRuntime(route?.slug);
+  const QaSimulationPanel = getQaSimulationPanel();
   const {
     engineState,
     adventureDefinition,
@@ -123,18 +123,10 @@ export default function ActiveAdventureScreen() {
     );
   }
 
-  async function emitTestPosition(position: readonly [number, number]) {
-    if (!__DEV__ || currentRoute.slug !== DEV_ADVENTURE_ENGINE_TEST_SLUG) return;
+  async function emitTestPosition(position: QaTestPositionKey) {
+    if (!isQaAdventureRoute(currentRoute.slug)) return;
     try {
-      await devSimulationLocationProvider.emit({
-        timestampMs: Date.now(),
-        latitude: position[1],
-        longitude: position[0],
-        accuracyMeters: 5,
-        altitudeMeters: 100,
-        speedMps: 1,
-        headingDegrees: 90,
-      });
+      await emitQaTestPosition(position);
       setEngineState(await runtime.refresh());
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No se pudo simular la posición.');
@@ -302,24 +294,8 @@ export default function ActiveAdventureScreen() {
             <Text style={styles.persistNote}>
               Puedes bloquear la pantalla. Android seguirá guardando posiciones en SQLite y el track se sincronizará después.
             </Text>
-            {__DEV__ && currentRoute.slug === DEV_ADVENTURE_ENGINE_TEST_SLUG ? (
-              <View style={styles.simulatorPanel}>
-                <Text style={styles.simulatorTitle}>DEV · SIMULADOR TEST DATA</Text>
-                <View style={styles.simulatorRow}>
-                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint1)}>
-                    <Text style={styles.simulatorButtonText}>CP1</Text>
-                  </Pressable>
-                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint2)}>
-                    <Text style={styles.simulatorButtonText}>CP2</Text>
-                  </Pressable>
-                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.discovery)}>
-                    <Text style={styles.simulatorButtonText}>DISC</Text>
-                  </Pressable>
-                  <Pressable style={styles.simulatorButton} onPress={() => void emitTestPosition(devAdventureEngineTestPositions.checkpoint3)}>
-                    <Text style={styles.simulatorButtonText}>CP3</Text>
-                  </Pressable>
-                </View>
-              </View>
+            {QaSimulationPanel && isQaAdventureRoute(currentRoute.slug) ? (
+              <QaSimulationPanel onEmit={(position) => void emitTestPosition(position)} />
             ) : null}
           </>
         )}
@@ -520,21 +496,4 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     marginTop: spacing[12],
   },
-  simulatorPanel: {
-    marginTop: spacing[12],
-    paddingTop: spacing[10],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  simulatorTitle: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  simulatorRow: { flexDirection: 'row', gap: spacing[4], marginTop: spacing[8] },
-  simulatorButton: {
-    flex: 1,
-    minHeight: 34,
-    borderRadius: radius.sm,
-    backgroundColor: colors.goldWash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  simulatorButtonText: { color: colors.earth, fontSize: 10, fontWeight: '900' },
 });

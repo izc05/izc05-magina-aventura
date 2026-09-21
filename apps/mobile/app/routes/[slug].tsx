@@ -212,11 +212,20 @@ export default function RouteDetailScreen() {
         </View>
 
         {mapStyle ? (
-          <RouteMap
-            payload={mapPayload}
-            mapStyle={mapStyle}
-            developmentMode={route.developmentFixture}
-          />
+          <View style={styles.mapSection}>
+            <View style={styles.mapSectionHeader}>
+              <View>
+                <Text style={styles.mapSectionEyebrow}>MAPA PROTAGONISTA</Text>
+                <Text style={styles.mapSectionTitle}>El recorrido que vas a descubrir</Text>
+              </View>
+              <Text style={styles.mapSectionMeta}>{mapPayload ? `v${mapPayload.geometryVersion}` : 'PREVIEW'}</Text>
+            </View>
+            <RouteMap
+              payload={mapPayload}
+              mapStyle={mapStyle}
+              developmentMode={route.developmentFixture}
+            />
+          </View>
         ) : (
           <View style={styles.mapUnavailable}>
             <Text style={styles.mapUnavailableTitle}>Mapa no configurado</Text>
@@ -328,6 +337,11 @@ const styles = StyleSheet.create({
   mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  mapSection: { marginTop: spacing[20] },
+  mapSectionHeader: { paddingHorizontal: spacing[20], marginBottom: spacing[10], flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing[12] },
+  mapSectionEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  mapSectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: spacing[4] },
+  mapSectionMeta: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

@@ -156,6 +156,19 @@ export default function PrepareRouteAdventureScreen() {
           <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
         </View>
 
+        <View style={styles.routeReadyCard}>
+          <View style={styles.routeReadyIcon}>
+            <Text style={styles.routeReadyIconText}>◎</Text>
+          </View>
+          <View style={styles.routeReadyCopy}>
+            <Text style={styles.routeReadyEyebrow}>AVENTURA VERSIONADA</Text>
+            <Text style={styles.routeReadyTitle}>Mapa y progreso preparados</Text>
+            <Text style={styles.routeReadyBody}>
+              El recorrido se fijará a esta geometría antes de iniciar el GPS y podrá continuar sin conexión.
+            </Text>
+          </View>
+        </View>
+
         <Text style={styles.sectionEyebrow}>COMPROBACIÓN REAL DEL TELÉFONO</Text>
         <Text style={styles.sectionTitle}>¿Estamos listos?</Text>
         <Text style={styles.sectionBody}>
@@ -272,6 +285,13 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[20], marginTop: -22, borderRadius: radius.lg,
     backgroundColor: colors.white, flexDirection: 'row', padding: spacing[16], ...shadow.card,
   },
+  routeReadyCard: { marginHorizontal: spacing[20], marginTop: spacing[16], borderRadius: radius.lg, backgroundColor: colors.oliveWash, padding: spacing[16], flexDirection: 'row', borderWidth: 1, borderColor: colors.border },
+  routeReadyIcon: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  routeReadyIconText: { color: colors.olive900, fontSize: 25, fontWeight: '900' },
+  routeReadyCopy: { flex: 1, marginLeft: spacing[12] },
+  routeReadyEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  routeReadyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: 3 },
+  routeReadyBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
   metric: { flex: 1, alignItems: 'center' },
   metricValue: { color: colors.ink, fontSize: 14, fontWeight: '900' },
   metricLabel: { color: colors.muted, fontSize: 9, marginTop: 4 },

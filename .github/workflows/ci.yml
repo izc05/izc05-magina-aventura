@@ -145,60 +145,12 @@ jobs:
 
           test -s "$apk"
 
-          if ! unzip -Z1 "$apk" | grep -Eq '^assets/index\.android\.bundle
-          cp "$apk" "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk"
-          sha256sum "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk" > "$evidence_dir/SHA256SUMS.txt"
-          cat > "$evidence_dir/BUILD_INFO.txt" <<EOF
-          commit=${{ github.sha }}
-          branch=${{ github.head_ref || github.ref_name }}
-          workflow_run=${{ github.run_number }}
-          build_type=phase4c-qa-standalone-release
-          generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          package_id=com.isivolt.maginaaventura.qa
-          version=$(jq -r '.expo.version' apps/mobile/app.json)
-          signing=debug-keystore-internal-qa-only-not-production
-          js_bundle=assets/index.android.bundle
-          hermes=embedded
-          EOF
-
-      - name: Upload Android Phase 4C QA standalone APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: magina-aventura-phase4c-qa-standalone-${{ github.run_number }}
-          path: apps/mobile/android/app/build/phase4c-qa
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
-; then
+          if ! unzip -Z1 "$apk" | grep -Eq '^assets/index\.android\.bundle$'; then
             echo "ERROR: JavaScript bundle not found in APK"
             exit 1
           fi
 
-          if ! unzip -Z1 "$apk" | grep -Eq '^lib/[^/]+/libhermesvm\.so
-          cp "$apk" "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk"
-          sha256sum "$evidence_dir/magina-aventura-phase4c-qa-standalone.apk" > "$evidence_dir/SHA256SUMS.txt"
-          cat > "$evidence_dir/BUILD_INFO.txt" <<EOF
-          commit=${{ github.sha }}
-          branch=${{ github.head_ref || github.ref_name }}
-          workflow_run=${{ github.run_number }}
-          build_type=phase4c-qa-standalone-release
-          generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          package_id=com.isivolt.maginaaventura.qa
-          version=$(jq -r '.expo.version' apps/mobile/app.json)
-          signing=debug-keystore-internal-qa-only-not-production
-          js_bundle=assets/index.android.bundle
-          hermes=embedded
-          EOF
-
-      - name: Upload Android Phase 4C QA standalone APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: magina-aventura-phase4c-qa-standalone-${{ github.run_number }}
-          path: apps/mobile/android/app/build/phase4c-qa
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
-; then
+          if ! unzip -Z1 "$apk" | grep -Eq '^lib/[^/]+/libhermesvm\.so$'; then
             echo "ERROR: Hermes VM library not found in APK"
             unzip -Z1 "$apk" | grep '^lib/' | grep -i hermes || true
             exit 1

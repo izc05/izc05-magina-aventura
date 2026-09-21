@@ -15,6 +15,7 @@ import {
 import { useActiveAdventure } from '../../src/activity/use-active-adventure';
 import { presentActiveAdventure } from '../../src/features/adventure/active-adventure-presenter';
 import { presentExploration } from '../../src/features/adventure/exploration-presenter';
+import { shouldShowExplorationOverlay } from '../../src/features/adventure/exploration-overlay';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { ActiveAdventureMap } from '../../src/map/ActiveAdventureMap';
 import { colors, radius, shadow, spacing } from '../../src/theme/tokens';
@@ -59,7 +60,7 @@ export default function ActiveAdventureScreen() {
       seenObservationKey.current = latestObservationKey;
       return;
     }
-    if (seenObservationKey.current !== latestObservationKey) {
+    if (shouldShowExplorationOverlay(seenObservationKey.current, latestObservationKey)) {
       seenObservationKey.current = latestObservationKey;
       setCelebrationVisible(true);
     }

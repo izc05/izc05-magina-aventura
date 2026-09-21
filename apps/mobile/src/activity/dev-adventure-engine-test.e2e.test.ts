@@ -134,6 +134,15 @@ describe('DEV Adventure Engine v2 Android harness', () => {
     const finished = await recoveredRuntime.finish();
     expect(finished.session.state).toBe('FINISHED');
     expect((await recoveredRuntime.loadTrack()).length).toBe(5);
+
+    const afterFinishRuntime = createActivityController({
+      store: new MemoryActivityStore(storeDatabase),
+      inbox: new MemoryBackgroundLocationInbox(inboxDatabase),
+      locationProvider: createSimulatedLocationProvider(),
+      createActivityId: () => 'unused-after-finish',
+      now: () => '2026-09-20T10:02:00.000Z',
+    });
+    expect(await afterFinishRuntime.recover(devAdventureEngineTestDefinition, devAdventureEngineTestRoute)).toBeNull();
   });
 
   it('rejects a different pinned definition version during recovery', async () => {

@@ -16,6 +16,7 @@ import type { LocationSample } from '@magina-aventura/contracts';
 import { getRuntimeRouteMapRepository } from '../features/routes/runtime-route-map-repository';
 import { materializeMapStyle } from '../map/map-style';
 import { expoRoutePackagePort } from '../offline/expo-route-package-port';
+import { belongsToRoute } from './active-adventure-recovery';
 import { getActivityRuntime } from './activity-runtime';
 import { trackToGeoJson } from './track-geojson';
 
@@ -81,12 +82,16 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
 
     async function load() {
       try {
-        const [definition, payload, manifest] = await Promise.all([
+        const [definitionResult, payloadResult, manifestResult] = await Promise.allSettled([
           routeMapRepository.getAdventureDefinition(currentRoute.slug),
           routeMapRepository.getMapPayload(currentRoute.slug),
           routeMapRepository.getOfflineManifest(currentRoute.slug),
         ]);
         if (!active) return;
+
+        const definition = definitionResult.status === 'fulfilled' ? definitionResult.value : null;
+        const payload = payloadResult.status === 'fulfilled' ? payloadResult.value : null;
+        const manifest = manifestResult.status === 'fulfilled' ? manifestResult.value : null;
 
         setMapPayload(payload);
         setAdventureDefinition(definition);
@@ -94,10 +99,11 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
 
         const line = payload?.line.geometry.coordinates ?? [];
         const current = runtime.current();
-        if (!current && !definition) {
+        const currentForRoute = belongsToRoute(current, currentRoute) ? current : null;
+        if (!currentForRoute && !definition) {
           throw new Error('La versión exacta de esta aventura no está disponible sin conexión.');
         }
-        const recovered = current ?? (await runtime.recover(definition!, currentRoute, line));
+        const recovered = currentForRoute ?? (await runtime.recover(definition!, currentRoute, line));
         if (!active) return;
 
         setEngineState(recovered);

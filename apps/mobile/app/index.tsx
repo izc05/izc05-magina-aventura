@@ -44,7 +44,7 @@ export default function RoutesHomeScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.emptyState}>
-          <AppHeader />
+          <AppHeader onDiagnosticsPress={() => router.push('/diagnostics')} />
           <View style={styles.emptyStateCard}>
             <Text style={styles.emptyStateTitle}>Rutas verificadas próximamente</Text>
             <Text style={styles.emptyStateBody}>
@@ -64,7 +64,7 @@ export default function RoutesHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <AppHeader />
+        <AppHeader onDiagnosticsPress={() => router.push('/diagnostics')} />
 
         <View style={styles.hero}>
           <View style={styles.heroSkyGlow} />

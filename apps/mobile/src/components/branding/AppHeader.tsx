@@ -3,13 +3,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, radius, spacing } from '../../theme/tokens';
 import { AppLogo } from './AppLogo';
 
-export function AppHeader() {
+export function AppHeader({ onDiagnosticsPress }: { onDiagnosticsPress?: () => void }) {
   return (
     <View style={styles.header}>
       <AppLogo compact />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Notificaciones"
+        accessibilityLabel={onDiagnosticsPress ? 'Abrir diagnóstico' : 'Notificaciones'}
+        onPress={onDiagnosticsPress}
         style={styles.notificationButton}
       >
         <View style={styles.bellDome} />

@@ -66,7 +66,55 @@ export default function ActiveAdventureScreen() {
     }
   }, [latestObservationKey]);
 
-  if (!route || !presentation) return null;
+  if (!route) {
+    return (
+      <SafeAreaView style={styles.startupSafeArea}>
+        <View style={styles.startupCard}>
+          <Text style={styles.startupEyebrow}>MÁGINA AVENTURA</Text>
+          <Text style={styles.startupTitle}>Ruta no disponible</Text>
+          <Text style={styles.startupBody}>Esta aventura ya no está disponible en el paquete local.</Text>
+          <Pressable style={styles.startupButton} onPress={() => router.replace('/')}>
+            <Text style={styles.startupButtonText}>Volver a rutas</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!presentation) return null;
+
+  if (loading && !engineState) {
+    return (
+      <SafeAreaView style={styles.startupSafeArea}>
+        <View style={styles.startupCard}>
+          <Text style={styles.startupEyebrow}>RECUPERACIÓN OFFLINE</Text>
+          <Text style={styles.startupTitle}>Cargando tu aventura</Text>
+          <Text style={styles.startupBody}>Estamos leyendo el progreso guardado en este dispositivo.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!loading && !engineState && errorMessage) {
+    return (
+      <SafeAreaView style={styles.startupSafeArea}>
+        <View style={styles.startupCard}>
+          <Text style={styles.startupEyebrow}>RECUPERACIÓN OFFLINE</Text>
+          <Text style={styles.startupTitle}>No se pudo recuperar la aventura</Text>
+          <Text style={styles.startupBody}>{errorMessage}</Text>
+          <Pressable
+            style={styles.startupButton}
+            onPress={() =>
+              router.replace({ pathname: '/routes/[slug]/prepare', params: { slug: route.slug } })
+            }
+          >
+            <Text style={styles.startupButtonText}>Volver a Preparación</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const currentRoute = route;
   const isPaused = engineState?.session.state === 'PAUSED';
   const hasActivity = Boolean(engineState);
@@ -315,6 +363,13 @@ function Metric({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.limestone },
+  startupSafeArea: { flex: 1, backgroundColor: colors.warmBackground, justifyContent: 'center', padding: spacing[20] },
+  startupCard: { borderRadius: radius.xl, backgroundColor: colors.white, padding: spacing[24], borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  startupEyebrow: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  startupTitle: { color: colors.ink, fontSize: 24, fontWeight: '900', marginTop: spacing[8] },
+  startupBody: { color: colors.muted, fontSize: 13, lineHeight: 20, marginTop: spacing[12] },
+  startupButton: { minHeight: 52, borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center', marginTop: spacing[20] },
+  startupButtonText: { color: colors.white, fontSize: 14, fontWeight: '900' },
   topHud: {
     position: 'absolute',
     top: spacing[12],

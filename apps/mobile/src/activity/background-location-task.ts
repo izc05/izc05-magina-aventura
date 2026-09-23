@@ -4,6 +4,9 @@ import { handleBackgroundLocations, type ExpoBackgroundLocation } from './backgr
 import { ACTIVITY_LOCATION_TASK } from './expo-location-adapter';
 import { sqliteActivityStore } from './sqlite-activity-store';
 import { sqliteBackgroundLocationInbox } from './sqlite-background-location-inbox';
+import { startupBreadcrumb } from '../features/diagnostics/startup-breadcrumbs';
+
+startupBreadcrumb('background-task-import');
 
 type LocationTaskData = {
   locations?: ExpoBackgroundLocation[];

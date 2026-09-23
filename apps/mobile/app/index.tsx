@@ -11,12 +11,14 @@ import { resolveOnboardingBootstrap } from '../src/features/onboarding/bootstrap
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { LaunchScreen } from '../src/features/onboarding/LaunchScreen';
 import { getQaHarnessCard, getRuntimeRoutes } from '../src/features/qa/qa-harness';
+import { startupBreadcrumb } from '../src/features/diagnostics/startup-breadcrumbs';
 import { brand } from '../src/theme/branding';
 import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 
 export default function RoutesHomeScreen() {
+  startupBreadcrumb('react-runtime');
   const routes = getRuntimeRoutes();
   const QaHarnessCard = getQaHarnessCard();
   const [ready, setReady] = useState(false);
@@ -43,14 +45,17 @@ export default function RoutesHomeScreen() {
 
   useEffect(() => {
     let mounted = true;
+    startupBreadcrumb('onboarding-storage-start');
 
     void resolveOnboardingBootstrap(expoOnboardingStorage)
       .then((nextScreen) => {
         if (!mounted) return;
+        startupBreadcrumb('onboarding-storage-complete');
         if (nextScreen === 'onboarding') {
           router.replace('/onboarding');
           return;
         }
+        startupBreadcrumb('home-mounted');
         setReady(true);
       })
 

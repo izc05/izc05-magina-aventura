@@ -1,4 +1,5 @@
 import type {
+  AdventureDefinition,
   OfflineRoutePackageManifest,
   RouteMapPayload,
 } from '@magina-aventura/contracts';
@@ -16,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getRuntimeRouteMapRepository } from '../../src/features/routes/runtime-route-map-repository';
 import { isQaHarnessEnabled } from '../../src/features/qa/qa-harness';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
+import { presentRouteExperience } from '../../src/features/routes/route-experience-presenter';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
@@ -76,6 +78,7 @@ export default function RouteDetailScreen() {
   );
 
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
+  const [adventureDefinition, setAdventureDefinition] = useState<AdventureDefinition | null>(null);
   const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);
   const [offlineState, setOfflineState] = useState<RouteOfflineUiState>('unavailable');
   const [mapStyle, setMapStyle] = useState<string | Record<string, unknown> | null>(baseMapStyle);
@@ -87,15 +90,17 @@ export default function RouteDetailScreen() {
 
     async function loadRouteMapState() {
       try {
-        const [payload, manifest] = await Promise.all([
+        const [payload, manifest, definition] = await Promise.all([
           routeMapRepository.getMapPayload(routeSlug),
           routeMapRepository.getOfflineManifest(routeSlug),
+          routeMapRepository.getAdventureDefinition(routeSlug),
         ]);
 
         if (!active) return;
 
         setMapPayload(payload);
         setOfflineManifest(manifest);
+        setAdventureDefinition(definition);
 
         if (!manifest) {
           setOfflineState('unavailable');
@@ -177,6 +182,7 @@ export default function RouteDetailScreen() {
   }
 
   const detail = presentRouteDetail(route);
+  const experience = presentRouteExperience(route, mapPayload, adventureDefinition);
   const canDownloadOffline =
     offlineManifest !== null &&
     offlineState !== 'ready' &&
@@ -203,6 +209,11 @@ export default function RouteDetailScreen() {
             <Text style={styles.title}>{route.title}</Text>
             <Text style={styles.difficulty}>{detail.difficulty}</Text>
           </View>
+          <View style={styles.heroImageCaption}>
+            <Text style={styles.heroImageCaptionText}>
+              IMAGEN DE RUTA · {experience.imageLabel.toUpperCase()}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.statsCard}>
@@ -222,6 +233,22 @@ export default function RouteDetailScreen() {
           </View>
         </View>
 
+        <View style={styles.quickFactsCard}>
+          <View style={styles.quickFact}>
+            <Text style={styles.quickFactIcon}>◎</Text>
+            <Text style={styles.quickFactValue}>{experience.explorationLabel}</Text>
+            <Text style={styles.quickFactLabel}>Exploración guiada</Text>
+          </View>
+          <View style={styles.quickFactDivider} />
+          <View style={styles.quickFact}>
+            <Text style={styles.quickFactIcon}>◌</Text>
+            <Text style={styles.quickFactValue}>
+              {experience.safetyCount} aviso{experience.safetyCount === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.quickFactLabel}>Seguridad revisable</Text>
+          </View>
+        </View>
+
         {mapStyle ? (
           <View style={styles.mapSection}>
             <View style={styles.mapSectionHeader}>
@@ -235,6 +262,7 @@ export default function RouteDetailScreen() {
               payload={mapPayload}
               mapStyle={mapStyle}
               developmentMode={route.developmentFixture}
+              discoveryTargets={adventureDefinition?.discoveries ?? []}
             />
           </View>
         ) : (
@@ -260,6 +288,28 @@ export default function RouteDetailScreen() {
           {route.safetyNotes.map((note) => (
             <Text key={note} style={styles.safetyNote}>• {note}</Text>
           ))}
+        </View>
+
+        <View style={styles.weatherCard}>
+          <View style={styles.weatherIcon}><Text style={styles.weatherIconText}>☼</Text></View>
+          <View style={styles.weatherCopy}>
+            <Text style={styles.weatherEyebrow}>CONDICIONES EN RUTA</Text>
+            <Text style={styles.weatherTitle}>{experience.weatherStatus}</Text>
+            <Text style={styles.weatherBody}>{experience.weatherDetail}</Text>
+          </View>
+        </View>
+
+        <View style={styles.targetsCard}>
+          <Text style={styles.targetsEyebrow}>LO QUE VAS A DESCUBRIR</Text>
+          <Text style={styles.targetsTitle}>Checkpoints y discoveries</Text>
+          {experience.targetNames.length > 0 ? experience.targetNames.map((name, index) => (
+            <View key={`${name}-${index}`} style={styles.targetRow}>
+              <Text style={styles.targetIndex}>{String(index + 1).padStart(2, '0')}</Text>
+              <Text style={styles.targetName}>{name}</Text>
+            </View>
+          )) : (
+            <Text style={styles.targetsEmpty}>Se cargarán al verificar el contenido de la aventura.</Text>
+          )}
         </View>
 
         <View style={styles.infoGrid}>
@@ -337,6 +387,8 @@ const styles = StyleSheet.create({
   devBadge: { position: 'absolute', top: spacing[20], right: spacing[16], borderRadius: radius.pill, backgroundColor: colors.ink, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
   devBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   heroCopy: { maxWidth: 320 },
+  heroImageCaption: { position: 'absolute', left: spacing[20], bottom: spacing[16], paddingHorizontal: spacing[10], paddingVertical: spacing[4], borderRadius: radius.pill, backgroundColor: 'rgba(23,32,25,0.72)' },
+  heroImageCaptionText: { color: colors.limestone, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
   municipality: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
   title: { color: colors.white, fontSize: typography.display, fontWeight: '900', marginTop: spacing[4] },
   difficulty: { color: colors.limestone, fontSize: 14, fontWeight: '700', marginTop: spacing[8] },
@@ -345,6 +397,12 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
+  quickFactsCard: { marginHorizontal: spacing[20], marginTop: spacing[12], padding: spacing[16], borderRadius: radius.lg, backgroundColor: colors.oliveWash, flexDirection: 'row', alignItems: 'center' },
+  quickFact: { flex: 1 },
+  quickFactIcon: { color: colors.olive700, fontSize: 18, fontWeight: '900' },
+  quickFactValue: { color: colors.ink, fontSize: 12, fontWeight: '900', marginTop: spacing[4] },
+  quickFactLabel: { color: colors.muted, fontSize: 10, marginTop: 2 },
+  quickFactDivider: { width: 1, height: 42, backgroundColor: colors.border, marginHorizontal: spacing[12] },
   mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
@@ -362,6 +420,20 @@ const styles = StyleSheet.create({
   safetyCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   safetyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   safetyNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  weatherCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], borderRadius: radius.lg, padding: spacing[16], backgroundColor: colors.sky, flexDirection: 'row', alignItems: 'center' },
+  weatherIcon: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  weatherIconText: { color: colors.aoveGold, fontSize: 24, fontWeight: '900' },
+  weatherCopy: { flex: 1, marginLeft: spacing[12] },
+  weatherEyebrow: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  weatherTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: 3 },
+  weatherBody: { color: colors.ink, opacity: 0.7, fontSize: 11, marginTop: 3 },
+  targetsCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  targetsEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  targetsTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginTop: spacing[4], marginBottom: spacing[12] },
+  targetRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing[10], borderTopWidth: 1, borderTopColor: colors.border },
+  targetIndex: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', width: 32 },
+  targetName: { color: colors.ink, fontSize: 13, fontWeight: '800', flex: 1 },
+  targetsEmpty: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing[16], gap: spacing[8] },
   infoCard: { width: '48%', borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   infoIcon: { color: colors.olive700, fontSize: 20, fontWeight: '900' },

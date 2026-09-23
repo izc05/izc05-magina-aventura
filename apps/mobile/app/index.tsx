@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,9 +17,29 @@ import { colors, radius, shadow, spacing, typography } from '../src/theme/tokens
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 
 export default function RoutesHomeScreen() {
-  const route = getRuntimeRoutes()[0];
+  const routes = getRuntimeRoutes();
   const QaHarnessCard = getQaHarnessCard();
   const [ready, setReady] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]>('Todos');
+
+  const visibleRoutes = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return routes.filter((candidate) => {
+      const matchesQuery = normalizedQuery.length === 0 || [
+        candidate.title,
+        candidate.municipalityName,
+        candidate.description,
+      ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
+      const matchesDifficulty = activeFilter === 'Todos'
+        || (activeFilter === 'Fácil' && candidate.difficulty === 'easy')
+        || (activeFilter === 'Moderada' && candidate.difficulty === 'moderate')
+        || (activeFilter === 'Difícil' && candidate.difficulty === 'hard');
+      return matchesQuery && matchesDifficulty;
+    });
+  }, [activeFilter, query, routes]);
+
+  const route = visibleRoutes[0] ?? routes[0];
 
   useEffect(() => {
     let mounted = true;
@@ -94,6 +114,8 @@ export default function RoutesHomeScreen() {
             placeholder="Buscar rutas, municipios, lugares…"
             placeholderTextColor={colors.muted}
             style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
           />
           <View style={styles.filterButton}>
             <View style={styles.filterLineWide} />
@@ -106,33 +128,45 @@ export default function RoutesHomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
         >
-          {filters.map((filter, index) => (
-            <View
+          {filters.map((filter) => (
+            <Pressable
               key={filter}
-              style={[styles.filterChip, index === 0 && styles.filterChipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activeFilter === filter }}
+              onPress={() => setActiveFilter(filter)}
+              style={[styles.filterChip, activeFilter === filter && styles.filterChipActive]}
             >
-              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>{filter}</Text>
-            </View>
+              <Text style={[styles.filterText, activeFilter === filter && styles.filterTextActive]}>{filter}</Text>
+            </Pressable>
           ))}
         </ScrollView>
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Ruta destacada</Text>
-            <Text style={styles.sectionSubtitle}>Empieza a descubrir Sierra Mágina</Text>
+          <Text style={styles.sectionTitle}>Explora rutas</Text>
+            <Text style={styles.sectionSubtitle}>{visibleRoutes.length} ruta{visibleRoutes.length === 1 ? '' : 's'} disponibles para comenzar</Text>
           </View>
-          <Text style={styles.sectionAction}>Ver todas  →</Text>
+          <Text style={styles.sectionAction}>Mapa y detalle  →</Text>
         </View>
 
-        <FeaturedRouteCard
-          route={route}
-          onPress={() =>
-            router.push({
-              pathname: '/routes/[slug]',
-              params: { slug: route.slug },
-            })
-          }
-        />
+        {visibleRoutes.length > 0 ? visibleRoutes.map((candidate) => (
+          <View key={candidate.slug} style={styles.routeCardWrap}>
+            <FeaturedRouteCard
+              route={candidate}
+              onPress={() =>
+                router.push({
+                  pathname: '/routes/[slug]',
+                  params: { slug: candidate.slug },
+                })
+              }
+            />
+          </View>
+        )) : (
+          <View style={styles.noResultsCard}>
+            <Text style={styles.noResultsTitle}>No encontramos esa ruta</Text>
+            <Text style={styles.noResultsBody}>Prueba con otro municipio, lugar o dificultad.</Text>
+          </View>
+        )}
 
         {QaHarnessCard && route?.developmentFixture ? (
           <>
@@ -567,6 +601,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
   },
+  routeCardWrap: {
+    marginBottom: spacing[16],
+  },
+  noResultsCard: {
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing[20],
+  },
+  noResultsTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
+  noResultsBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,

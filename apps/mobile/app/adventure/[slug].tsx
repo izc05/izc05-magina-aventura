@@ -195,6 +195,8 @@ export default function ActiveAdventureScreen() {
         track={trackFeature}
         currentPoint={currentPoint}
         fallbackCenter={[currentRoute.startLongitude, currentRoute.startLatitude]}
+        discoveryTargets={adventureDefinition?.discoveries ?? []}
+        unlockedTargetKeys={engineState?.exploration?.unlockedTargetKeys ?? []}
       />
 
       <View style={styles.topHud}>

@@ -1,5 +1,5 @@
 import { Camera, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-native';
-import type { LocationSample, RouteMapPayload } from '@magina-aventura/contracts';
+import type { AdventureTargetDefinition, LocationSample, RouteMapPayload } from '@magina-aventura/contracts';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ActivityTrackFeature } from '../activity/track-geojson';
@@ -11,6 +11,8 @@ interface ActiveAdventureMapProps {
   track: ActivityTrackFeature;
   currentPoint: LocationSample | null;
   fallbackCenter: readonly [longitude: number, latitude: number];
+  discoveryTargets?: readonly AdventureTargetDefinition[];
+  unlockedTargetKeys?: readonly string[];
 }
 
 export function ActiveAdventureMap({
@@ -19,6 +21,8 @@ export function ActiveAdventureMap({
   track,
   currentPoint,
   fallbackCenter,
+  discoveryTargets = [],
+  unlockedTargetKeys = [],
 }: ActiveAdventureMapProps) {
   const center = currentPoint
     ? ([currentPoint.longitude, currentPoint.latitude] as [number, number])
@@ -41,6 +45,30 @@ export function ActiveAdventureMap({
           type: 'Point' as const,
           coordinates: [currentPoint.longitude, currentPoint.latitude] as [number, number],
         },
+      }
+    : null;
+  const unlocked = new Set(unlockedTargetKeys);
+  const checkpointShape = payload
+    ? {
+        type: 'FeatureCollection' as const,
+        features: payload.checkpoints.map((checkpoint) => ({
+          type: 'Feature' as const,
+          properties: { unlocked: unlocked.has(`checkpoint:${checkpoint.id}`) },
+          geometry: { type: 'Point' as const, coordinates: checkpoint.position },
+        })),
+      }
+    : null;
+  const discoveryShape = discoveryTargets.length > 0
+    ? {
+        type: 'FeatureCollection' as const,
+        features: discoveryTargets.map((discovery) => ({
+          type: 'Feature' as const,
+          properties: { unlocked: unlocked.has(`discovery:${discovery.id}`) },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [discovery.longitude, discovery.latitude],
+          },
+        })),
       }
     : null;
 
@@ -99,6 +127,36 @@ export function ActiveAdventureMap({
                 'circle-radius': 7,
                 'circle-stroke-color': colors.white,
                 'circle-stroke-width': 3,
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
+
+        {checkpointShape ? (
+          <GeoJSONSource id="active-checkpoints" data={checkpointShape as any}>
+            <Layer
+              id="active-checkpoints-layer"
+              type="circle"
+              paint={{
+                'circle-color': ['case', ['get', 'unlocked'], colors.olive900, colors.aoveGold],
+                'circle-radius': 7,
+                'circle-stroke-color': colors.white,
+                'circle-stroke-width': 2,
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
+
+        {discoveryShape ? (
+          <GeoJSONSource id="active-discoveries" data={discoveryShape as any}>
+            <Layer
+              id="active-discoveries-layer"
+              type="circle"
+              paint={{
+                'circle-color': ['case', ['get', 'unlocked'], colors.olive900, colors.sky],
+                'circle-radius': 6,
+                'circle-stroke-color': colors.aoveGold,
+                'circle-stroke-width': 2,
               } as any}
             />
           </GeoJSONSource>

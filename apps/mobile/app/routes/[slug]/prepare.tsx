@@ -1,3 +1,4 @@
+import type { AdventureDefinition } from '@magina-aventura/contracts';
 import { evaluateOfflinePackage } from '@magina-aventura/offline-sync';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -26,6 +27,7 @@ export default function PrepareRouteAdventureScreen() {
   const routeMapRepository = getRuntimeRouteMapRepository();
   const routeSlug = route?.slug ?? '';
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
+  const [adventureDefinition, setAdventureDefinition] = useState<AdventureDefinition | null>(null);
   const [permissions, setPermissions] = useState<LocationPermissionState>();
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -45,8 +47,12 @@ export default function PrepareRouteAdventureScreen() {
       if (!routeSlug) return;
 
       try {
-        const manifest = await routeMapRepository.getOfflineManifest(routeSlug);
+        const [manifest, definition] = await Promise.all([
+          routeMapRepository.getOfflineManifest(routeSlug),
+          routeMapRepository.getAdventureDefinition(routeSlug),
+        ]);
         if (!active) return;
+        setAdventureDefinition(definition);
         if (!manifest) {
           setOfflineState('unavailable');
           return;
@@ -156,17 +162,34 @@ export default function PrepareRouteAdventureScreen() {
           <Metric value={durationLabel(route.durationMinutes)} label="Duración" />
         </View>
 
-        <View style={styles.routeReadyCard}>
+          <View style={styles.routeReadyCard}>
           <View style={styles.routeReadyIcon}>
             <Text style={styles.routeReadyIconText}>◎</Text>
           </View>
           <View style={styles.routeReadyCopy}>
             <Text style={styles.routeReadyEyebrow}>AVENTURA VERSIONADA</Text>
             <Text style={styles.routeReadyTitle}>Mapa y progreso preparados</Text>
-            <Text style={styles.routeReadyBody}>
+              <Text style={styles.routeReadyBody}>
               El recorrido se fijará a esta geometría antes de iniciar el GPS y podrá continuar sin conexión.
+              </Text>
+            </View>
+          </View>
+
+        <View style={styles.objectivesCard}>
+          <View style={styles.objectivesHeader}>
+            <View>
+              <Text style={styles.objectivesEyebrow}>PROGRESIÓN DE LA AVENTURA</Text>
+              <Text style={styles.objectivesTitle}>Tu ruta tiene objetivos</Text>
+            </View>
+            <Text style={styles.objectivesCount}>
+              {(adventureDefinition?.checkpoints.length ?? 0) + (adventureDefinition?.discoveries.length ?? 0)}
             </Text>
           </View>
+          <Text style={styles.objectivesBody}>
+            {adventureDefinition
+              ? `${adventureDefinition.checkpoints.length} checkpoints y ${adventureDefinition.discoveries.length} discoveries se activarán durante el recorrido.`
+              : 'Los objetivos se mostrarán cuando el contenido versionado esté disponible.'}
+          </Text>
         </View>
 
         <Text style={styles.sectionEyebrow}>COMPROBACIÓN REAL DEL TELÉFONO</Text>
@@ -292,6 +315,12 @@ const styles = StyleSheet.create({
   routeReadyEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   routeReadyTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: 3 },
   routeReadyBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
+  objectivesCard: { marginHorizontal: spacing[20], marginTop: spacing[16], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  objectivesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  objectivesEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  objectivesTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', marginTop: 3 },
+  objectivesCount: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
+  objectivesBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   metric: { flex: 1, alignItems: 'center' },
   metricValue: { color: colors.ink, fontSize: 14, fontWeight: '900' },
   metricLabel: { color: colors.muted, fontSize: 9, marginTop: 4 },

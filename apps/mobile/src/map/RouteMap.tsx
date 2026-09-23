@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../theme/tokens';
 import type { RouteMapProps } from './map-types';
 
-export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) {
+export function RouteMap({ payload, mapStyle, developmentMode, discoveryTargets = [] }: RouteMapProps) {
   const initialViewState = payload
     ? {
         bounds: payload.bounds,
@@ -19,6 +19,16 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
           type: 'Feature' as const,
           properties: { id: checkpoint.id, required: checkpoint.required },
           geometry: { type: 'Point' as const, coordinates: checkpoint.position },
+        })),
+      }
+      : null;
+  const discoveryShape = payload && discoveryTargets.length > 0
+    ? {
+        type: 'FeatureCollection' as const,
+        features: discoveryTargets.map((discovery) => ({
+          type: 'Feature' as const,
+          properties: { id: discovery.id, category: discovery.kind },
+          geometry: { type: 'Point' as const, coordinates: [discovery.longitude, discovery.latitude] },
         })),
       }
     : null;
@@ -52,6 +62,21 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
                 'circle-color': colors.aoveGold,
                 'circle-radius': 6,
                 'circle-stroke-color': colors.white,
+                'circle-stroke-width': 2,
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
+
+        {discoveryShape ? (
+          <GeoJSONSource id="route-discoveries" data={discoveryShape as any}>
+            <Layer
+              id="route-discoveries-layer"
+              type="circle"
+              paint={{
+                'circle-color': colors.olive900,
+                'circle-radius': 5,
+                'circle-stroke-color': colors.aoveGold,
                 'circle-stroke-width': 2,
               } as any}
             />

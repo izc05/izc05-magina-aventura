@@ -18,7 +18,7 @@ with fk as (
     where i.indrelid = fk.conrelid
       and i.indisvalid
       and i.indisready
-      and (i.indkey::smallint[])[0:cardinality(fk.conkey)-1] = fk.conkey
+      and (i.indkey::smallint[])[1:cardinality(fk.conkey)] = fk.conkey
   )
 )
 select is((select count(*)::int from missing), 0, 'all public foreign keys have a covering leading-column index');

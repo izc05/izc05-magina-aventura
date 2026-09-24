@@ -44,3 +44,7 @@
 | 16 | Cuadros Content Validation | N/A | N/A | c4f92e6968e039804fed44dae254f8152c422330 | READY | Task 11 | Verified Sendero de Cuadros content checklist and pre-field lifecycle state FIELD_TEST_PENDING |
 - Task 11 Review: Verified Cuadros (MA-001) track provenance, geometry-derived metrics (8.7 km / 412m D+), checkpoints, discoveries, and offline package manifest. Documented evidence in cuadros-rc1-content-validation.md.
 - GATE: IMPLEMENTED_PENDING_DB_VALIDATION
+
+| 17 | Release Audit & Final Candidate Packaging | N/A | N/A | 887993b7700660704588835849a4b50758e2a801 | READY_TO_PUSH_FOR_CI | Task 12 | Final release audit, physical field test protocol and candidate HEAD packaging |
+- Task 12 Review: Completed monorepo typecheck (0 errors across 7 projects) and full test suite (399 tests passing with 0 failures). Formatted field test protocol in cuadros-end-to-end.md and final audit in release-audit.md.
+- GATE: READY_TO_PUSH_FOR_CI

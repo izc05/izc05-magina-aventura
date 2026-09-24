@@ -34,6 +34,7 @@ CREATE POLICY "Users can view own ledger entries" ON public.user_ledger
 
 CREATE INDEX idx_verified_stats_user ON public.verified_activity_stats(user_id);
 CREATE INDEX idx_user_ledger_user ON public.user_ledger(user_id);
+
 -- Step 4: Consolidate a verified activity atomically
 CREATE OR REPLACE FUNCTION public.consolidate_verified_activity(
   p_activity_id uuid,
@@ -45,7 +46,7 @@ CREATE OR REPLACE FUNCTION public.consolidate_verified_activity(
   p_olives_awarded integer,
   p_reason_codes text[],
   p_policy_version text
-) RETURNS void AS \$\$
+) RETURNS void AS $$
 BEGIN
   -- Update activity state
   UPDATE public.activities
@@ -75,4 +76,4 @@ BEGIN
     VALUES (p_user_id, p_activity_id, p_xp_awarded, p_olives_awarded, 'Activity verified');
   END IF;
 END;
-\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

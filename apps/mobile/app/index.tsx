@@ -59,17 +59,7 @@ export default function RoutesHomeScreen() {
 
   function handleBottomNav(item: (typeof brand.bottomNavigation)[number]) {
     const action = resolveBottomNavSelection(item);
-
-    if (action.kind === 'navigate') {
-      router.replace(action.href);
-      return;
-    }
-
-    Alert.alert(
-      action.label,
-      'Este módulo se incorporará en una siguiente fase. En esta beta estamos cerrando rutas, navegación y GPS real.',
-      [{ text: 'Entendido' }],
-    );
+    router.replace(action.href);
   }
 
   if (!ready) return <LaunchScreen />;

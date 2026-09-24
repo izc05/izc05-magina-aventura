@@ -32,3 +32,7 @@
 | 10 | Validation & Progression | N/A | N/A | 6538a7b166e35134ad1b1175fbf883df85403480 | PENDING TESTS | Task 5 | Activity validation state and progression schema |
 - Task 5 Review: Added validation tables, progression ledger, atomic RPC and pgTAP tests.
 - GATE: IMPLEMENTED_PENDING_DB_VALIDATION
+
+| 14 | Final Navigation & Control Center | N/A | N/A | 199a35a12c0622a5a8574464e363380d921c36ab | READY | Task 9 | Expo Router tabs, candidate-bound readiness evidence and Control Center dashboard |
+- Task 9 Review: Activated concrete bottom tabs (Rutas, Retos, Colecciones, Ranking, Perfil, Historial), implemented candidate-bound readiness evidence schema and RC1 Control Center admin module.
+- GATE: IMPLEMENTED_PENDING_DB_VALIDATION

@@ -5,9 +5,9 @@ export const HOME_DIFFICULTY_FILTERS = ['Todos', 'Fácil', 'Moderada', 'Difícil
 
 export type HomeDifficultyFilter = (typeof HOME_DIFFICULTY_FILTERS)[number];
 
-export type BottomNavSelection =
-  | Readonly<{ kind: 'navigate'; href: '/' }>
-  | Readonly<{ kind: 'coming-soon'; label: Exclude<BottomNavigationItem, 'Rutas'> }>;
+export type BottomNavHref = '/' | '/challenges' | '/collections' | '/ranking' | '/profile';
+
+export type BottomNavSelection = Readonly<{ kind: 'navigate'; href: BottomNavHref }>;
 
 const difficultyByFilter: Record<Exclude<HomeDifficultyFilter, 'Todos'>, number> = {
   Fácil: 1,
@@ -43,7 +43,14 @@ export function filterHomeRoutes(
   });
 }
 
+const NAV_MAP: Record<BottomNavigationItem, BottomNavHref> = {
+  Rutas: '/',
+  Retos: '/challenges',
+  Colecciones: '/collections',
+  Ranking: '/ranking',
+  Perfil: '/profile',
+};
+
 export function resolveBottomNavSelection(item: BottomNavigationItem): BottomNavSelection {
-  if (item === 'Rutas') return { kind: 'navigate', href: '/' };
-  return { kind: 'coming-soon', label: item };
+  return { kind: 'navigate', href: NAV_MAP[item] };
 }

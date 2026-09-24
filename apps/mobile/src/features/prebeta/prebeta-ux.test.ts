@@ -59,11 +59,11 @@ describe('pre-beta home UX', () => {
     expect(filterHomeRoutes(routes, '', filter).map((route) => route.slug)).toEqual(expected);
   });
 
-  it('turns every bottom-navigation tap into an explicit action', () => {
+  it('navigates every bottom tab to a concrete route', () => {
     expect(resolveBottomNavSelection('Rutas')).toEqual({ kind: 'navigate', href: '/' });
-    expect(resolveBottomNavSelection('Retos')).toEqual({ kind: 'coming-soon', label: 'Retos' });
-    expect(resolveBottomNavSelection('Colecciones')).toEqual({ kind: 'coming-soon', label: 'Colecciones' });
-    expect(resolveBottomNavSelection('Ranking')).toEqual({ kind: 'coming-soon', label: 'Ranking' });
-    expect(resolveBottomNavSelection('Perfil')).toEqual({ kind: 'coming-soon', label: 'Perfil' });
+    expect(resolveBottomNavSelection('Retos')).toEqual({ kind: 'navigate', href: '/challenges' });
+    expect(resolveBottomNavSelection('Colecciones')).toEqual({ kind: 'navigate', href: '/collections' });
+    expect(resolveBottomNavSelection('Ranking')).toEqual({ kind: 'navigate', href: '/ranking' });
+    expect(resolveBottomNavSelection('Perfil')).toEqual({ kind: 'navigate', href: '/profile' });
   });
 });

@@ -3,6 +3,7 @@ name: Android Preview APK
 on:
   push:
     branches:
+      - integration/rc1
       - feat/visual-identity-onboarding-v1
       - feat/visual-route-flow-v1
       - feat/visual-adventure-summary-v1

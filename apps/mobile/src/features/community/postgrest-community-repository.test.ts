@@ -6,6 +6,7 @@ import { createPostgrestCommunityRepository } from './postgrest-community-reposi
 const config: SupabasePublicConfig = {
   url: 'https://project.supabase.co',
   publishableKey: 'sb_publishable_test',
+  environment: 'dev',
 };
 
 function jsonResponse(body: unknown, status = 200): Response {

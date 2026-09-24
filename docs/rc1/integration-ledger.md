@@ -36,3 +36,7 @@
 | 14 | Final Navigation & Control Center | N/A | N/A | 199a35a12c0622a5a8574464e363380d921c36ab | READY | Task 9 | Expo Router tabs, candidate-bound readiness evidence and Control Center dashboard |
 - Task 9 Review: Activated concrete bottom tabs (Rutas, Retos, Colecciones, Ranking, Perfil, Historial), implemented candidate-bound readiness evidence schema and RC1 Control Center admin module.
 - GATE: IMPLEMENTED_PENDING_DB_VALIDATION
+
+| 15 | Separate Runtime Environments | N/A | N/A | 7e26488884f62e407709abb937392f960021b292 | READY | Task 10 | Explicit dev/staging/production environment classification, client security and staging runbook |
+- Task 10 Review: Added environment classification to SupabasePublicConfig, rejected privileged keys in client config, updated tests, and documented exact 12-step staging smoke test sequence in staging-runbook.md.
+- GATE: IMPLEMENTED_PENDING_DB_VALIDATION

@@ -12,16 +12,26 @@ describe('readSupabasePublicConfig', () => {
     ).toBeNull();
   });
 
-  it('reads only the public Expo Supabase variables', () => {
+  it('reads public Expo Supabase variables and includes environment', () => {
     expect(
       readSupabasePublicConfig({
         EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
         EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test-key',
+        EXPO_PUBLIC_APP_ENV: 'staging',
       }),
     ).toEqual({
       url: 'https://example.supabase.co',
       publishableKey: 'sb_publishable_test-key',
+      environment: 'staging',
     });
+  });
+
+  it('defaults environment to dev when unconfigured', () => {
+    const config = readSupabasePublicConfig({
+      EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test-key',
+    });
+    expect(config?.environment).toBe('dev');
   });
 
   it('rejects a configured non-HTTPS project URL', () => {
@@ -39,5 +49,14 @@ describe('readSupabasePublicConfig', () => {
         SUPABASE_SERVICE_ROLE_KEY: 'service-role-must-never-be-used-here',
       }),
     ).toBeNull();
+  });
+
+  it('rejects privileged service-role key passed as publishable key', () => {
+    expect(() =>
+      readSupabasePublicConfig({
+        EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+        EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'ey...service_role_secret',
+      }),
+    ).toThrow(/Privileged keys/);
   });
 });

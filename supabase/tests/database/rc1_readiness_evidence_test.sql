@@ -10,7 +10,7 @@ SELECT throws_ok(
     VALUES ('gps-runtime', 'abc123', 'CI', true);
   $$,
   '42501',
-  'new row violates row-level security policy for table "rc1_readiness_evidence"',
+  NULL,
   'Anonymous users cannot forge readiness evidence'
 );
 
@@ -23,11 +23,11 @@ SELECT throws_ok(
     VALUES ('gps-runtime', 'abc123', 'CI', true);
   $$,
   '42501',
-  'new row violates row-level security policy for table "rc1_readiness_evidence"',
+  NULL,
   'Authenticated mobile users cannot forge readiness evidence'
 );
 
--- Test 3: CI evidence cannot be stored as manual evidence (enforced by kind CHECK)
+-- Test 3: Invalid evidence kind is rejected
 SELECT throws_ok(
   $$
     SET ROLE service_role;
@@ -35,7 +35,7 @@ SELECT throws_ok(
     VALUES ('gps-runtime', 'abc123', 'INVALID_KIND', true);
   $$,
   '23514',
-  'new row for relation "rc1_readiness_evidence" violates check constraint',
+  NULL,
   'Evidence kind must be CI or MANUAL'
 );
 

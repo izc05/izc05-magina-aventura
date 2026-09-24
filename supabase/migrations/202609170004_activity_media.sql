@@ -17,6 +17,8 @@ CREATE TABLE public.activity_media (
 
 CREATE INDEX idx_activity_media_activity ON public.activity_media(activity_id);
 CREATE INDEX idx_activity_media_user ON public.activity_media(user_id);
+CREATE INDEX idx_activity_media_discovery ON public.activity_media(discovery_id);
+CREATE INDEX idx_activity_media_checkpoint ON public.activity_media(checkpoint_id);
 
 ALTER TABLE public.activity_media ENABLE ROW LEVEL SECURITY;
 
@@ -41,6 +43,9 @@ CREATE TABLE public.community_publications (
   published_at timestamptz NOT NULL DEFAULT now(),
   hidden boolean NOT NULL DEFAULT false
 );
+
+CREATE INDEX idx_community_pub_media ON public.community_publications(media_id);
+CREATE INDEX idx_community_pub_user ON public.community_publications(user_id);
 
 ALTER TABLE public.community_publications ENABLE ROW LEVEL SECURITY;
 

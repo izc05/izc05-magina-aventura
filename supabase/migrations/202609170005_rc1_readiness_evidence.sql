@@ -14,6 +14,7 @@ CREATE TABLE public.rc1_readiness_evidence (
 
 CREATE INDEX idx_readiness_evidence_gate ON public.rc1_readiness_evidence(gate_id, candidate_sha);
 CREATE INDEX idx_readiness_evidence_sha ON public.rc1_readiness_evidence(candidate_sha);
+CREATE INDEX idx_readiness_evidence_actor ON public.rc1_readiness_evidence(actor);
 
 ALTER TABLE public.rc1_readiness_evidence ENABLE ROW LEVEL SECURITY;
 

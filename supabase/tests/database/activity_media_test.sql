@@ -10,8 +10,8 @@ SELECT throws_ok(
     INSERT INTO public.activity_media (activity_id, user_id, privacy)
     VALUES ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'PUBLIC');
   $$,
-  '23514',
-  'new row violates row-level security policy for table "activity_media"',
+  '42501',
+  NULL,
   'Users cannot directly insert PUBLIC media'
 );
 

@@ -16,6 +16,7 @@ CREATE TABLE public.route_weather_snapshots (
 );
 
 CREATE INDEX idx_weather_snapshots_route ON public.route_weather_snapshots(route_id, fetched_at DESC);
+CREATE INDEX route_weather_snapshots_route_id_fk_idx ON public.route_weather_snapshots(route_id);
 
 -- RLS: mobile clients can read (for offline manifest enrichment)
 ALTER TABLE public.route_weather_snapshots ENABLE ROW LEVEL SECURITY;

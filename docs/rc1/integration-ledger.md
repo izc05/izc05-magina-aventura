@@ -40,3 +40,7 @@
 | 15 | Separate Runtime Environments | N/A | N/A | 7e26488884f62e407709abb937392f960021b292 | READY | Task 10 | Explicit dev/staging/production environment classification, client security and staging runbook |
 - Task 10 Review: Added environment classification to SupabasePublicConfig, rejected privileged keys in client config, updated tests, and documented exact 12-step staging smoke test sequence in staging-runbook.md.
 - GATE: IMPLEMENTED_PENDING_DB_VALIDATION
+
+| 16 | Cuadros Content Validation | N/A | N/A | c4f92e6968e039804fed44dae254f8152c422330 | READY | Task 11 | Verified Sendero de Cuadros content checklist and pre-field lifecycle state FIELD_TEST_PENDING |
+- Task 11 Review: Verified Cuadros (MA-001) track provenance, geometry-derived metrics (8.7 km / 412m D+), checkpoints, discoveries, and offline package manifest. Documented evidence in cuadros-rc1-content-validation.md.
+- GATE: IMPLEMENTED_PENDING_DB_VALIDATION

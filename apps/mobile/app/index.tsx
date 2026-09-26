@@ -79,6 +79,23 @@ export default function RoutesHomeScreen() {
           ))}
         </ScrollView>
 
+        <Pressable
+          style={styles.testerBanner}
+          onPress={() => router.push('/theme-tester')}
+        >
+          <View style={styles.testerIconBox}>
+            <Text style={styles.testerIcon}>🎨</Text>
+          </View>
+          <View style={styles.testerCopy}>
+            <Text style={styles.testerEyebrow}>HERRAMIENTA DE DISEÑO</Text>
+            <Text style={styles.testerTitle}>Probador Visual & Capas</Text>
+            <Text style={styles.testerBody}>
+              Prueba los 4 temas cartográficos, altimetría y capas interactivas.
+            </Text>
+          </View>
+          <Text style={styles.testerArrow}>→</Text>
+        </Pressable>
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Rutas destacadas</Text>
@@ -172,6 +189,29 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
   filterText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
   filterTextActive: { color: colors.white },
+  testerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    backgroundColor: colors.olive900,
+    padding: spacing[16],
+    marginVertical: spacing[12],
+  },
+  testerIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[12],
+  },
+  testerIcon: { fontSize: 20 },
+  testerCopy: { flex: 1 },
+  testerEyebrow: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  testerTitle: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 2 },
+  testerBody: { color: colors.limestone, fontSize: 11, marginTop: 2 },
+  testerArrow: { color: colors.aoveGold, fontSize: 20, fontWeight: '900', marginLeft: spacing[8] },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',

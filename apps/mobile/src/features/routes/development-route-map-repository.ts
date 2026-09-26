@@ -8,8 +8,8 @@ import {
 /**
  * Local route source for the field-preview build.
  * The line comes from the official Junta KML. Checkpoint positions are still
- * control waypoints and must not be used as final GPS triggers before field
- * validation; runtime checkpoint activation is not wired to this preview.
+ * control waypoints and are used only as provisional GPS targets in the pilot;
+ * they must not be treated as final verified checkpoints before field validation.
  */
 export const developmentRouteMapRepository: RouteMapRepository = {
   async getMapPayload(slug) {

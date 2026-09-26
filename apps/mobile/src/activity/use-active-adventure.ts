@@ -7,9 +7,14 @@ import {
   evaluateOfflinePackage,
   resolvePmtilesUri,
 } from '@magina-aventura/offline-sync';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ActivityEngineState } from '@magina-aventura/activity-engine';
+import {
+  createExplorationState,
+  evaluateExplorationSample,
+  type ExplorationState,
+} from '@magina-aventura/activity-engine';
 import type { LocationSample } from '@magina-aventura/contracts';
 
 import { developmentRouteMapRepository } from '../features/routes/development-route-map-repository';
@@ -65,6 +70,8 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
   const [mapStyle, setMapStyle] = useState<string | Record<string, unknown>>(fallbackMapStyle);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [explorationState, setExplorationState] = useState<ExplorationState>(() => createExplorationState());
+  const evaluatedSequence = useRef<number | null>(null);
 
   useEffect(() => {
     if (!route) return;
@@ -136,6 +143,27 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
   const trackFeature = useMemo(() => trackToGeoJson(track), [track]);
   const currentPoint = engineState?.snapshot.lastValidSample ?? track.at(-1) ?? null;
 
+  useEffect(() => {
+    if (!currentPoint || !mapPayload || currentPoint.sequence === evaluatedSequence.current) return;
+    const targets = mapPayload.checkpoints
+      .filter((checkpoint): checkpoint is typeof checkpoint & { position: readonly [number, number] } => checkpoint.position !== null)
+      .map((checkpoint) => ({
+        id: checkpoint.id,
+        kind: 'checkpoint' as const,
+        longitude: checkpoint.position[0],
+        latitude: checkpoint.position[1],
+        triggerRadiusMeters: checkpoint.triggerRadiusM,
+      }));
+    const evaluation = evaluateExplorationSample(
+      explorationState,
+      currentPoint,
+      targets,
+      { maxAccuracyMeters: 30, requiredConsecutiveSamples: 2, maxEvidenceGapSeconds: 20 },
+    );
+    evaluatedSequence.current = currentPoint.sequence;
+    setExplorationState(evaluation.state);
+  }, [currentPoint, explorationState, mapPayload]);
+
   return {
     engineState,
     setEngineState,
@@ -147,5 +175,6 @@ export function useActiveAdventure(route: RouteDetail | undefined) {
     loading,
     errorMessage,
     setErrorMessage,
+    explorationState,
   };
 }

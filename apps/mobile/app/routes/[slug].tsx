@@ -14,6 +14,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
+import { getMa001CheckpointContent } from '../../src/features/routes/ma001-pilot-content';
 import { presentRouteDetail } from '../../src/features/routes/route-detail-presenter';
 import { useRouteBySlug } from '../../src/features/routes/use-route-catalog';
 import { RouteMap } from '../../src/map/RouteMap';
@@ -246,6 +247,11 @@ export default function RouteDetailScreen() {
                 <View style={[styles.checkpointDot, checkpoint.position ? styles.checkpointDotMapped : styles.checkpointDotPending]} />
                 <View style={styles.checkpointCopy}>
                   <Text style={styles.checkpointName}>{checkpoint.id} · {checkpoint.name}</Text>
+                  {getMa001CheckpointContent(checkpoint.id) ? (
+                    <Text style={styles.checkpointBody}>
+                      {getMa001CheckpointContent(checkpoint.id)?.objective}
+                    </Text>
+                  ) : null}
                   <Text style={styles.checkpointStatus}>
                     {checkpoint.position ? 'Posición de control en mapa' : 'Posición pendiente de campo'}
                   </Text>
@@ -369,6 +375,7 @@ const styles = StyleSheet.create({
   checkpointDotPending: { backgroundColor: colors.aoveGold },
   checkpointCopy: { flex: 1 },
   checkpointName: { color: colors.ink, fontSize: 12, fontWeight: '900' },
+  checkpointBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   checkpointStatus: { color: colors.muted, fontSize: 10, marginTop: 2 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },

@@ -26,6 +26,7 @@ export default function ActiveAdventureScreen() {
     loading,
     errorMessage,
     setErrorMessage,
+    explorationState,
   } = useActiveAdventure(route);
 
   const presentation = useMemo(
@@ -147,6 +148,9 @@ export default function ActiveAdventureScreen() {
         <Text style={styles.bottomEyebrow}>ESTADO DE LA AVENTURA</Text>
         <Text style={styles.objectiveName}>{presentation.objectiveTitle}</Text>
         <Text style={styles.objectiveMeta}>{presentation.objectiveMeta}</Text>
+        <Text style={styles.checkpointProgress}>
+          {explorationState.unlockedTargetIds.length} checkpoints detectados en modo piloto
+        </Text>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
@@ -279,6 +283,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 4,
+  },
+  checkpointProgress: {
+    color: colors.olive700,
+    fontSize: 10,
+    fontWeight: '900',
+    marginTop: spacing[8],
   },
   errorText: {
     color: colors.earth,

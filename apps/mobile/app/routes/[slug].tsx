@@ -223,7 +223,7 @@ export default function RouteDetailScreen() {
           <RouteMap
             payload={mapPayload}
             mapStyle={mapStyle}
-            developmentMode={route.developmentFixture ?? false}
+            developmentMode={(route.developmentFixture ?? false) || mapPayload?.routeId === 'MA-001'}
           />
         ) : (
           <View style={styles.mapUnavailable}>
@@ -267,7 +267,9 @@ export default function RouteDetailScreen() {
             <Text style={styles.infoIcon}>◎</Text>
             <Text style={styles.infoTitle}>Checkpoints</Text>
             <Text style={styles.infoCopy}>
-              {mapPayload ? `${mapPayload.checkpoints.length} verificados` : 'Sin datos verificados'}
+              {mapPayload
+                ? `${mapPayload.checkpoints.filter((checkpoint) => checkpoint.position).length} en mapa · ${mapPayload.checkpoints.filter((checkpoint) => !checkpoint.position).length} por validar`
+                : 'Sin datos verificados'}
             </Text>
           </View>
           <View style={styles.infoCard}>

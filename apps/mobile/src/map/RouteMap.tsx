@@ -15,10 +15,14 @@ export function RouteMap({ payload, mapStyle, developmentMode }: RouteMapProps) 
   const checkpointShape = payload
     ? {
         type: 'FeatureCollection' as const,
-        features: payload.checkpoints.map((checkpoint) => ({
+        features: payload.checkpoints.filter((checkpoint) => checkpoint.position).map((checkpoint) => ({
           type: 'Feature' as const,
-          properties: { id: checkpoint.id, required: checkpoint.required },
-          geometry: { type: 'Point' as const, coordinates: checkpoint.position },
+          properties: {
+            id: checkpoint.id,
+            required: checkpoint.required,
+            positionStatus: checkpoint.positionStatus ?? 'verified',
+          },
+          geometry: { type: 'Point' as const, coordinates: checkpoint.position! },
         })),
       }
     : null;

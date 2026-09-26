@@ -1,0 +1,159 @@
+{
+  "route_master_version": "0.2",
+  "schema_version": "adventure-content-contract-v1.1-draft",
+  "adventure_id": "MA-001",
+  "slug": "cuadros-las-vinas",
+  "identity": {
+    "title": "Cuadros · Las Viñas",
+    "subtitle": "Agua, piedra y frontera",
+    "municipality": "Bedmar y Garcíez",
+    "province": "Jaén",
+    "territory": "Sierra Mágina",
+    "activity_type": "HIKING",
+    "route_type": "CIRCULAR",
+    "difficulty": "MEDIA",
+    "default_locale": "es-ES"
+  },
+  "editorial": {
+    "status": "FIELD_VALIDATION_PENDING",
+    "content_status": "ADVANCED",
+    "canonical_geometry_status": "PENDING_OFFICIAL_AND_FIELD_CONTRAST",
+    "field_validation_status": "PENDING",
+    "media_status": "SHOT_LIST_DEFINED_CAPTURE_PENDING",
+    "reward_status": "PARTNER_PENDING",
+    "offline_status": "NOT_READY"
+  },
+  "publication_gate": {
+    "status": "BLOCKED_MULTIPLE",
+    "reasons": [
+      "OFFICIAL_TEMPORARY_CLOSURE",
+      "FIELD_VALIDATION_PENDING",
+      "OFFICIAL_TRACK_CONTRAST_PENDING"
+    ],
+    "required_to_open": [
+      "OFFICIAL_REOPENING_CONFIRMED",
+      "FIELD_TRACK_COMPLETED",
+      "ALL_REQUIRED_CHECKPOINTS_PASS",
+      "ACCESS_PASS",
+      "SAFETY_PASS",
+      "CANONICAL_TRACK_SELECTED",
+      "REQUIRED_MEDIA_COMPLETE"
+    ]
+  },
+  "metrics": {
+    "official_distance_m": 8720,
+    "official_duration_estimated_min": 180,
+    "control_distance_m": 8987,
+    "control_recorded_time_sec": 10608,
+    "control_elevation_min_m": 567.5,
+    "control_elevation_max_m": 916.9,
+    "canonical_distance_m": null,
+    "canonical_elevation_gain_m": null,
+    "canonical_elevation_loss_m": null,
+    "canonical_elevation_min_m": null,
+    "canonical_elevation_max_m": null
+  },
+  "recommended_direction": null,
+  "geometry_hierarchy": [
+    {
+      "priority": 1,
+      "track_type": "OFFICIAL",
+      "track_id": "ma001-official-las-vinas",
+      "role": "AUTHORITATIVE_REFERENCE",
+      "status": "LOCATED_CONTRAST_PENDING"
+    },
+    {
+      "priority": 2,
+      "track_type": "FIELD",
+      "track_id": "ma001-field",
+      "role": "PHYSICAL_VALIDATION",
+      "status": "PENDING"
+    },
+    {
+      "priority": 3,
+      "track_type": "CONTROL",
+      "track_id": "ma001-control-wikiloc-47452434",
+      "role": "CONTROL_ONLY",
+      "status": "AVAILABLE",
+      "is_canonical": false
+    }
+  ],
+  "source_records": {
+    "adventure_record": "MA001_CUADROS_DATA_RECORD_v0_1.json",
+    "segments": "MA001_ROUTE_SEGMENTS_v0_1.json",
+    "control_summary": "control/MA001_Cuadros_LasVinas_CONTROL_summary.json",
+    "field_validation_template": "validation/MA001_FIELD_VALIDATION_TEMPLATE_v0_1.json",
+    "media_manifest": "media/MA001_MEDIA_MANIFEST_v0_1.json"
+  },
+  "narrative": {
+    "theme": "Agua, geología, paisaje cultivado, patrimonio e historia de frontera",
+    "arc": [
+      "AGUA",
+      "ASCENSO",
+      "PAISAJE",
+      "PIEDRA",
+      "FRONTERA",
+      "TRADICION",
+      "AGUA",
+      "REGRESO"
+    ],
+    "chapters": [
+      {"sequence": 1, "chapter_id": "ma001-ch-agua", "title": "El agua", "start_checkpoint_id": "CP00", "end_checkpoint_id": "CP02"},
+      {"sequence": 2, "chapter_id": "ma001-ch-subida", "title": "La subida", "start_checkpoint_id": "CP03", "end_checkpoint_id": "CP04"},
+      {"sequence": 3, "chapter_id": "ma001-ch-paisaje-piedra", "title": "El paisaje y la piedra", "start_checkpoint_id": "CP05", "end_checkpoint_id": "CP07"},
+      {"sequence": 4, "chapter_id": "ma001-ch-frontera", "title": "La frontera", "start_checkpoint_id": "CP08", "end_checkpoint_id": "CP08"},
+      {"sequence": 5, "chapter_id": "ma001-ch-memoria-regreso", "title": "Memoria y regreso", "start_checkpoint_id": "CP09", "end_checkpoint_id": "FINAL"}
+    ]
+  },
+  "checkpoint_registry": [
+    {"id": "CP00", "role": "START_SAFETY", "required": true, "field_status": "PENDING"},
+    {"id": "CP01", "role": "NAV", "required": true, "field_status": "PENDING"},
+    {"id": "CP02", "role": "MAJOR_NATURE", "required": true, "field_status": "PENDING"},
+    {"id": "CP03", "role": "DISCOVERY_TRANSITION", "required": false, "field_status": "PENDING"},
+    {"id": "CP04", "role": "MAJOR_LANDSCAPE", "required": true, "field_status": "PENDING"},
+    {"id": "CP05", "role": "DISCOVERY_LANDSCAPE", "required": false, "field_status": "PENDING"},
+    {"id": "CP06", "role": "MAJOR_GEOLOGY", "required": true, "field_status": "PENDING"},
+    {"id": "CP07", "role": "DISCOVERY_SAFETY_WATER", "required": true, "field_status": "PENDING"},
+    {"id": "CP08", "role": "MAJOR_HERITAGE", "required": true, "field_status": "PENDING"},
+    {"id": "CP09", "role": "MAJOR_CULTURE", "required": true, "field_status": "PENDING"},
+    {"id": "CP10", "role": "MAJOR_NATURE", "required": true, "field_status": "PENDING"},
+    {"id": "FINAL", "role": "FINAL", "required": true, "field_status": "PENDING"}
+  ],
+  "optional_poi_registry": [
+    {"id": "poi-casa-molino", "status": "FIELD_PENDING"},
+    {"id": "poi-tunel-control", "status": "HOLD", "publishable": false}
+  ],
+  "game": {
+    "xp_economy_status": "PILOT_NOT_FROZEN",
+    "speed_bonus_xp": 0,
+    "completion_xp_candidate": 250,
+    "badge_candidate": "Guardián de Cuadros",
+    "completion_rules_status": "PENDING_FIELD_TESTS",
+    "anti_spoof_required": true
+  },
+  "community": {
+    "tracks_allowed_with_consent": true,
+    "photos_allowed_with_permission": true,
+    "incidents_allowed": true,
+    "canonical_auto_update_from_community": false
+  },
+  "admin_requirements": {
+    "editable_without_code": true,
+    "track_upload": true,
+    "checkpoint_editor": true,
+    "poi_editor": true,
+    "media_manager": true,
+    "source_manager": true,
+    "publication_gate_manager": true,
+    "reward_manager": true,
+    "field_validation_manager": true
+  },
+  "next_actions": [
+    "IMPORT_AND_COMPARE_OFFICIAL_TRACK",
+    "PERFORM_FIELD_VALIDATION",
+    "CAPTURE_REQUIRED_MEDIA",
+    "RESOLVE_UNKNOWN_CHECKPOINT_POSITIONS",
+    "FREEZE_COMPLETION_RULES_AFTER_FIELD_TEST",
+    "TEST_CONTRACT_WITH_MA002"
+  ]
+}

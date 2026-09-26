@@ -22,7 +22,8 @@ export interface RouteLineFeature {
 export interface RouteMapCheckpoint {
   id: string;
   name: string;
-  position: GeoJsonPosition;
+  position: GeoJsonPosition | null;
+  positionStatus?: 'control' | 'verified' | 'pending';
   triggerRadiusM: number;
   required: boolean;
 }
@@ -32,6 +33,7 @@ export interface RouteMapDiscoveryHint {
   category:
     | 'flora'
     | 'fauna'
+    | 'water'
     | 'heritage'
     | 'olive'
     | 'tradition'

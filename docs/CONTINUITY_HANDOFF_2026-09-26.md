@@ -57,9 +57,9 @@ La app móvil ya tiene conectado el flujo GPS de la ruta piloto MA-001 Cuadros /
   - `FOREGROUND_SERVICE`
   - `FOREGROUND_SERVICE_LOCATION`
 
-## Compilación Android en curso
+## APK Android final generada
 
-Se lanzó una build local con:
+La build local terminó correctamente usando Android SDK 36, NDK 27.1.12297006 y JDK 17:
 
 ```bash
 cd /home/ubuntu/magina-aventura-rc1
@@ -82,48 +82,47 @@ unzip -Z1 apps/mobile/android/app/build/outputs/apk/release/app-release.apk | aw
 sha256sum apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-Debe contener únicamente `arm64-v8a`.
+Resultado verificado:
 
-## Cambios locales aún no publicados
+| Campo | Resultado |
+|---|---|
+| Archivo | `/home/ubuntu/magina-aventura-artifacts/final/magina-aventura-ma001-arm64-release.apk` |
+| Tamaño | 55.261.784 bytes (52 MiB) |
+| Arquitectura | `arm64-v8a` únicamente |
+| Package | `com.isivolt.maginaaventura` |
+| Version | `0.1.0` / versionCode `1` |
+| SDK mínimo / objetivo | 24 / 36 |
+| SHA-256 | `47cd091d9b4edd5702eff6bfdd338a86317f58d7424f95a8ba180842edab4153` |
 
-En el momento de crear este documento estaban pendientes de commit:
+El APK incluye y declara los cinco permisos de ubicación comprobados en el manifest.
 
-- `.github/workflows/android-preview.yml`
-  - se añadió la rama `fix/gps-expo-sdk57` para que la APK se construya automáticamente con cada push.
-- `apps/mobile/app/adventure/[slug].tsx`
-  - contador de checkpoints detectados en modo piloto.
-- `apps/mobile/app/routes/[slug].tsx`
-  - contenido narrativo visible de los checkpoints.
-- `apps/mobile/src/activity/use-active-adventure.ts`
-  - evaluación de proximidad de checkpoints con GPS.
-- `apps/mobile/src/features/routes/development-route-map-repository.ts`
-  - comentario actualizado.
-- `apps/mobile/src/features/routes/route-utils.test.ts`
-  - prueba de integridad del registro narrativo.
-- `apps/mobile/src/features/routes/ma001-pilot-content.ts`
-  - nuevo registro de capítulos y contenido.
+## Cambios publicados
+
+El código de la funcionalidad está publicado en `origin/fix/gps-expo-sdk57` mediante el commit `490ba1c`.
+El commit `f4211d4` deja el árbol limpio y revierte sólo la modificación del workflow porque la credencial GitHub no tiene permiso `workflows`.
 
 ## Próximos pasos exactos
 
-1. Esperar la build Android local.
-2. Si termina correctamente, hacer commit de los cambios pendientes:
+1. La APK ya está generada y validada en la ruta indicada arriba.
+2. Si otra cuenta tiene permiso `workflows`, puede añadir `fix/gps-expo-sdk57` a `on.push.branches` de `.github/workflows/android-preview.yml` y hacer push para activar la build automática:
 
 ```bash
-git add .github/workflows/android-preview.yml apps/mobile/app/adventure/'[slug].tsx' apps/mobile/app/routes/'[slug].tsx' apps/mobile/src/activity/use-active-adventure.ts apps/mobile/src/features/routes/development-route-map-repository.ts apps/mobile/src/features/routes/route-utils.test.ts apps/mobile/src/features/routes/ma001-pilot-content.ts docs/CONTINUITY_HANDOFF_2026-09-26.md
-git commit -m "feat(mobile): activate pilot checkpoint progression"
-git push origin fix/gps-expo-sdk57
+git checkout -b ci/android-preview-ma001
+# añadir "- fix/gps-expo-sdk57" en .github/workflows/android-preview.yml
+git add .github/workflows/android-preview.yml
+git commit -m "ci: build Android preview for GPS branch"
+git push origin ci/android-preview-ma001
 ```
 
-3. Verificar si GitHub Actions inicia automáticamente la build. El workflow ya incluye esta rama.
-4. Si GitHub no inicia Actions, el token de GitHub no tiene permiso de dispatch manual. La build local sigue siendo válida.
-5. Descargar/copiar la APK final a un directorio estable, por ejemplo:
+3. La build de GitHub no se pudo lanzar desde esta cuenta porque el token no tiene permiso `workflows`; la APK local sí está validada.
+4. Para copiar la APK final a otra máquina:
 
 ```bash
 mkdir -p /home/ubuntu/magina-aventura-artifacts/final
 cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk /home/ubuntu/magina-aventura-artifacts/final/
 ```
 
-6. No marcar MA-001 como ruta publicable todavía. La documentación mantiene estos bloqueos legítimos:
+5. No marcar MA-001 como ruta publicable todavía. La documentación mantiene estos bloqueos legítimos:
    - cierre oficial temporal;
    - validación física pendiente;
    - tres checkpoints sin posición final;

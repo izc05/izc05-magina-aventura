@@ -234,6 +234,27 @@ export default function RouteDetailScreen() {
           </View>
         )}
 
+        {mapPayload ? (
+          <View style={styles.checkpointCard}>
+            <Text style={styles.checkpointEyebrow}>GUION DE LA AVENTURA · MA-001</Text>
+            <Text style={styles.checkpointTitle}>Puntos de la ruta</Text>
+            <Text style={styles.checkpointIntro}>
+              El trazado procede del KML oficial. Los puntos marcados como pendientes necesitan validación de campo antes de activar recompensas GPS.
+            </Text>
+            {mapPayload.checkpoints.map((checkpoint) => (
+              <View key={checkpoint.id} style={styles.checkpointRow}>
+                <View style={[styles.checkpointDot, checkpoint.position ? styles.checkpointDotMapped : styles.checkpointDotPending]} />
+                <View style={styles.checkpointCopy}>
+                  <Text style={styles.checkpointName}>{checkpoint.id} · {checkpoint.name}</Text>
+                  <Text style={styles.checkpointStatus}>
+                    {checkpoint.position ? 'Posición de control en mapa' : 'Posición pendiente de campo'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <Text style={styles.sectionTitle}>Tu aventura</Text>
         <Text style={styles.body}>{(route as any).description ?? ""}</Text>
 
@@ -338,6 +359,17 @@ const styles = StyleSheet.create({
   mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  checkpointCard: { marginHorizontal: spacing[20], marginBottom: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  checkpointEyebrow: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  checkpointTitle: { color: colors.ink, fontSize: 19, fontWeight: '900', marginTop: spacing[8] },
+  checkpointIntro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8], marginBottom: spacing[12] },
+  checkpointRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing[10], paddingVertical: spacing[8], borderTopWidth: 1, borderTopColor: colors.border },
+  checkpointDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
+  checkpointDotMapped: { backgroundColor: colors.olive700 },
+  checkpointDotPending: { backgroundColor: colors.aoveGold },
+  checkpointCopy: { flex: 1 },
+  checkpointName: { color: colors.ink, fontSize: 12, fontWeight: '900' },
+  checkpointStatus: { color: colors.muted, fontSize: 10, marginTop: 2 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

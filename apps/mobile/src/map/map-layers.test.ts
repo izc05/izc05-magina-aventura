@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCheckpointFeatureCollection,
+  buildElevationSegmentFeatureCollection,
   buildHikerPositionFeature,
   buildPOIFeatureCollection,
   sierraMaginaParkBoundaryGeoJSON,
   type DetailedPOI,
 } from './map-layers';
 import { MAP_THEMES, getMapTheme } from './map-theme';
-import type { RouteMapCheckpoint } from '@magina-aventura/contracts';
+import type { GeoJsonPosition, RouteMapCheckpoint } from '@magina-aventura/contracts';
 
 describe('Map Layers & Theme Utilities', () => {
   it('builds checkpoint feature collection with correct properties', () => {
@@ -43,6 +44,56 @@ describe('Map Layers & Theme Utilities', () => {
     const hiker = buildHikerPositionFeature([-3.41, 37.81], 90);
     expect(hiker.features[0]?.properties.heading).toBe(90);
     expect(hiker.features[0]?.geometry.coordinates).toEqual([-3.41, 37.81]);
+  });
+
+  it('segments the verified route geometry by the measured elevation profile', () => {
+    const coordinates: GeoJsonPosition[] = [
+      [-3.4, 37.8],
+      [-3.41, 37.81],
+      [-3.42, 37.82],
+    ];
+    const profile = [
+      { distanceKm: 0, elevationM: 640 },
+      { distanceKm: 1, elevationM: 820 },
+      { distanceKm: 2, elevationM: 1040 },
+    ];
+
+    const collection = buildElevationSegmentFeatureCollection(coordinates, profile);
+
+    expect(collection.type).toBe('FeatureCollection');
+    expect(collection.features).toHaveLength(2);
+    expect(collection.features[0]?.geometry.coordinates).toEqual([coordinates[0], coordinates[1]]);
+    expect(collection.features[0]?.properties.startElevationM).toBe(640);
+    expect(collection.features[1]?.properties.endElevationM).toBe(1040);
+    expect(collection.features[0]?.properties.elevationRatio).toBeLessThan(
+      collection.features[1]!.properties.elevationRatio,
+    );
+  });
+
+  it('uses the middle altitude color stop for a flat measured profile', () => {
+    const coordinates: GeoJsonPosition[] = [[-3.4, 37.8], [-3.41, 37.81]];
+    const profile = [
+      { distanceKm: 0, elevationM: 750 },
+      { distanceKm: 2, elevationM: 750 },
+    ];
+
+    const collection = buildElevationSegmentFeatureCollection(coordinates, profile);
+
+    expect(collection.features).toHaveLength(1);
+    expect(collection.features[0]?.properties.elevationRatio).toBe(0.5);
+  });
+
+  it('omits the altitude overlay when geometry or measured profile is unavailable', () => {
+    const coordinates: GeoJsonPosition[] = [[-3.4, 37.8], [-3.41, 37.81]];
+
+    expect(buildElevationSegmentFeatureCollection(coordinates, [])).toEqual({
+      type: 'FeatureCollection',
+      features: [],
+    });
+    expect(buildElevationSegmentFeatureCollection([coordinates[0]!], [
+      { distanceKm: 0, elevationM: 700 },
+      { distanceKm: 1, elevationM: 800 },
+    ]).features).toHaveLength(0);
   });
 
   it('contains valid Sierra Mágina Natural Park polygon boundary', () => {

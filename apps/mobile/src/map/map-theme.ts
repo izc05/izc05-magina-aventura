@@ -9,6 +9,9 @@ export interface MapThemeConfig {
   trackColor: string;
   trackWidth: number;
   trackGlowColor: string;
+  elevationLowColor: string;
+  elevationMidColor: string;
+  elevationHighColor: string;
   checkpointColor: string;
   checkpointBorderColor: string;
   poiColors: Record<string, string>;
@@ -28,6 +31,9 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
     trackColor: colors.olive700,
     trackWidth: 5,
     trackGlowColor: 'rgba(71, 106, 69, 0.25)',
+    elevationLowColor: '#4A7C59',
+    elevationMidColor: colors.aoveGold,
+    elevationHighColor: '#B85042',
     checkpointColor: colors.aoveGold,
     checkpointBorderColor: colors.white,
     poiColors: {
@@ -53,6 +59,9 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
     trackColor: '#B85042',
     trackWidth: 6,
     trackGlowColor: 'rgba(184, 80, 66, 0.2)',
+    elevationLowColor: '#116466',
+    elevationMidColor: '#E6B84A',
+    elevationHighColor: '#B85042',
     checkpointColor: '#2C3531',
     checkpointBorderColor: '#FFFFFF',
     poiColors: {
@@ -78,6 +87,9 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
     trackColor: '#39FF14',
     trackWidth: 6,
     trackGlowColor: 'rgba(57, 255, 20, 0.4)',
+    elevationLowColor: '#00C97A',
+    elevationMidColor: '#FFD43B',
+    elevationHighColor: '#FF4D7D',
     checkpointColor: '#00F0FF',
     checkpointBorderColor: '#0F172A',
     poiColors: {
@@ -103,6 +115,9 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
     trackColor: '#10B981',
     trackWidth: 5,
     trackGlowColor: 'rgba(16, 185, 129, 0.35)',
+    elevationLowColor: '#10B981',
+    elevationMidColor: '#F59E0B',
+    elevationHighColor: '#F472B6',
     checkpointColor: '#F59E0B',
     checkpointBorderColor: '#090D16',
     poiColors: {

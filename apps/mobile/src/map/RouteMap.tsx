@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Camera, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -6,6 +6,7 @@ import { colors, radius, spacing } from '../theme/tokens';
 import type { RouteMapProps } from './map-types';
 import {
   buildCheckpointFeatureCollection,
+  buildElevationSegmentFeatureCollection,
   buildHikerPositionFeature,
   buildPOIFeatureCollection,
   defaultLayerVisibility,
@@ -58,6 +59,13 @@ export function RouteMap({
         enhancedPayload.hikerHeadingDeg ?? 45,
       )
     : null;
+  const elevationProfile = enhancedPayload?.elevationProfile;
+  const routeCoordinates = payload?.line.geometry.coordinates;
+  const elevationSegments = useMemo(() => {
+    if (!routeCoordinates || !elevationProfile || elevationProfile.length < 2) return null;
+    return buildElevationSegmentFeatureCollection(routeCoordinates, elevationProfile);
+  }, [routeCoordinates, elevationProfile]);
+  const elevationAvailable = Boolean(elevationSegments?.features.length);
 
   function handleToggleLayer(key: keyof MapLayerVisibility) {
     const updated = { ...visibility, [key]: !visibility[key] };
@@ -116,6 +124,42 @@ export function RouteMap({
               paint={{
                 'line-color': theme.trackColor,
                 'line-width': theme.trackWidth,
+                'line-cap': 'round',
+                'line-join': 'round',
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
+
+        {/* Capa 2b: route geometry coloured by measured elevation samples */}
+        {visibility.elevationGrid && elevationSegments?.features.length ? (
+          <GeoJSONSource id="route-elevation-segments" data={elevationSegments as any}>
+            <Layer
+              id="route-elevation-casing"
+              type="line"
+              paint={{
+                'line-color': theme.trackGlowColor,
+                'line-width': theme.trackWidth + 4,
+                'line-cap': 'round',
+                'line-join': 'round',
+              } as any}
+            />
+            <Layer
+              id="route-elevation-line"
+              type="line"
+              paint={{
+                'line-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'elevationRatio'],
+                  0,
+                  theme.elevationLowColor,
+                  0.5,
+                  theme.elevationMidColor,
+                  1,
+                  theme.elevationHighColor,
+                ],
+                'line-width': Math.max(theme.trackWidth - 1, 4),
                 'line-cap': 'round',
                 'line-join': 'round',
               } as any}
@@ -206,10 +250,15 @@ export function RouteMap({
       {showLayerControls ? (
         <LayerControlOverlay
           visibility={visibility}
+          elevationAvailable={elevationAvailable}
           onToggleLayer={handleToggleLayer}
           activeThemeId={activeThemeId}
           onSelectTheme={handleSelectTheme}
         />
+      ) : null}
+
+      {visibility.elevationGrid && elevationAvailable && elevationProfile ? (
+        <ElevationLegend profile={elevationProfile} theme={theme} />
       ) : null}
 
       {developmentMode ? (
@@ -217,6 +266,51 @@ export function RouteMap({
           <Text style={styles.devText}>DESARROLLO · {theme.name.toUpperCase()}</Text>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+function ElevationLegend({
+  profile,
+  theme,
+}: {
+  profile: Array<{ distanceKm: number; elevationM: number }>;
+  theme: ReturnType<typeof getMapTheme>;
+}) {
+  const values = profile
+    .map((point) => point.elevationM)
+    .filter(Number.isFinite);
+  if (values.length < 2) return null;
+
+  const min = Math.round(Math.min(...values));
+  const max = Math.round(Math.max(...values));
+  const mid = Math.round((min + max) / 2);
+  const stops = [
+    { label: 'BAJA', value: min, color: theme.elevationLowColor },
+    { label: 'MEDIA', value: mid, color: theme.elevationMidColor },
+    { label: 'ALTA', value: max, color: theme.elevationHighColor },
+  ];
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Altimetría del recorrido: cotas de ${min} a ${max} metros`}
+      pointerEvents="none"
+      style={[
+        styles.elevationLegend,
+        { backgroundColor: theme.cardBackground, borderColor: colors.border },
+      ]}
+    >
+      <Text style={[styles.elevationLegendTitle, { color: theme.textColor }]}>ALTIMETRÍA DEL RECORRIDO</Text>
+      <View style={styles.elevationLegendStops}>
+        {stops.map((stop) => (
+          <View key={stop.label} style={styles.elevationLegendStop}>
+            <View style={[styles.elevationLegendSwatch, { backgroundColor: stop.color }]} />
+            <Text style={[styles.elevationLegendLabel, { color: theme.textColor }]}>{stop.label}</Text>
+            <Text style={[styles.elevationLegendValue, { color: theme.textColor }]}>{stop.value} m</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -251,4 +345,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
   devText: { color: colors.white, fontSize: 9, fontWeight: '900' },
+  elevationLegend: {
+    position: 'absolute',
+    right: spacing[12],
+    bottom: spacing[12],
+    minWidth: 184,
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[8],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    elevation: 3,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  elevationLegendTitle: { fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  elevationLegendStops: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing[8],
+    marginTop: spacing[4],
+  },
+  elevationLegendStop: { alignItems: 'center', flex: 1 },
+  elevationLegendSwatch: { width: 18, height: 3, borderRadius: 2 },
+  elevationLegendLabel: { fontSize: 8, fontWeight: '800', marginTop: 3 },
+  elevationLegendValue: { fontSize: 8, fontWeight: '700', opacity: 0.72 },
 });

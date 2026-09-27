@@ -16,9 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { onboardingSlides } from '../src/features/onboarding/onboarding-contract';
 import { expoOnboardingStorage } from '../src/features/onboarding/expo-onboarding-storage';
 import { OnboardingSlide } from '../src/features/onboarding/OnboardingSlide';
+import { startupBreadcrumb } from '../src/features/diagnostics/startup-breadcrumbs';
 import { colors, radius, shadow, spacing } from '../src/theme/tokens';
 
 export default function OnboardingScreen() {
+  startupBreadcrumb('onboarding-mounted');
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);

@@ -9,8 +9,10 @@ Este repositorio se desarrolla por gates pequeños, verificables y reversibles.
 3. `docs/game/GAMIFIED_MAP_SPEC.md`
 4. `docs/game/ASSET_PIPELINE.md`
 5. `docs/game/QA_GATES.md`
-6. `docs/superpowers/specs/2026-09-15-magina-aventura-product-design.md`
-7. `docs/superpowers/specs/2026-09-15-maplibre-gpx-offline-design.md`
+6. `docs/game/CLAUDE_CODEX_HANDOFF.md`
+7. `docs/game/MAP_DATA_ATTRIBUTION.md`
+8. `docs/superpowers/specs/2026-09-15-magina-aventura-product-design.md`
+9. `docs/superpowers/specs/2026-09-15-maplibre-gpx-offline-design.md`
 
 ## Reglas no negociables
 

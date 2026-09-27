@@ -180,3 +180,55 @@ Candidatos posteriores:
 - accessibility/reduced motion;
 - performance telemetry;
 - shaders muy ligeros para rare discoveries.
+
+
+## Concrete example files worth studying
+
+These are reference implementations, not files to copy wholesale.
+
+### MapLibre React Native
+- `examples/shared/src/examples/SymbolCircleLayer/SdfIcon.tsx`: SDF icon registration via `Images`.
+- `examples/shared/src/examples/SymbolCircleLayer/CustomIcon.tsx`: custom icon + GeoJSON source.
+- `examples/shared/src/examples/UserLocation/UserLocationForNavigation.tsx`: navigation-style user marker/heading.
+- `docs/content/setup/migrations/v11.md`: current v11 consolidated Layer API and animated-layer changes.
+
+Use these patterns for checkpoint/discovery symbols and player marker.
+
+### React Native Reanimated
+- `docs/docs-reanimated/src/examples/RepeatBasic.tsx`: bounded/repeating pulse pattern.
+- `docs/docs-reanimated/src/examples/SequenceWobble.tsx`: sequence/repeat composition.
+- `docs/docs-reanimated/src/examples/CancelAnimation.tsx`: cancellation/cleanup.
+- `docs/docs-reanimated/src/examples/UseReducedMotion.tsx`: accessibility fallback.
+
+Use these concepts for ObjectivePulse, GameToast and XPBurst. Prefer current API from the Expo-compatible installed version.
+
+### React Native Skia
+- `apps/example/src/Examples/Breathe/Breathe.tsx`: soft radial/blur motion useful as a reference for objective halos.
+- `apps/example/src/Examples/API/UseCanvas.tsx`: Canvas + BlurMask primitives.
+- `apps/example/src/Examples/SpeedTest/SpeedTest.tsx`: performance-oriented example.
+- `packages/skia/src/renderer/__tests__/e2e/LightingImageFilters.spec.tsx`: bounded decorative ember/snow-style particles.
+
+Use the primitives, not the demo identity.
+
+### Can it be done in React Native? (wcandillon)
+- `bonuses/skia-examples/src/Rings/Ring.tsx`: animated circular/ring treatment.
+- `bonuses/skia-examples/src/PathGradient/Neon.tsx`: path-gradient visual technique.
+- `season4/src/Chess/Piece.tsx`: gesture/shared-value pattern.
+
+Useful for learning composition of Skia + Reanimated. The examples target older dependency versions, so port concepts rather than dependency configs.
+
+### React Native Game Engine Handbook
+- `app/table-of-contents/systems.js`: small particle-system pattern.
+- `app/physics/rigid-bodies/systems.js`: system update separation.
+- `app/sensors/accelerometer/systems.js`: sensor -> system processing example.
+
+Use the system/event separation concept only. Do not bring its old Expo stack into production.
+
+## Reuse rule for agents
+
+When adapting a concrete example:
+1. Link the source file in the PR report.
+2. State whether the reuse is API/pattern-only or substantial code adaptation.
+3. If substantial, add a THIRD_PARTY_NOTICES entry.
+4. Rewrite it against current Expo 57/RN 0.86 APIs.
+5. Add Mágina-specific tests instead of relying on the source demo.

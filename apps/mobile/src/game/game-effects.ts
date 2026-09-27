@@ -2,7 +2,7 @@ import type { GameEffectCommand, GameEvent } from './game-events';
 
 function animation(
   preset: Extract<GameEffectCommand, { kind: 'animation' }>['preset'],
-  options: { title?: string; amount?: number } = {},
+  options: { title?: string | undefined; amount?: number | undefined } = {},
 ): GameEffectCommand {
   return {
     kind: 'animation',
@@ -15,7 +15,7 @@ function animation(
 function toast(
   title: string,
   tone: Extract<GameEffectCommand, { kind: 'hud.toast' }>['tone'],
-  subtitle?: string,
+  subtitle?: string | undefined,
 ): GameEffectCommand {
   return {
     kind: 'hud.toast',

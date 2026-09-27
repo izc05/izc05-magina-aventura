@@ -1,5 +1,30 @@
 import type { GameEffectCommand, GameEvent } from './game-events';
 
+function animation(
+  preset: Extract<GameEffectCommand, { kind: 'animation' }>['preset'],
+  options: { title?: string; amount?: number } = {},
+): GameEffectCommand {
+  return {
+    kind: 'animation',
+    preset,
+    ...(options.title !== undefined ? { title: options.title } : {}),
+    ...(options.amount !== undefined ? { amount: options.amount } : {}),
+  };
+}
+
+function toast(
+  title: string,
+  tone: Extract<GameEffectCommand, { kind: 'hud.toast' }>['tone'],
+  subtitle?: string,
+): GameEffectCommand {
+  return {
+    kind: 'hud.toast',
+    title,
+    tone,
+    ...(subtitle !== undefined ? { subtitle } : {}),
+  };
+}
+
 export function effectsForGameEvent(event: GameEvent): GameEffectCommand[] {
   switch (event.type) {
     case 'checkpoint.reached':
@@ -7,26 +32,10 @@ export function effectsForGameEvent(event: GameEvent): GameEffectCommand[] {
         { kind: 'haptic', intensity: 'medium' },
         { kind: 'sound', cue: 'checkpoint' },
         { kind: 'map.pulse', targetId: event.checkpointId, tone: 'checkpoint' },
-        {
-          kind: 'animation',
-          preset: 'checkpoint-reveal',
-          title: event.title,
-          amount: event.xp,
-        },
-        {
-          kind: 'hud.toast',
-          title: 'Checkpoint alcanzado',
-          subtitle: event.title,
-          tone: 'checkpoint',
-        },
-        ...(event.xp
-          ? [
-              {
-                kind: 'animation',
-                preset: 'xp-burst',
-                amount: event.xp,
-              } satisfies GameEffectCommand,
-            ]
+        animation('checkpoint-reveal', { title: event.title, amount: event.xp }),
+        toast('Checkpoint alcanzado', 'checkpoint', event.title),
+        ...(event.xp !== undefined
+          ? [animation('xp-burst', { amount: event.xp })]
           : []),
       ];
 
@@ -35,79 +44,40 @@ export function effectsForGameEvent(event: GameEvent): GameEffectCommand[] {
         { kind: 'haptic', intensity: 'success' },
         { kind: 'sound', cue: 'discovery' },
         { kind: 'map.pulse', targetId: event.discoveryId, tone: 'discovery' },
-        {
-          kind: 'animation',
-          preset: 'discovery-reveal',
-          title: event.title,
-          amount: event.xp,
-        },
-        {
-          kind: 'hud.toast',
-          title: 'Descubrimiento desbloqueado',
-          subtitle: event.title,
-          tone: 'discovery',
-        },
+        animation('discovery-reveal', { title: event.title, amount: event.xp }),
+        toast('Descubrimiento desbloqueado', 'discovery', event.title),
       ];
 
     case 'xp.earned':
       return [
         { kind: 'haptic', intensity: 'light' },
         { kind: 'sound', cue: 'xp' },
-        { kind: 'animation', preset: 'xp-burst', amount: event.amount },
-        {
-          kind: 'hud.toast',
-          title: `+${event.amount} XP`,
-          subtitle: event.reason,
-          tone: 'reward',
-        },
+        animation('xp-burst', { amount: event.amount }),
+        toast(`+${event.amount} XP`, 'reward', event.reason),
       ];
 
     case 'badge.unlocked':
       return [
         { kind: 'haptic', intensity: 'success' },
         { kind: 'sound', cue: 'badge' },
-        { kind: 'animation', preset: 'badge-unlock', title: event.title },
-        {
-          kind: 'hud.toast',
-          title: 'Nueva insignia',
-          subtitle: event.title,
-          tone: 'achievement',
-        },
+        animation('badge-unlock', { title: event.title }),
+        toast('Nueva insignia', 'achievement', event.title),
       ];
 
     case 'level.up':
       return [
         { kind: 'haptic', intensity: 'heavy' },
         { kind: 'sound', cue: 'level-up' },
-        {
-          kind: 'animation',
-          preset: 'level-up',
-          title: event.title ?? `Nivel ${event.level}`,
-        },
-        {
-          kind: 'hud.toast',
-          title: `Nivel ${event.level}`,
-          subtitle: event.title,
-          tone: 'achievement',
-        },
+        animation('level-up', { title: event.title ?? `Nivel ${event.level}` }),
+        toast(`Nivel ${event.level}`, 'achievement', event.title),
       ];
 
     case 'route.completed':
       return [
         { kind: 'haptic', intensity: 'success' },
         { kind: 'sound', cue: 'route-complete' },
-        {
-          kind: 'animation',
-          preset: 'route-complete',
-          title: event.title,
-          amount: event.xp,
-        },
-        {
-          kind: 'hud.toast',
-          title: '¡Aventura completada!',
-          subtitle: event.title,
-          tone: 'achievement',
-        },
+        animation('route-complete', { title: event.title, amount: event.xp }),
+        toast('¡Aventura completada!', 'achievement', event.title),
       ];
   }
 }

@@ -27,3 +27,7 @@ No reinventar motores si existe una librería mantenida y compatible, pero tampo
 - Meter Rive/Skia/Lottie en splash o startup obligatorio.
 - Añadir un framework de estado global solo para FX sin necesidad demostrada.
 - Copiar assets o código sin licencia trazable.
+
+
+## Gate execution
+Use `docs/game/AGENT_START_PROMPTS.md` for implementation/review prompts and follow master tracker issue #54.

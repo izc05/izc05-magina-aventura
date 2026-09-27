@@ -5,7 +5,8 @@ Este repositorio se desarrolla por gates pequeños, verificables y reversibles.
 ## Lectura obligatoria antes de modificar Game/FX/Map
 
 1. `docs/game/MASTER_IMPLEMENTATION_PLAN.md`
-2. `docs/game/THIRD_PARTY_RESEARCH.md`
+2. `docs/game/INTERNAL_REUSE_AUDIT.md`
+3. `docs/game/THIRD_PARTY_RESEARCH.md`
 3. `docs/game/GAMIFIED_MAP_SPEC.md`
 4. `docs/game/ASSET_PIPELINE.md`
 5. `docs/game/QA_GATES.md`

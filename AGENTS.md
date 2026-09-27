@@ -8,6 +8,8 @@ Este repositorio se desarrolla por gates pequeños, verificables y reversibles.
 2. `docs/game/INTERNAL_REUSE_AUDIT.md`
 3. `docs/game/PORTING_MATRIX.md`
 4. `docs/game/LOCATION_GAME_REFERENCES.md`
+5. `docs/game/DEPENDENCY_BASELINE.md`
+6. `docs/game/FX_REUSE_RECIPES.md`
 3. `docs/game/THIRD_PARTY_RESEARCH.md`
 3. `docs/game/GAMIFIED_MAP_SPEC.md`
 4. `docs/game/ASSET_PIPELINE.md`

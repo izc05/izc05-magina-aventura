@@ -232,3 +232,36 @@ When adapting a concrete example:
 3. If substantial, add a THIRD_PARTY_NOTICES entry.
 4. Rewrite it against current Expo 57/RN 0.86 APIs.
 5. Add Mágina-specific tests instead of relying on the source demo.
+
+
+## ECS/game-loop alternatives investigated
+
+### hmans/miniplex
+- TypeScript.
+- MIT.
+- Active in 2026.
+- Clean ECS/entity-query model.
+
+Decision: **do not adopt for V1**. The current GameEvent/GameEffectCommand model is simpler and better matched to route events. Reconsider only if future minigames introduce hundreds/thousands of short-lived entities or complex system queries.
+
+### NateTheGreatt/bitECS
+- TypeScript/data-oriented ECS.
+- Active.
+- MPL-2.0.
+
+Decision: not needed for V1; Miniplex has a simpler licensing/profile if an ECS is later justified.
+
+### ecsyjs/ecsy
+- MIT but archived.
+
+Decision: reject for new production architecture.
+
+### matter-js
+- Active 2D physics engine.
+- MIT.
+
+Decision: keep optional for self-contained 2D minigames only. Never use Matter for GPS/map movement or route progression.
+
+## Architecture checkpoint
+
+Do not add a general-purpose ECS/game loop merely because the product is becoming more playful. The outdoor adventure loop is event-driven and low-entity-count. Adopt a heavier engine only when a measured feature actually needs it.

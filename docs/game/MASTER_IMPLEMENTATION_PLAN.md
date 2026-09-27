@@ -131,6 +131,19 @@ El motor no importa librerías nativas.
 
 ## 6. Gates de implementación
 
+## 6A. Gate 0B — Internal code salvage (mandatory before native FX)
+
+Before Game Kit adds native visual runtimes, execute `docs/game/INTERNAL_REUSE_AUDIT.md`.
+
+Historical branches already contain tested GPS/activity, proximity, geo, XP, levels, badges, challenges, rankings and collections. Do not duplicate those systems.
+
+The intended domain stack becomes:
+
+`Activity Engine (salvaged) -> Progression/Collections (salvaged) -> GameEvent -> GameEffectCommand -> FX runtime`
+
+External Turf is supplemental; it does not replace existing proximity/location-quality logic by default.
+
+
 ### Gate 1 — Pure Game Core
 
 **Objetivo:** event bus/translator puro y testeable.

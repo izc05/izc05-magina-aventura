@@ -217,3 +217,98 @@ Tras interacción manual:
 - Player marker representa precision degraded.
 - Offline conserva iconos y style necesarios.
 - 15 min de simulación GPS no produce crecimiento de memoria evidente.
+
+
+## 16. MapLibre v11 implementation sources to reuse
+
+The current `RouteMap.tsx` already uses the correct v11 direction:
+- unified `Layer`;
+- `paint` with MapLibre Style Spec kebab-case properties;
+- `GeoJSONSource data`;
+- `Camera initialViewState`.
+
+Do not migrate back to old `CircleLayer`/`LineLayer`/`ShapeSource` tutorials.
+
+### A. Pulsing active objective
+
+Upstream source:
+`maplibre/maplibre-react-native/examples/shared/src/components/PulseCircleLayer.tsx`
+
+Pattern:
+- `Animated.GeoJSONSource`;
+- multiple `Animated.Layer type="circle"`;
+- bounded loop;
+- cleanup with `animationLoop.stop()`;
+- animated radius/opacity.
+
+Use for:
+- next checkpoint halo;
+- nearby discovery pulse;
+- temporary map reveal emphasis.
+
+Adapt:
+- IDs must be unique per Map instance/target;
+- colors/timing come from Mágina tokens/rarity;
+- reduced-motion mode gets a static circle;
+- only the active/nearby target pulses, not every marker.
+
+If substantial upstream code is adapted, record it in THIRD_PARTY_NOTICES (MapLibre React Native, MIT).
+
+### B. Route-progress overlay
+
+Upstream source:
+`examples/shared/src/examples/Animations/AnimateCircleAlongLine.tsx`
+
+Pattern:
+- official route remains fixed;
+- progress line is a separate source/layer;
+- current point can be emphasized independently.
+
+Use for:
+- completed route segment;
+- user's current progress;
+- route recap.
+
+Do not slice giant route arrays on every GPS render if avoidable; the production implementation should derive/update at a controlled cadence.
+
+### C. Animated route geometry
+
+Upstream source:
+`examples/shared/src/examples/Animations/AnimatedLength.tsx`
+
+Pattern:
+- `Animated.RouteCoordinatesArray`;
+- `Animated.GeoJSON`;
+- `Animated.GeoJSONSource`;
+- `Animated.Layer`.
+
+Possible use:
+- short route reveal/preview animations;
+- onboarding/detail transition.
+
+Do not run a decorative full-route animation continuously during GPS recording.
+
+### D. SDF game markers
+
+Upstream source:
+`examples/shared/src/examples/SymbolCircleLayer/SdfIcon.tsx`
+
+Pattern:
+- register local asset through `Images`;
+- mark asset as `sdf: true`;
+- `Layer type="symbol"`;
+- style icon color from feature property.
+
+Use for:
+- checkpoint status;
+- discovery category/status;
+- recolorable rarity/state markers;
+- offline icon packs.
+
+Prefer SDF for simple monochrome marker shapes; use local WebP/PNG for richer illustrated badges where recoloring is not needed.
+
+### E. v11 event/API rule
+
+MapLibre v11 event payloads use `event.nativeEvent`, and old examples may use pre-v11 prop names.
+
+Before copying any MapLibre snippet, compare against current v11 repository source or migration docs.

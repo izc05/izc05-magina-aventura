@@ -331,3 +331,36 @@ Reanimated / Haptics / Audio / Lottie / Skia / optional Rive
 ```
 
 The renderer never decides whether a checkpoint was truly reached or a reward was earned.
+
+
+## I. Historical CI evidence
+
+The historical sources are not merely dead experiments.
+
+### `feat/adventure-engine-v2`
+Reviewed Actions history includes multiple successful PR CI runs across the engine/visual/QA work, including:
+- run 35586016730 — success;
+- 35565301096 — success;
+- 35558722291 — success;
+- 35549928486 — success;
+- 35542896096 — success;
+- 35536262336 — success;
+- 35533926537 — success;
+- and earlier successful runs.
+
+There were also failed intermediate runs; treat the final/source commit of each transplant as code to revalidate, not as proof that every commit in branch history was correct.
+
+### `feat/06f-progression-cycle-foundation`
+Reviewed PR CI:
+- run 35060595745 — success;
+- run 35060408672 — success;
+after an earlier failed intermediate run.
+
+### Consequence
+
+Priority order for reuse:
+1. historical pure code with tests + known successful CI;
+2. maintained external dependency/pattern;
+3. new implementation only when neither existing source fits.
+
+All transplanted code still must pass **current** main/Expo-57 CI after adaptation. Historical green CI is evidence, not a waiver.

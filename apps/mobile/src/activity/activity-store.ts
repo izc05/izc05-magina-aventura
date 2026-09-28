@@ -19,6 +19,7 @@ export interface RecoveredActivity {
   snapshot: ActivitySnapshot;
   samplesAfterSnapshot: LocationSample[];
   exploration: ExplorationPersistence;
+  lastConsumedInboxId: number;
 }
 
 export interface ActivityStore {
@@ -33,6 +34,7 @@ export interface ActivityStore {
     samples: LocationSample[],
     snapshot: ActivitySnapshot | null,
     exploration?: ExplorationPersistence,
+    consumedInboxThrough?: number,
   ): Promise<void>;
   loadActiveSession(): Promise<RecoveredActivity | null>;
   updateSession(
@@ -40,6 +42,12 @@ export interface ActivityStore {
     snapshot: ActivitySnapshot,
     exploration?: ExplorationPersistence,
   ): Promise<void>;
+  finishSessionAndQueueSyncBatch(
+    session: ActivitySession,
+    snapshot: ActivitySnapshot,
+    exploration: ExplorationPersistence,
+    batch: ActivitySyncBatch,
+  ): Promise<ActivitySyncBatch>;
   loadTrack(activityId: string): Promise<LocationSample[]>;
   loadExploration(activityId: string): Promise<ExplorationPersistence>;
   queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch>;

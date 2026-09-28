@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { activityRuntime } from '../../../src/activity/activity-runtime';
+import type { LocationPermissionState } from '../../../src/activity/location-provider';
 import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
 import { expoRoutePackagePort } from '../../../src/offline/expo-route-package-port';
@@ -20,23 +22,46 @@ const offlineCopy: Record<PrepareOfflineState, string> = {
   error: 'Error de lectura',
 };
 
+function permissionCopy(
+  permissions: LocationPermissionState | null,
+): [string, string] {
+  if (!permissions) return ['Comprobando…', 'Comprobando…'];
+  if (!permissions.servicesEnabled) return ['GPS desactivado', 'No disponible'];
+
+  return [
+    permissions.foregroundGranted ? 'Activa' : 'Pendiente',
+    permissions.backgroundGranted
+      ? 'Activo'
+      : permissions.foregroundGranted
+        ? 'Solo primer plano'
+        : 'Pendiente',
+  ];
+}
+
 export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
+  const [permissions, setPermissions] = useState<LocationPermissionState | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [requestingPermissions, setRequestingPermissions] = useState(false);
 
   useEffect(() => {
     if (!routeSlug) return;
 
     let active = true;
 
-    async function loadOfflineState() {
+    async function loadReadiness() {
       try {
-        const manifest = await developmentRouteMapRepository.getOfflineManifest(routeSlug);
+        const [permissionState, manifest] = await Promise.all([
+          activityRuntime.getPermissionState(),
+          developmentRouteMapRepository.getOfflineManifest(routeSlug),
+        ]);
 
         if (!active) return;
+        setPermissions(permissionState);
 
         if (!manifest) {
           setOfflineState('unavailable');
@@ -49,11 +74,14 @@ export default function PrepareRouteAdventureScreen() {
           setOfflineState(evaluateOfflinePackage(installed, manifest));
         }
       } catch {
-        if (active) setOfflineState('error');
+        if (active) {
+          setOfflineState('error');
+          setPermissionError('No hemos podido comprobar el estado del GPS.');
+        }
       }
     }
 
-    void loadOfflineState();
+    void loadReadiness();
 
     return () => {
       active = false;
@@ -74,14 +102,48 @@ export default function PrepareRouteAdventureScreen() {
     );
   }
 
-  const readinessRows = [
-    ['Ubicación', 'Pendiente'],
-    ['GPS en segundo plano', 'Pendiente'],
-    ['Ruta offline', offlineCopy[offlineState]],
-    ['Seguridad', 'Revisar'],
-  ] as const;
-
+  const [foregroundCopy, backgroundCopy] = permissionCopy(permissions);
   const offlineReady = offlineState === 'ready';
+
+  async function continueWithGps() {
+    setRequestingPermissions(true);
+    setPermissionError(null);
+
+    try {
+      const nextPermissions = await activityRuntime.requestPermissions();
+      setPermissions(nextPermissions);
+
+      if (!nextPermissions.servicesEnabled) {
+        setPermissionError('Activa la ubicación/GPS del teléfono antes de comenzar.');
+        return;
+      }
+
+      if (!nextPermissions.foregroundGranted) {
+        setPermissionError('Necesitamos permiso de ubicación para registrar la aventura.');
+        return;
+      }
+
+      router.push({
+        pathname: '/adventure/[slug]',
+        params: { slug: route.slug },
+      });
+    } catch (error) {
+      setPermissionError(
+        error instanceof Error
+          ? error.message
+          : 'No se han podido preparar los permisos de ubicación.',
+      );
+    } finally {
+      setRequestingPermissions(false);
+    }
+  }
+
+  const readinessRows = [
+    ['Ubicación', foregroundCopy],
+    ['GPS en segundo plano', backgroundCopy],
+    ['Ruta offline', offlineCopy[offlineState]],
+    ['Seguridad', 'Revisada para QA'],
+  ] as const;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -99,7 +161,8 @@ export default function PrepareRouteAdventureScreen() {
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Comprobaciones previas</Text>
           <Text style={styles.noticeBody}>
-            Esta pantalla separa el estado del paquete offline de los permisos GPS. Ubicación y seguimiento en segundo plano seguirán pendientes hasta el plan específico del motor de actividad.
+            Esta build ya comprueba los permisos reales del teléfono. Puedes continuar con
+            seguimiento solo en primer plano si Android no concede el permiso en segundo plano.
           </Text>
         </View>
 
@@ -126,24 +189,26 @@ export default function PrepareRouteAdventureScreen() {
           <Text style={styles.offlineBody}>
             {offlineReady
               ? 'La versión instalada coincide con la geometría y el contenido publicados para esta ruta.'
-              : offlineState === 'unavailable'
-                ? 'Esta ruta todavía no tiene un paquete cartográfico verificado asociado.'
-                : 'Vuelve a la ficha de la ruta para descargar o actualizar el paquete antes de salir.'}
+              : 'Para esta prueba física el paquete offline no bloquea el GPS. Lo validaremos en un gate separado.'}
           </Text>
         </View>
+
+        {permissionError ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>{permissionError}</Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
         <Pressable
-          style={styles.startButton}
-          onPress={() =>
-            router.push({
-              pathname: '/adventure/[slug]',
-              params: { slug: route.slug },
-            })
-          }
+          style={[styles.startButton, requestingPermissions && styles.startButtonDisabled]}
+          disabled={requestingPermissions}
+          onPress={() => void continueWithGps()}
         >
-          <Text style={styles.startButtonText}>Continuar en modo desarrollo</Text>
+          <Text style={styles.startButtonText}>
+            {requestingPermissions ? 'Preparando GPS…' : 'Activar GPS y comenzar'}
+          </Text>
           <Text style={styles.startArrow}>→</Text>
         </Pressable>
       </View>
@@ -166,13 +231,16 @@ const styles = StyleSheet.create({
   readinessRow: { minHeight: 60, paddingHorizontal: spacing[16], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   readinessDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
   readinessLabel: { color: colors.ink, fontSize: 14, fontWeight: '800' },
-  readinessState: { color: colors.olive700, fontSize: 12, fontWeight: '900' },
+  readinessState: { color: colors.olive700, fontSize: 12, fontWeight: '900', textAlign: 'right', maxWidth: '45%' },
   offlineCard: { marginTop: spacing[24], borderRadius: radius.lg, backgroundColor: colors.olive900, padding: spacing[20] },
   offlineEyebrow: { color: colors.aoveGold, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   offlineTitle: { color: colors.white, fontSize: 19, fontWeight: '900', marginTop: spacing[8] },
   offlineBody: { color: colors.limestone, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
+  errorCard: { marginTop: spacing[16], borderRadius: radius.md, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.aoveGold, padding: spacing[16] },
+  errorText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing[20], backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
   startButton: { minHeight: 58, borderRadius: radius.md, paddingHorizontal: spacing[20], backgroundColor: colors.olive900, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  startButtonDisabled: { opacity: 0.65 },
   startButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   startArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },
   notFound: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },

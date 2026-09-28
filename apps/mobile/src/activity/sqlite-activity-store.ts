@@ -34,6 +34,7 @@ type SessionRow = {
   finished_at: string | null;
   last_processed_sequence: number;
   sync_state: ActivitySession['syncState'];
+  last_consumed_inbox_id: number;
 };
 
 type SnapshotRow = { payload_json: string };
@@ -282,8 +283,14 @@ export class SQLiteActivityStore implements ActivityStore {
     samples: LocationSample[],
     snapshot: ActivitySnapshot | null,
     exploration?: ExplorationPersistence,
+    consumedInboxThrough?: number,
   ): Promise<void> {
-    if (samples.length === 0 && !snapshot && !exploration) return;
+    if (
+      samples.length === 0 &&
+      !snapshot &&
+      !exploration &&
+      consumedInboxThrough === undefined
+    ) return;
 
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
@@ -307,6 +314,21 @@ export class SQLiteActivityStore implements ActivityStore {
           activityId,
           exploration,
           snapshot?.createdAt ?? new Date().toISOString(),
+        );
+      }
+
+      if (consumedInboxThrough !== undefined) {
+        await txn.runAsync(
+          `UPDATE activity_sessions
+           SET last_consumed_inbox_id =
+             CASE
+               WHEN last_consumed_inbox_id < ? THEN ?
+               ELSE last_consumed_inbox_id
+             END
+           WHERE activity_id = ?`,
+          consumedInboxThrough,
+          consumedInboxThrough,
+          activityId,
         );
       }
     });
@@ -365,6 +387,7 @@ export class SQLiteActivityStore implements ActivityStore {
         explorationStateRow,
         explorationObservationRows,
       ),
+      lastConsumedInboxId: sessionRow.last_consumed_inbox_id ?? 0,
     };
   }
 
@@ -384,6 +407,51 @@ export class SQLiteActivityStore implements ActivityStore {
         await writeExploration(txn, session.activityId, exploration, snapshot.createdAt);
       }
     });
+  }
+
+  async finishSessionAndQueueSyncBatch(
+    session: ActivitySession,
+    snapshot: ActivitySnapshot,
+    exploration: ExplorationPersistence,
+    batch: ActivitySyncBatch,
+  ): Promise<ActivitySyncBatch> {
+    const db = await this.database();
+
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      await writeSession(txn, {
+        ...session,
+        lastProcessedSequence: snapshot.lastProcessedSequence,
+        syncState: 'queued',
+      });
+      await writeSnapshot(txn, snapshot);
+      await writeExploration(txn, session.activityId, exploration, snapshot.createdAt);
+
+      await txn.runAsync(
+        `INSERT OR IGNORE INTO activity_sync_batches (
+          batch_id, activity_id, sequence_start, sequence_end, idempotency_key,
+          payload_json, state, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)`,
+        batch.batchId,
+        batch.activityId,
+        batch.sequenceStart,
+        batch.sequenceEnd,
+        batch.idempotencyKey,
+        JSON.stringify(batch),
+        batch.createdAt,
+      );
+    });
+
+    const row = await db.getFirstAsync<SyncBatchRow>(
+      `SELECT payload_json
+       FROM activity_sync_batches
+       WHERE idempotency_key = ?`,
+      batch.idempotencyKey,
+    );
+    if (!row) {
+      throw new Error('Unable to persist finished activity sync batch');
+    }
+
+    return syncBatchFromRow(row);
   }
 
   async loadTrack(activityId: string): Promise<LocationSample[]> {

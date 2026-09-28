@@ -1,6 +1,7 @@
 import { ACTIVITY_CORE_MIGRATION } from './001-activity-core';
 import { EXPLORATION_MIGRATION } from './002-exploration';
 import { ADVENTURE_BINDING_MIGRATION } from './003-adventure-binding';
+import { DURABILITY_CURSOR_MIGRATION } from './004-durability-cursor';
 
 export interface SQLiteMigrationDatabase {
   execAsync(source: string): Promise<void>;
@@ -25,6 +26,7 @@ export const ACTIVITY_MIGRATIONS: readonly SQLiteMigration[] = [
   { version: 1, name: 'activity-core', sql: ACTIVITY_CORE_MIGRATION },
   { version: 2, name: 'exploration', sql: EXPLORATION_MIGRATION },
   { version: 3, name: 'adventure-binding', sql: ADVENTURE_BINDING_MIGRATION },
+  { version: 4, name: 'durability-cursor', sql: DURABILITY_CURSOR_MIGRATION },
 ];
 
 export const ACTIVITY_SCHEMA_VERSION = ACTIVITY_MIGRATIONS.at(-1)?.version ?? 0;

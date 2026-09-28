@@ -1,5 +1,4 @@
 import type { ActivityEngineState } from '@magina-aventura/activity-engine';
-import { distanceMeters } from '@magina-aventura/geo';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -36,6 +35,22 @@ function errorCopy(error: unknown): string {
   return 'No se ha podido iniciar el seguimiento GPS.';
 }
 
+function distanceBetweenMeters(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+): number {
+  const radius = 6_371_008.8;
+  const radians = (value: number) => (value * Math.PI) / 180;
+  const lat1 = radians(a.latitude);
+  const lat2 = radians(b.latitude);
+  const deltaLat = radians(b.latitude - a.latitude);
+  const deltaLon = radians(b.longitude - a.longitude);
+  const h =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+  return 2 * radius * Math.asin(Math.sqrt(h));
+}
+
 export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
@@ -49,7 +64,8 @@ export default function ActiveAdventureScreen() {
   const [busyAction, setBusyAction] = useState(false);
 
   useEffect(() => {
-    if (!route || !routeSlug) return;
+    const currentRoute = route;
+    if (!currentRoute || !routeSlug) return;
 
     let active = true;
     let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -68,11 +84,11 @@ export default function ActiveAdventureScreen() {
         const enhancedPayload = payload as EnhancedRoutePayload;
         setMapPayload(enhancedPayload);
 
-        const definition = createDevelopmentAdventureDefinition(route, enhancedPayload);
+        const definition = createDevelopmentAdventureDefinition(currentRoute, enhancedPayload);
         const line = enhancedPayload.line.geometry.coordinates;
 
-        const recovered = await activityRuntime.recover(definition, route, line);
-        const state = recovered ?? await activityRuntime.start(definition, route, line);
+        const recovered = await activityRuntime.recover(definition, currentRoute, line);
+        const state = recovered ?? await activityRuntime.start(definition, currentRoute, line);
 
         if (!active) return;
         setActivityState(state);
@@ -127,7 +143,7 @@ export default function ActiveAdventureScreen() {
   const objectiveDistance =
     nextPoi && lastSample
       ? Math.round(
-          distanceMeters(
+          distanceBetweenMeters(
             {
               latitude: lastSample.latitude,
               longitude: lastSample.longitude,
@@ -168,7 +184,7 @@ export default function ActiveAdventureScreen() {
       setActivityState(finished);
       router.replace({
         pathname: '/adventure/[slug]/summary',
-        params: { slug: route.slug },
+        params: { slug: routeSlug },
       });
     } catch (error) {
       setRuntimeError(errorCopy(error));

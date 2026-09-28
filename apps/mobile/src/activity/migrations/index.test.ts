@@ -55,18 +55,19 @@ describe('activity SQLite migration runner', () => {
     );
 
     expect(version).toBe(ACTIVITY_SCHEMA_VERSION);
-    expect([...database.applied]).toEqual([1, 2, 3]);
+    expect([...database.applied]).toEqual([1, 2, 3, 4]);
     expect(database.executed.join('\n')).toContain('activity_exploration_state');
     expect(database.executed.join('\n')).toContain('ADD COLUMN adventure_slug');
+    expect(database.executed.join('\n')).toContain('last_consumed_inbox_id');
     expect(database.executed.join('\n')).not.toMatch(/DROP\s+TABLE/i);
   });
 
   it('is idempotent after all migration records have been applied', async () => {
-    const database = new MigrationDatabase([1, 2, 3]);
+    const database = new MigrationDatabase([1, 2, 3, 4]);
 
     await runActivityMigrations(database);
 
-    expect(await activitySchemaVersion(database)).toBe(3);
+    expect(await activitySchemaVersion(database)).toBe(4);
     expect(database.executed.filter((source) => source.includes('ALTER TABLE'))).toHaveLength(0);
     expect(database.executed.filter((source) => source.includes('activity_exploration_state'))).toHaveLength(0);
   });

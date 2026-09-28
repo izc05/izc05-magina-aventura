@@ -125,7 +125,7 @@ export default function PrepareRouteAdventureScreen() {
 
       router.push({
         pathname: '/adventure/[slug]',
-        params: { slug: route.slug },
+        params: { slug: routeSlug },
       });
     } catch (error) {
       setPermissionError(

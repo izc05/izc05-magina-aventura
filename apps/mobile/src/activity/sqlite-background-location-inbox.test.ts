@@ -88,10 +88,13 @@ describe('SQLiteBackgroundLocationInbox', () => {
     ]);
 
     const inbox = new SQLiteBackgroundLocationInbox('test-background-inbox.db');
-    const pending = await inbox.loadPending('activity-1');
+    const pending = await inbox.loadPending('activity-1', 3);
     await inbox.acknowledgeThrough('activity-1', 4);
 
     expect(pending.map((item) => item.inboxId)).toEqual([4, 5]);
+    const getAllCalls = mocks.getAllAsync.mock.calls as unknown[][];
+    expect(String(getAllCalls[0]?.[0] ?? '')).toContain('inbox_id > ?');
+    expect(getAllCalls[0]?.slice(1)).toEqual(['activity-1', 3]);
     expect(pending[1]?.point.altitudeMeters).toBeNull();
 
     const runCalls = mocks.runAsync.mock.calls as unknown[][];

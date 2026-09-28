@@ -13,6 +13,8 @@ jobs:
   build-qa-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_QA_BYPASS_AUTH: '1'
 
     steps:
       - name: Checkout
@@ -106,6 +108,7 @@ jobs:
             echo "apk_bytes=$apk_bytes"
             echo "apk_mib=$apk_mib"
             echo "abi=arm64-v8a"
+            echo "qa_bypass_auth=1"
             echo "expo_sdk=57"
             echo "react_native=0.86.2"
             echo "expo_location=57.0.20"

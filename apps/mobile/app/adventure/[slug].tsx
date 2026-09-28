@@ -64,8 +64,8 @@ export default function ActiveAdventureScreen() {
   const [busyAction, setBusyAction] = useState(false);
 
   useEffect(() => {
+    if (!route || !routeSlug) return;
     const currentRoute = route;
-    if (!currentRoute || !routeSlug) return;
 
     let active = true;
     let refreshTimer: ReturnType<typeof setInterval> | null = null;

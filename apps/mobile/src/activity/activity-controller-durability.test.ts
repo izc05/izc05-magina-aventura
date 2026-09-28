@@ -231,7 +231,7 @@ describe('ActivityController durability boundaries', () => {
 
     expect(database.sessions.get('activity-atomic-finish')?.state).toBe('FINISHED');
     expect(database.sessions.get('activity-atomic-finish')?.syncState).toBe('queued');
-    expect(database.syncBatches).toHaveLength(1);
+    expect(database.syncBatches.size).toBe(1);
     expect(
       [...database.syncBatches.values()][0]?.idempotencyKey,
     ).toBe('activity:activity-atomic-finish:track:1-2');

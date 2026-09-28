@@ -99,15 +99,19 @@ export class SQLiteBackgroundLocationInbox implements BackgroundLocationInbox {
     });
   }
 
-  async loadPending(activityId: string): Promise<PendingBackgroundLocation[]> {
+  async loadPending(
+    activityId: string,
+    afterInboxId = 0,
+  ): Promise<PendingBackgroundLocation[]> {
     const db = await this.database();
     const rows = await db.getAllAsync<InboxRow>(
       `SELECT inbox_id, timestamp_ms, latitude, longitude, accuracy_m,
               altitude_m, speed_mps, heading_deg
        FROM activity_background_location_inbox
-       WHERE activity_id = ?
+       WHERE activity_id = ? AND inbox_id > ?
        ORDER BY inbox_id ASC`,
       activityId,
+      afterInboxId,
     );
 
     return rows.map(rowToPending);

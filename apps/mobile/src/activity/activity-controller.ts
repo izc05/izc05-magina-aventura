@@ -20,7 +20,7 @@ import type {
   ExplorationPersistence,
   RecoveredActivity,
 } from './activity-store';
-import { createActivitySyncQueue } from './activity-sync-queue';
+import { createActivitySyncBatch } from './activity-sync-queue';
 import type {
   BackgroundLocationInbox,
   BackgroundLocationPoint,
@@ -128,10 +128,8 @@ export function createActivityController(dependencies: ActivityControllerDepende
   let routeLine: readonly GeoJsonPosition[] = [];
   let explorationConfig: ReturnType<typeof explorationConfigFromAdventureDefinition> | null = null;
   let initialized = false;
-  const syncQueue = createActivitySyncQueue({
-    store: dependencies.store,
-    now: dependencies.now,
-  });
+  let lastConsumedInboxId = 0;
+  let refreshInFlight: Promise<ActivityEngineState | null> | null = null;
 
   function applyExploration(
     state: ActivityEngineState,
@@ -176,19 +174,23 @@ export function createActivityController(dependencies: ActivityControllerDepende
     });
   }
 
-  async function refresh(): Promise<ActivityEngineState | null> {
+  async function refreshInternal(): Promise<ActivityEngineState | null> {
     await initializeStores();
     if (!engineState) return null;
 
     const activityId = engineState.session.activityId;
-    const pending = await dependencies.inbox.loadPending(activityId);
+    const pending = await dependencies.inbox.loadPending(
+      activityId,
+      lastConsumedInboxId,
+    );
     if (pending.length === 0) return engineState;
 
+    let nextState = engineState;
     const samples = [];
     let snapshotToPersist = null;
 
     for (const item of pending) {
-      const sequence = engineState.session.lastProcessedSequence + 1;
+      const sequence = nextState.session.lastProcessedSequence + 1;
       const sample = normalizeLocationSample(
         {
           sequence,
@@ -200,34 +202,51 @@ export function createActivityController(dependencies: ActivityControllerDepende
           speedMps: item.point.speedMps,
           headingDegrees: item.point.headingDegrees,
         },
-        engineState.snapshot.lastValidSample,
+        nextState.snapshot.lastValidSample,
       );
 
-      engineState = reduceActivity(
-        engineState,
+      nextState = reduceActivity(
+        nextState,
         { type: 'LOCATION', sample },
         routeLine,
       );
-      engineState = applyExploration(engineState, sample);
+      nextState = applyExploration(nextState, sample);
       samples.push(sample);
 
-      if (engineState.shouldPersistSnapshot) {
-        snapshotToPersist = engineState.snapshot;
+      if (nextState.shouldPersistSnapshot) {
+        snapshotToPersist = nextState.snapshot;
       }
     }
+
+    const consumedThrough = pending[pending.length - 1]!.inboxId;
 
     await dependencies.store.appendBatch(
       activityId,
       samples,
       snapshotToPersist,
-      explorationFromEngine(engineState),
-    );
-    await dependencies.inbox.acknowledgeThrough(
-      activityId,
-      pending[pending.length - 1]!.inboxId,
+      explorationFromEngine(nextState),
+      consumedThrough,
     );
 
+    engineState = nextState;
+    lastConsumedInboxId = consumedThrough;
+
+    try {
+      await dependencies.inbox.acknowledgeThrough(activityId, consumedThrough);
+    } catch {
+      // Cleanup is best-effort. The durable cursor is the exactly-once boundary.
+    }
+
     return engineState;
+  }
+
+  function refresh(): Promise<ActivityEngineState | null> {
+    if (refreshInFlight) return refreshInFlight;
+
+    refreshInFlight = refreshInternal().finally(() => {
+      refreshInFlight = null;
+    });
+    return refreshInFlight;
   }
 
   return {
@@ -251,6 +270,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
       ensureReadyForAdventure(permissions);
 
       routeLine = line;
+      lastConsumedInboxId = 0;
       const at = dependencies.now();
       const session: ActivitySession = {
         activityId: dependencies.createActivityId(),
@@ -267,7 +287,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
         syncState: 'local',
       };
 
-      engineState = reduceActivity(
+      const startedState = reduceActivity(
         {
           ...createInitialEngineState(session, at),
           exploration: createExplorationState(),
@@ -278,29 +298,30 @@ export function createActivityController(dependencies: ActivityControllerDepende
       );
 
       await dependencies.store.createSession(
-        engineState.session,
-        engineState.snapshot,
-        explorationFromEngine(engineState),
+        startedState.session,
+        startedState.snapshot,
+        explorationFromEngine(startedState),
       );
+      engineState = startedState;
 
       try {
-        await startLocation(engineState.session.activityId);
+        await startLocation(startedState.session.activityId);
       } catch (error) {
-        const pausedAt = dependencies.now();
-        engineState = reduceActivity(
-          engineState,
-          { type: 'PAUSE', at: pausedAt },
+        const pausedState = reduceActivity(
+          startedState,
+          { type: 'PAUSE', at: dependencies.now() },
           routeLine,
         );
         await dependencies.store.updateSession(
-          engineState.session,
-          engineState.snapshot,
-          explorationFromEngine(engineState),
+          pausedState.session,
+          pausedState.snapshot,
+          explorationFromEngine(pausedState),
         );
+        engineState = pausedState;
         throw error;
       }
 
-      return engineState;
+      return startedState;
     },
 
     async recover(
@@ -313,6 +334,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
       const recovered = await dependencies.store.loadActiveSession();
       if (!recovered || recovered.session.routeId !== route.id) {
         engineState = null;
+        lastConsumedInboxId = 0;
         return null;
       }
 
@@ -322,7 +344,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
         route,
       );
       explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
+      lastConsumedInboxId = recovered.lastConsumedInboxId;
       engineState = rehydrateEngineState(recovered, routeLine, applyExploration);
+
       if (engineState.session.state === 'ACTIVE') {
         await startLocation(engineState.session.activityId);
       }
@@ -336,79 +360,99 @@ export function createActivityController(dependencies: ActivityControllerDepende
       const current = await refresh();
       if (!current) throw new Error('No active adventure');
 
-      engineState = reduceActivity(
+      const pausedState = reduceActivity(
         current,
         { type: 'PAUSE', at: dependencies.now() },
         routeLine,
       );
       await dependencies.store.updateSession(
-        engineState.session,
-        engineState.snapshot,
-        explorationFromEngine(engineState),
+        pausedState.session,
+        pausedState.snapshot,
+        explorationFromEngine(pausedState),
       );
+      engineState = pausedState;
       await dependencies.locationProvider.stop();
-      return engineState;
+      return pausedState;
     },
 
     async resume(): Promise<ActivityEngineState> {
       if (!engineState) throw new Error('No paused adventure');
 
-      engineState = reduceActivity(
+      const resumedState = reduceActivity(
         engineState,
         { type: 'RESUME', at: dependencies.now() },
         routeLine,
       );
       await dependencies.store.updateSession(
-        engineState.session,
-        engineState.snapshot,
-        explorationFromEngine(engineState),
+        resumedState.session,
+        resumedState.snapshot,
+        explorationFromEngine(resumedState),
       );
+      engineState = resumedState;
 
       try {
-        await startLocation(engineState.session.activityId);
+        await startLocation(resumedState.session.activityId);
       } catch (error) {
-        engineState = reduceActivity(
-          engineState,
+        const pausedState = reduceActivity(
+          resumedState,
           { type: 'PAUSE', at: dependencies.now() },
           routeLine,
         );
         await dependencies.store.updateSession(
-          engineState.session,
-          engineState.snapshot,
-          explorationFromEngine(engineState),
+          pausedState.session,
+          pausedState.snapshot,
+          explorationFromEngine(pausedState),
         );
+        engineState = pausedState;
         throw error;
       }
 
-      return engineState;
+      return resumedState;
     },
 
     async finish(): Promise<ActivityEngineState> {
       const current = await refresh();
       if (!current) throw new Error('No active adventure');
 
-      engineState = reduceActivity(
+      const finishedState = reduceActivity(
         current,
         { type: 'FINISH', at: dependencies.now() },
         routeLine,
       );
-      await dependencies.store.updateSession(
-        engineState.session,
-        engineState.snapshot,
-        explorationFromEngine(engineState),
+      const track = await dependencies.store.loadTrack(
+        finishedState.session.activityId,
       );
-      await dependencies.locationProvider.stop();
 
-      const track = await dependencies.store.loadTrack(engineState.session.activityId);
       if (track.length > 0) {
-        await syncQueue.enqueue(
-          engineState.session.activityId,
+        const batch = createActivitySyncBatch(
+          finishedState.session.activityId,
           track,
-          engineState.snapshot,
+          finishedState.snapshot,
+          dependencies.now(),
+        );
+        await dependencies.store.finishSessionAndQueueSyncBatch(
+          finishedState.session,
+          finishedState.snapshot,
+          explorationFromEngine(finishedState),
+          batch,
+        );
+      } else {
+        await dependencies.store.updateSession(
+          finishedState.session,
+          finishedState.snapshot,
+          explorationFromEngine(finishedState),
         );
       }
 
-      return engineState;
+      engineState = finishedState;
+
+      try {
+        await dependencies.locationProvider.stop();
+      } catch {
+        // The durable FINISHED/outbox state wins. Native cleanup is retried on reopen.
+      }
+
+      return finishedState;
     },
 
     async loadTrack() {

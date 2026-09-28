@@ -9,8 +9,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => {
   const execAsync = vi.fn(async () => undefined);
   const runAsync = vi.fn(async () => ({ changes: 1, lastInsertRowId: 1 }));
-  const getFirstAsync = vi.fn(async () => null as unknown);
-  const getAllAsync = vi.fn(async () => [] as unknown[]);
+  const getFirstAsync = vi.fn(async (..._args: unknown[]) => null as unknown);
+  const getAllAsync = vi.fn(async (..._args: unknown[]) => [] as unknown[]);
   const database = {
     execAsync,
     runAsync,

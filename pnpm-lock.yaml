@@ -10,6 +10,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@magina-aventura/activity-engine':
+        specifier: workspace:*
+        version: link:../../packages/activity-engine
       '@magina-aventura/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

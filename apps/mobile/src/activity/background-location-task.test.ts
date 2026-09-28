@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   defineTask: vi.fn(),
@@ -23,6 +23,10 @@ vi.mock('./sqlite-background-location-inbox', () => ({
 
 import { ACTIVITY_LOCATION_TASK } from './expo-location-adapter';
 import './background-location-task';
+
+beforeEach(() => {
+  mocks.handleBackgroundLocations.mockClear();
+});
 
 describe('background location task registration', () => {
   it('registers the activity task at module load in global scope', () => {

@@ -20,6 +20,7 @@ export interface MemoryActivityStoreDatabase {
   samples: Map<string, Map<number, LocationSample>>;
   snapshots: Map<string, Map<number, ActivitySnapshot>>;
   explorations: Map<string, ExplorationPersistence>;
+  lastConsumedInboxIds: Map<string, number>;
   syncBatches: Map<string, ActivitySyncBatch>;
   syncedBatchIds: Set<string>;
 }
@@ -30,6 +31,7 @@ export function createMemoryActivityStoreDatabase(): MemoryActivityStoreDatabase
     samples: new Map(),
     snapshots: new Map(),
     explorations: new Map(),
+    lastConsumedInboxIds: new Map(),
     syncBatches: new Map(),
     syncedBatchIds: new Set(),
   };
@@ -143,6 +145,7 @@ export class MemoryActivityStore implements ActivityStore {
       cloneSnapshot(snapshot),
     );
     this.database.explorations.set(session.activityId, cloneExploration(exploration));
+    this.database.lastConsumedInboxIds.set(session.activityId, 0);
   }
 
   async appendBatch(
@@ -150,6 +153,7 @@ export class MemoryActivityStore implements ActivityStore {
     samples: LocationSample[],
     snapshot: ActivitySnapshot | null,
     exploration?: ExplorationPersistence,
+    consumedInboxThrough?: number,
   ): Promise<void> {
     const sampleMap = ensureSampleMap(this.database, activityId);
 
@@ -176,6 +180,14 @@ export class MemoryActivityStore implements ActivityStore {
     if (exploration) {
       this.database.explorations.set(activityId, cloneExploration(exploration));
     }
+
+    if (consumedInboxThrough !== undefined) {
+      const current = this.database.lastConsumedInboxIds.get(activityId) ?? 0;
+      this.database.lastConsumedInboxIds.set(
+        activityId,
+        Math.max(current, consumedInboxThrough),
+      );
+    }
   }
 
   async loadActiveSession(): Promise<RecoveredActivity | null> {
@@ -200,6 +212,8 @@ export class MemoryActivityStore implements ActivityStore {
       snapshot,
       samplesAfterSnapshot,
       exploration: await this.loadExploration(activeSession.activityId),
+      lastConsumedInboxId:
+        this.database.lastConsumedInboxIds.get(activeSession.activityId) ?? 0,
     };
   }
 
@@ -219,6 +233,41 @@ export class MemoryActivityStore implements ActivityStore {
     if (exploration) {
       this.database.explorations.set(session.activityId, cloneExploration(exploration));
     }
+  }
+
+  async finishSessionAndQueueSyncBatch(
+    session: ActivitySession,
+    snapshot: ActivitySnapshot,
+    exploration: ExplorationPersistence,
+    batch: ActivitySyncBatch,
+  ): Promise<ActivitySyncBatch> {
+    const existing = [...this.database.syncBatches.values()].find(
+      (item) => item.idempotencyKey === batch.idempotencyKey,
+    );
+
+    this.database.sessions.set(session.activityId, {
+      ...cloneSession(session),
+      lastProcessedSequence: snapshot.lastProcessedSequence,
+      syncState: 'queued',
+    });
+    ensureSnapshotMap(this.database, session.activityId).set(
+      snapshot.lastProcessedSequence,
+      cloneSnapshot(snapshot),
+    );
+    this.database.explorations.set(
+      session.activityId,
+      cloneExploration(exploration),
+    );
+
+    if (existing) return cloneBatch(existing);
+
+    const queued = {
+      ...batch,
+      snapshot: batch.snapshot ? cloneSnapshot(batch.snapshot) : null,
+      samples: batch.samples.map(cloneSample),
+    };
+    this.database.syncBatches.set(batch.batchId, queued);
+    return cloneBatch(queued);
   }
 
   async loadTrack(activityId: string): Promise<LocationSample[]> {

@@ -16,7 +16,10 @@ export interface PendingBackgroundLocation {
 export interface BackgroundLocationInbox {
   initialize(): Promise<void>;
   append(activityId: string, points: BackgroundLocationPoint[]): Promise<void>;
-  loadPending(activityId: string): Promise<PendingBackgroundLocation[]>;
+  loadPending(
+    activityId: string,
+    afterInboxId?: number,
+  ): Promise<PendingBackgroundLocation[]>;
   acknowledgeThrough(activityId: string, inboxId: number): Promise<void>;
 }
 
@@ -70,8 +73,12 @@ export class MemoryBackgroundLocationInbox implements BackgroundLocationInbox {
     this.database.records.set(activityId, records);
   }
 
-  async loadPending(activityId: string): Promise<PendingBackgroundLocation[]> {
+  async loadPending(
+    activityId: string,
+    afterInboxId = 0,
+  ): Promise<PendingBackgroundLocation[]> {
     return (this.database.records.get(activityId) ?? [])
+      .filter((record) => record.inboxId > afterInboxId)
       .slice()
       .sort((left, right) => left.inboxId - right.inboxId)
       .map((record) => ({

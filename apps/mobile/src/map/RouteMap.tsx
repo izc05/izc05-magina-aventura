@@ -36,6 +36,8 @@ export function RouteMap({
 
   const theme = getMapTheme(activeThemeId);
   const enhancedPayload = payload as EnhancedRoutePayload | null;
+  const resolvedMapStyle =
+    mapStyle ?? 'https://demotiles.maplibre.org/style.json';
 
   const initialViewState = payload
     ? {
@@ -72,7 +74,7 @@ export function RouteMap({
 
   return (
     <View style={[styles.container, { height, backgroundColor: theme.backgroundColor }]}>
-      <Map style={styles.map} mapStyle={mapStyle as any}>
+      <Map style={styles.map} mapStyle={resolvedMapStyle as any}>
         <Camera initialViewState={initialViewState as any} />
 
         {/* Capa 1: Parque Natural Sierra Mágina Boundary */}

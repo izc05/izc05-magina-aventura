@@ -11,6 +11,35 @@ export interface ActivitySyncQueueDependencies {
   now(): string;
 }
 
+export function createActivitySyncBatch(
+  activityId: string,
+  samples: readonly LocationSample[],
+  snapshot: ActivitySnapshot | null,
+  createdAt: string,
+): ActivitySyncBatch {
+  if (samples.length === 0) {
+    throw new Error('Cannot queue an empty activity track batch');
+  }
+
+  const sortedSamples = [...samples].sort(
+    (left, right) => left.sequence - right.sequence,
+  );
+  const sequenceStart = sortedSamples[0]!.sequence;
+  const sequenceEnd = sortedSamples[sortedSamples.length - 1]!.sequence;
+  const idempotencyKey = `activity:${activityId}:track:${sequenceStart}-${sequenceEnd}`;
+
+  return {
+    batchId: idempotencyKey,
+    activityId,
+    sequenceStart,
+    sequenceEnd,
+    idempotencyKey,
+    samples: sortedSamples,
+    snapshot,
+    createdAt,
+  };
+}
+
 export function createActivitySyncQueue(dependencies: ActivitySyncQueueDependencies) {
   return {
     async enqueue(
@@ -18,27 +47,12 @@ export function createActivitySyncQueue(dependencies: ActivitySyncQueueDependenc
       samples: readonly LocationSample[],
       snapshot: ActivitySnapshot | null,
     ): Promise<ActivitySyncBatch> {
-      if (samples.length === 0) {
-        throw new Error('Cannot queue an empty activity track batch');
-      }
-
-      const sortedSamples = [...samples].sort(
-        (left, right) => left.sequence - right.sequence,
-      );
-      const sequenceStart = sortedSamples[0]!.sequence;
-      const sequenceEnd = sortedSamples[sortedSamples.length - 1]!.sequence;
-      const idempotencyKey = `activity:${activityId}:track:${sequenceStart}-${sequenceEnd}`;
-      const batch: ActivitySyncBatch = {
-        batchId: idempotencyKey,
+      const batch = createActivitySyncBatch(
         activityId,
-        sequenceStart,
-        sequenceEnd,
-        idempotencyKey,
-        samples: sortedSamples,
+        samples,
         snapshot,
-        createdAt: dependencies.now(),
-      };
-
+        dependencies.now(),
+      );
       return dependencies.store.queueSyncBatch(batch);
     },
 

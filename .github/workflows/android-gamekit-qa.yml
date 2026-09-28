@@ -1,9 +1,9 @@
-name: Android Game Kit QA APK
+name: Android Game Kit QA Guest APK
 
 on:
   push:
     branches:
-      - feat/game-00e-android-physical-gate
+      - qa/game00e-guest-mode
   workflow_dispatch:
 
 permissions:
@@ -13,6 +13,8 @@ jobs:
   build-qa-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_QA_GUEST: '1'
 
     steps:
       - name: Checkout
@@ -106,6 +108,7 @@ jobs:
             echo "apk_bytes=$apk_bytes"
             echo "apk_mib=$apk_mib"
             echo "abi=arm64-v8a"
+            echo "qa_guest=true"
             echo "expo_sdk=57"
             echo "react_native=0.86.2"
             echo "expo_location=57.0.20"
@@ -115,10 +118,10 @@ jobs:
 
           cat "$META"
 
-      - name: Upload Android physical-QA bundle
+      - name: Upload Android QA guest bundle
         uses: actions/upload-artifact@v4
         with:
-          name: magina-aventura-gamekit-arm64-${{ github.run_number }}
+          name: magina-aventura-gamekit-guest-arm64-${{ github.run_number }}
           path: |
             apps/mobile/android/app/build/outputs/apk/release/app-release.apk
             apps/mobile/android/app/src/main/AndroidManifest.xml

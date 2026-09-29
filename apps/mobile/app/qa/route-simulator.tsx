@@ -9,6 +9,9 @@ import {
   jumpToCheckpoint,
   ManualQaStepSource,
   route01CuadrosContent,
+  route01LasVinasBounds,
+  route01LasVinasCoordinates,
+  route01LasVinasStart,
   routeLengthMeters,
   scaleAdventureCheckpointsToGeometry,
   snapshot,
@@ -16,7 +19,6 @@ import {
   type SimulatorState,
 } from '@magina-aventura/route-simulator';
 
-import { mockRoutePayload } from '../../src/features/routes/development-route-map-repository';
 import type { EnhancedRoutePayload } from '../../src/map/map-layers';
 import { RouteMap } from '../../src/map/RouteMap';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
@@ -25,7 +27,7 @@ const enabled =
   __DEV__ || process.env.EXPO_PUBLIC_ENABLE_QA_ROUTE_SIMULATOR === '1';
 
 const geometry: RouteGeometry = {
-  coordinates: mockRoutePayload.line.geometry.coordinates,
+  coordinates: route01LasVinasCoordinates,
 };
 
 function km(value: number): string {
@@ -71,12 +73,31 @@ export default function QaRouteSimulatorScreen() {
 
   const mapPayload: EnhancedRoutePayload = useMemo(
     () => ({
-      ...mockRoutePayload,
+      routeId: route01CuadrosContent.routeId,
+      slug: 'las-vinas-route-01-qa',
+      geometryVersion: 1,
+      start: route01LasVinasStart,
+      bounds: [...route01LasVinasBounds],
+      line: {
+        type: 'Feature',
+        properties: {
+          routeId: route01CuadrosContent.routeId,
+          geometryVersion: 1,
+          source: 'Junta de Andalucía',
+          qaSimulated: true,
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [...route01LasVinasCoordinates],
+        },
+      },
       checkpoints: qaMapCheckpoints,
       discoveryHints: [],
       pois: [],
+      elevationProfile: [],
       hikerPosition: state.position,
       hikerHeadingDeg: 45,
+      mapAsset: null,
     }),
     [qaMapCheckpoints, state.position],
   );
@@ -138,9 +159,9 @@ export default function QaRouteSimulatorScreen() {
         <Text style={styles.eyebrow}>ROUTE-01 · QA ROUTE SIMULATOR</Text>
         <Text style={styles.title}>{route01CuadrosContent.title}</Text>
         <Text style={styles.body}>
-          El mapa usa geometría provisional de desarrollo. Los 8 checkpoints
-          de esta aventura se proyectan temporalmente sobre ese trazado hasta
-          que #86 incorpore la geometría oficial verificada.
+          El mapa usa la geometría oficial verificada de Las Viñas (400
+          puntos, geometryVersion 1). La ruta sigue siendo exclusivamente QA
+          mientras la Junta la mantenga cerrada temporalmente.
         </Text>
 
         <View style={styles.metrics}>

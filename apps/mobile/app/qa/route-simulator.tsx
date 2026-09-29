@@ -11,6 +11,7 @@ import {
   route01CuadrosContent,
   route01LasVinasBounds,
   route01LasVinasCoordinates,
+  route01LasVinasGeometryMetadata,
   route01LasVinasStart,
   routeLengthMeters,
   scaleAdventureCheckpointsToGeometry,
@@ -163,6 +164,16 @@ export default function QaRouteSimulatorScreen() {
           puntos, geometryVersion 1). La ruta sigue siendo exclusivamente QA
           mientras la Junta la mantenga cerrada temporalmente.
         </Text>
+
+        <View style={styles.sourceCard}>
+          <Text style={styles.sourceTitle}>CERRADO TEMPORALMENTE · SOLO QA</Text>
+          <Text style={styles.sourceText}>
+            {route01LasVinasGeometryMetadata.attribution}
+          </Text>
+          <Text style={styles.sourceText}>
+            Fuente: Junta de Andalucía · verificada 29/09/2026 · geometría v1
+          </Text>
+        </View>
 
         <View style={styles.metrics}>
           <Metric label="Progreso" value={`${Math.round(progress * 100)}%`} />
@@ -331,6 +342,25 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   body: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  sourceCard: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing[12],
+  },
+  sourceTitle: {
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  sourceText: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: spacing[4],
+  },
   metrics: {
     flexDirection: 'row',
     backgroundColor: colors.white,

@@ -42,11 +42,16 @@ describe('LocationProvider permissions', () => {
   });
 
 
-  it('keeps a valid foreground-only permission state when background is denied', async () => {
+  it('starts the visible-adventure permission flow without requesting background', async () => {
+    let backgroundRequests = 0;
     const provider = createLocationProvider(
       fakeAdapter({
         requestForegroundPermission: async () => 'granted',
-        requestBackgroundPermission: async () => 'denied',
+        getBackgroundPermission: async () => 'denied',
+        requestBackgroundPermission: async () => {
+          backgroundRequests += 1;
+          return 'granted';
+        },
       }),
     );
 
@@ -55,6 +60,27 @@ describe('LocationProvider permissions', () => {
       backgroundGranted: false,
       servicesEnabled: true,
     });
+    expect(backgroundRequests).toBe(0);
+  });
+
+  it('requests background permission only through the explicit background flow', async () => {
+    let backgroundRequests = 0;
+    const provider = createLocationProvider(
+      fakeAdapter({
+        getForegroundPermission: async () => 'granted',
+        requestBackgroundPermission: async () => {
+          backgroundRequests += 1;
+          return 'granted';
+        },
+      }),
+    );
+
+    await expect(provider.requestBackgroundPermission()).resolves.toEqual({
+      foregroundGranted: true,
+      backgroundGranted: true,
+      servicesEnabled: true,
+    });
+    expect(backgroundRequests).toBe(1);
   });
 
   it('starts native background updates with the active activity id when fully ready', async () => {

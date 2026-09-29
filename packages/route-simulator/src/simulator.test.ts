@@ -35,6 +35,18 @@ describe('QA route simulator', () => {
     expect(snapshot(jumped)).toMatchObject({ qaSimulated: true, publicAchievementEligible: false, rankingEligible: false, sponsorRedemptionEligible: false });
   });
 
+  it('resolves prerequisite chains independently of checkpoint array order', () => {
+    const reordered = {
+      ...route01CuadrosContent,
+      checkpoints: [...route01CuadrosContent.checkpoints].reverse(),
+    };
+    const initial = createSimulator(reordered, geometry);
+    const jumped = jumpToCheckpoint(reordered, geometry, initial, 'sistillos');
+
+    expect(jumped.reachedCheckpointIds).toEqual(['portal-cuadros', 'corredor-adelfas', 'sistillos']);
+    expect(jumped.unlockedDiscoveryIds).toContain('sistillos-discovery');
+  });
+
   it('is idempotent when replaying the same timestamp', () => {
     const initial = createSimulator(route01CuadrosContent, geometry);
     const a = advanceReplay(route01CuadrosContent, geometry, initial, 4_000, 4);

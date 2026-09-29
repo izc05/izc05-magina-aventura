@@ -19,6 +19,30 @@ export interface SimulatorState {
   unlockedDiscoveryIds: string[];
 }
 
+export function scaleAdventureCheckpointsToGeometry(
+  content: AdventureContentDefinition,
+  geometry: RouteGeometry,
+): AdventureContentDefinition {
+  const geometryMeters = routeLengthMeters(geometry);
+  const authoredMeters =
+    content.checkpoints.reduce(
+      (max, checkpoint) => Math.max(max, checkpoint.progressMeters),
+      0,
+    );
+
+  if (geometryMeters <= 0 || authoredMeters <= 0) return content;
+
+  const scale = geometryMeters / authoredMeters;
+
+  return {
+    ...content,
+    checkpoints: content.checkpoints.map((checkpoint) => ({
+      ...checkpoint,
+      progressMeters: checkpoint.progressMeters * scale,
+    })),
+  };
+}
+
 function cumulativeDistances(coordinates: readonly GeoJsonPosition[]): number[] {
   const distances = [0];
   for (let index = 1; index < coordinates.length; index += 1) {

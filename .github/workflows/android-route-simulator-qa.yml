@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-route-simulator-qa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-route-simulator:
     runs-on: ubuntu-latest

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/game-00e-android-physical-gate
+      - integration/gps-game-kit-qa
   workflow_dispatch:
 
 permissions:

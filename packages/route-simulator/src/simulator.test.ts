@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { route01CuadrosContent } from './fixtures/route-01-cuadros';
-import { advanceBySteps, advanceReplay, createSimulator, interpolatePosition, jumpToCheckpoint, routeLengthMeters, snapshot } from './simulator';
+import { advanceBySteps, advanceReplay, advanceReplayByDelta, createSimulator, interpolatePosition, jumpToCheckpoint, routeLengthMeters, snapshot } from './simulator';
 
 const geometry = { coordinates: [[-3.4, 37.7], [-3.4, 37.74], [-3.39, 37.78]] as [number, number][] };
 
@@ -17,6 +17,16 @@ describe('QA route simulator', () => {
     const x10 = advanceReplay(route01CuadrosContent, geometry, initial, 10_000, 10);
     expect(x10.progressMeters).toBeGreaterThan(x1.progressMeters);
     expect(x10.context).toMatchObject({ qaSimulated: true, watermark: 'SIMULACIÓN QA', mode: 'replay', publicEffectsEnabled: false });
+  });
+
+
+  it('never regresses when replay speed changes between increments', () => {
+    const initial = createSimulator(route01CuadrosContent, geometry, 'replay-delta-test');
+    const fast = advanceReplayByDelta(route01CuadrosContent, geometry, initial, 10_000, 10);
+    const slow = advanceReplayByDelta(route01CuadrosContent, geometry, fast, 10_000, 1);
+
+    expect(slow.progressMeters).toBeGreaterThan(fast.progressMeters);
+    expect(slow.elapsedMs).toBe(20_000);
   });
 
   it('advances a virtual route by steps, never the real GPS position', () => {

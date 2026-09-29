@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useReducer, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import {
   BadgeRewardCard,
   CheckpointCard,
   DiscoveryCard,
+  GameEventFeedback,
+  type GameFeedback,
 } from '../src/features/game-kit/GameKitComponents';
 import {
   createInitialGameKitState,
@@ -28,41 +30,11 @@ import { colors, radius, spacing, typography } from '../src/theme/tokens';
 const initialState = createInitialGameKitState(MOCK_ROUTE.checkpoints.map((checkpoint) => checkpoint.id));
 const reducer = (state: typeof initialState, event: GameEvent) => reduceGameEvent(state, event);
 
-type Feedback = { title: string; detail: string; kind: 'discovery' | 'xp' | 'badge' | 'checkpoint' | 'route' | 'default' };
-
 export default function GameKitPlaygroundScreen() {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const feedbackOpacity = useRef(new Animated.Value(0)).current;
+  const [feedback, setFeedback] = useState<GameFeedback | null>(null);
   const level = getExplorerLevel(state.xp);
-
-  useEffect(() => {
-    let active = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (active) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!feedback) return;
-    feedbackOpacity.setValue(reduceMotion ? 1 : 0.2);
-    const animation = reduceMotion
-      ? Animated.timing(feedbackOpacity, { toValue: 1, duration: 0, useNativeDriver: true })
-      : Animated.spring(feedbackOpacity, { toValue: 1, speed: 16, bounciness: 5, useNativeDriver: true });
-    animation.start();
-    const timer = setTimeout(() => setFeedback(null), 3200);
-    return () => {
-      animation.stop();
-      clearTimeout(timer);
-    };
-  }, [feedback, feedbackOpacity, reduceMotion]);
 
   const nextDiscovery = useMemo(
     () => MOCK_DISCOVERIES.find((discovery) => !state.discoveries.includes(discovery.id))?.title ?? 'Ruta completada',
@@ -87,7 +59,7 @@ export default function GameKitPlaygroundScreen() {
     dispatch(event);
   }
 
-  function show(title: string, detail: string, kind: Feedback['kind']) {
+  function show(title: string, detail: string, kind: GameFeedback['kind']) {
     setFeedback({ title, detail, kind });
   }
 
@@ -183,14 +155,7 @@ export default function GameKitPlaygroundScreen() {
           </View>
         </View>
 
-        {feedback ? (
-          <Animated.View accessibilityLiveRegion="polite" accessibilityRole="alert" pointerEvents="none" style={[styles.feedbackToast, { opacity: feedbackOpacity }]}>
-            <View style={[styles.feedbackMark, feedback.kind === 'badge' && styles.feedbackMarkGold]}>
-              <Text style={styles.feedbackMarkText}>{feedback.kind === 'xp' ? '+' : feedback.kind === 'badge' ? '✦' : feedback.kind === 'checkpoint' ? '⌖' : feedback.kind === 'route' ? '✓' : '✧'}</Text>
-            </View>
-            <View style={styles.feedbackCopy}><Text style={styles.feedbackTitle}>{feedback.title}</Text><Text style={styles.feedbackDetail}>{feedback.detail}</Text></View>
-          </Animated.View>
-        ) : null}
+        <GameEventFeedback feedback={feedback} />
 
         <View style={styles.disclosure}>
           <Text style={styles.disclosureTag}>CONTENIDO FICTICIO</Text>
@@ -312,13 +277,6 @@ const styles = StyleSheet.create({
   mapTitle: { color: colors.white, fontSize: 15, fontWeight: '900', marginTop: 3 },
   mapCaption: { color: '#D7DFD3', fontSize: 9, marginTop: 2 },
   hudOverlay: { position: 'absolute', left: spacing[12], right: spacing[12], bottom: spacing[12] },
-  feedbackToast: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.olive900, borderRadius: radius.md, padding: spacing[12], marginBottom: spacing[12], borderWidth: 1, borderColor: colors.aoveGold },
-  feedbackMark: { width: 34, height: 34, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: spacing[12] },
-  feedbackMarkGold: { backgroundColor: colors.aoveGold },
-  feedbackMarkText: { color: colors.white, fontSize: 18, fontWeight: '900' },
-  feedbackCopy: { flex: 1 },
-  feedbackTitle: { color: colors.white, fontSize: 13, fontWeight: '900' },
-  feedbackDetail: { color: colors.limestone, fontSize: 10, lineHeight: 14, marginTop: 2 },
   disclosure: { backgroundColor: '#F0E8D8', borderRadius: radius.md, padding: spacing[12], borderLeftWidth: 3, borderLeftColor: colors.aoveGold },
   disclosureTag: { color: colors.earth, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   disclosureText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: spacing[4] },

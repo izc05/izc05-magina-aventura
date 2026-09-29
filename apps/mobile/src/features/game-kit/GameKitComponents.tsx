@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CHECKPOINT_STATES, getExplorerLevel, type CheckpointState, type GameKitState } from './model';
 import type { MockCheckpoint, MockDiscovery } from './mock-content';
 import { colors, radius, spacing } from '../../theme/tokens';
@@ -113,6 +113,59 @@ export function BadgeRewardCard({ badge, unlocked, onUnlock }: {
   );
 }
 
+export type GameFeedback = {
+  title: string;
+  detail: string;
+  kind: 'discovery' | 'xp' | 'badge' | 'checkpoint' | 'route' | 'default';
+};
+
+/** Shared visual effect for simulated or future Adventure Engine events. */
+export function GameEventFeedback({ feedback }: { feedback: GameFeedback | null }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!feedback) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    opacity.setValue(reduceMotion ? 1 : 0.2);
+    const animation = reduceMotion
+      ? Animated.timing(opacity, { toValue: 1, duration: 0, useNativeDriver: true })
+      : Animated.spring(opacity, { toValue: 1, speed: 16, bounciness: 5, useNativeDriver: true });
+    animation.start();
+    const timer = setTimeout(() => setVisible(false), 3200);
+    return () => {
+      animation.stop();
+      clearTimeout(timer);
+    };
+  }, [feedback, opacity, reduceMotion]);
+
+  if (!feedback || !visible) return null;
+  return (
+    <Animated.View accessibilityLiveRegion="polite" accessibilityRole="alert" pointerEvents="none" style={[styles.feedbackToast, { opacity }]}>
+      <View style={[styles.feedbackMark, feedback.kind === 'badge' && styles.feedbackMarkGold]}>
+        <Text style={styles.feedbackMarkText}>{feedback.kind === 'xp' ? '+' : feedback.kind === 'badge' ? '✦' : feedback.kind === 'checkpoint' ? '⌖' : feedback.kind === 'route' ? '✓' : '✧'}</Text>
+      </View>
+      <View style={styles.feedbackCopy}><Text style={styles.feedbackTitle}>{feedback.title}</Text><Text style={styles.feedbackDetail}>{feedback.detail}</Text></View>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   hud: { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing[16], borderWidth: 1, borderColor: colors.border },
   hudTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -162,4 +215,11 @@ const styles = StyleSheet.create({
   badgeDescription: { color: colors.muted, fontSize: 9, marginTop: 3, textAlign: 'center' },
   badgeButton: { paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
   badgeButtonText: { color: colors.olive700, fontWeight: '900', fontSize: 9 },
+  feedbackToast: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.olive900, borderRadius: radius.md, padding: spacing[12], marginBottom: spacing[12], borderWidth: 1, borderColor: colors.aoveGold },
+  feedbackMark: { width: 34, height: 34, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: spacing[12] },
+  feedbackMarkGold: { backgroundColor: colors.aoveGold },
+  feedbackMarkText: { color: colors.white, fontSize: 18, fontWeight: '900' },
+  feedbackCopy: { flex: 1 },
+  feedbackTitle: { color: colors.white, fontSize: 13, fontWeight: '900' },
+  feedbackDetail: { color: colors.limestone, fontSize: 10, lineHeight: 14, marginTop: 2 },
 });

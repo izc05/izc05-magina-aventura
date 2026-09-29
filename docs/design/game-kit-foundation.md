@@ -29,7 +29,7 @@ The UI playground dispatches the same typed `GameEvent` messages locally. The ev
 
 - `apps/mobile/src/features/game-kit/model.ts` — event contract, reducer/state, configurable XP reward values and five explorer levels.
 - `apps/mobile/src/features/game-kit/mock-content.ts` — demo route, discovery categories, mock discoveries, challenges, collectibles, and badge metadata.
-- `apps/mobile/src/features/game-kit/GameKitComponents.tsx` — reusable compact adventure HUD, discovery card, checkpoint status editor, and badge reward card.
+- `apps/mobile/src/features/game-kit/GameKitComponents.tsx` — reusable compact adventure HUD, discovery card, checkpoint status editor, badge reward card, and reduced-motion-aware event feedback effect.
 - `apps/mobile/src/features/game-kit/model.test.ts` — reducer, checkpoint, XP, level, badge idempotence, and progress tests.
 - `apps/mobile/app/game-kit-playground.tsx` — standalone developer/QA simulation surface with controls and feedback.
 - `apps/mobile/app/index.tsx` — development-only entry point (`__DEV__`).

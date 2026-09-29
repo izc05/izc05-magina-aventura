@@ -5,6 +5,7 @@ import {
   advanceBySteps,
   advanceReplayByDelta,
   createSimulator,
+  interpolatePosition,
   jumpToCheckpoint,
   ManualQaStepSource,
   route01CuadrosContent,
@@ -56,13 +57,28 @@ export default function QaRouteSimulatorScreen() {
     .find((checkpoint) => state.reachedCheckpointIds.includes(checkpoint.id));
   const qaSnapshot = snapshot(state);
 
+  const qaMapCheckpoints = useMemo(
+    () =>
+      content.checkpoints.map((checkpoint) => ({
+        id: checkpoint.id,
+        name: checkpoint.title,
+        position: interpolatePosition(geometry, checkpoint.progressMeters),
+        triggerRadiusM: 30,
+        required: checkpoint.required,
+      })),
+    [content],
+  );
+
   const mapPayload: EnhancedRoutePayload = useMemo(
     () => ({
       ...mockRoutePayload,
+      checkpoints: qaMapCheckpoints,
+      discoveryHints: [],
+      pois: [],
       hikerPosition: state.position,
       hikerHeadingDeg: 45,
     }),
-    [state.position],
+    [qaMapCheckpoints, state.position],
   );
 
   if (!enabled) {
@@ -122,9 +138,9 @@ export default function QaRouteSimulatorScreen() {
         <Text style={styles.eyebrow}>ROUTE-01 · QA ROUTE SIMULATOR</Text>
         <Text style={styles.title}>{route01CuadrosContent.title}</Text>
         <Text style={styles.body}>
-          El mapa usa geometría provisional de desarrollo. Los checkpoints se
-          escalan temporalmente a ese trazado hasta que #86 incorpore la
-          geometría oficial verificada.
+          El mapa usa geometría provisional de desarrollo. Los 8 checkpoints
+          de esta aventura se proyectan temporalmente sobre ese trazado hasta
+          que #86 incorpore la geometría oficial verificada.
         </Text>
 
         <View style={styles.metrics}>

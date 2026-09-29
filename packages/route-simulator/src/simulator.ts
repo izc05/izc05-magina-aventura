@@ -19,6 +19,30 @@ export interface SimulatorState {
   unlockedDiscoveryIds: string[];
 }
 
+export function scaleAdventureCheckpointsToGeometry(
+  content: AdventureContentDefinition,
+  geometry: RouteGeometry,
+): AdventureContentDefinition {
+  const geometryMeters = routeLengthMeters(geometry);
+  const authoredMeters =
+    content.checkpoints.reduce(
+      (max, checkpoint) => Math.max(max, checkpoint.progressMeters),
+      0,
+    );
+
+  if (geometryMeters <= 0 || authoredMeters <= 0) return content;
+
+  const scale = geometryMeters / authoredMeters;
+
+  return {
+    ...content,
+    checkpoints: content.checkpoints.map((checkpoint) => ({
+      ...checkpoint,
+      progressMeters: checkpoint.progressMeters * scale,
+    })),
+  };
+}
+
 function cumulativeDistances(coordinates: readonly GeoJsonPosition[]): number[] {
   const distances = [0];
   for (let index = 1; index < coordinates.length; index += 1) {
@@ -91,6 +115,40 @@ export function advanceReplay(content: AdventureContentDefinition, geometry: Rou
   const progressMeters = Math.min(routeLengthMeters(geometry), Math.max(0, elapsedMs / 1000 * metersPerSecond * speedMultiplier));
   const progression = progressionAt(content, progressMeters, state);
   return { ...state, context: { ...state.context, mode: 'replay' }, elapsedMs, progressMeters, position: interpolatePosition(geometry, progressMeters), ...progression };
+}
+
+export function advanceReplayByDelta(
+  content: AdventureContentDefinition,
+  geometry: RouteGeometry,
+  state: SimulatorState,
+  deltaMs: number,
+  speedMultiplier: 1 | 4 | 10,
+  metersPerSecond = 1.2,
+): SimulatorState {
+  const normalizedDeltaMs = Math.max(0, Number.isFinite(deltaMs) ? deltaMs : 0);
+  const normalizedMetersPerSecond =
+    Number.isFinite(metersPerSecond) && metersPerSecond > 0
+      ? metersPerSecond
+      : 1.2;
+  const deltaMeters =
+    (normalizedDeltaMs / 1000) *
+    normalizedMetersPerSecond *
+    speedMultiplier;
+  const progressMeters = Math.min(
+    routeLengthMeters(geometry),
+    Math.max(0, state.progressMeters + deltaMeters),
+  );
+  const elapsedMs = state.elapsedMs + normalizedDeltaMs;
+  const progression = progressionAt(content, progressMeters, state);
+
+  return {
+    ...state,
+    context: { ...state.context, mode: 'replay' },
+    elapsedMs,
+    progressMeters,
+    position: interpolatePosition(geometry, progressMeters),
+    ...progression,
+  };
 }
 
 export function advanceBySteps(content: AdventureContentDefinition, geometry: RouteGeometry, state: SimulatorState, steps: number, metersPerStep = 0.75): SimulatorState {

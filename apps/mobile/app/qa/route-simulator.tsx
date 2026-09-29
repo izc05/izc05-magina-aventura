@@ -185,6 +185,14 @@ export default function QaRouteSimulatorScreen() {
           payload={mapPayload}
           mapStyle="https://demotiles.maplibre.org/style.json"
           developmentMode
+          layerVisibility={{
+            routeTrack: true,
+            checkpoints: true,
+            pois: false,
+            parkBoundary: false,
+            hikerPosition: true,
+            elevationGrid: false,
+          }}
           showLayerControls={false}
           height={320}
         />

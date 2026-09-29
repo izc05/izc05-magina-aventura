@@ -30,6 +30,23 @@ function formatElapsed(totalSeconds: number): string {
     .padStart(2, '0')}`;
 }
 
+function displayedElapsedSeconds(
+  snapshot: ActivityEngineState['snapshot'] | undefined,
+  sessionState: ActivityEngineState['session']['state'],
+  nowMs: number,
+): number {
+  if (!snapshot) return 0;
+  if (sessionState !== 'ACTIVE') return snapshot.totalElapsedSeconds;
+
+  const anchorMs = Date.parse(snapshot.createdAt);
+  if (!Number.isFinite(anchorMs)) return snapshot.totalElapsedSeconds;
+
+  return (
+    snapshot.totalElapsedSeconds +
+    Math.max(0, (nowMs - anchorMs) / 1000)
+  );
+}
+
 function errorCopy(error: unknown): string {
   if (error instanceof Error) return error.message;
   return 'No se ha podido iniciar el seguimiento GPS.';
@@ -62,6 +79,12 @@ export default function ActiveAdventureScreen() {
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
   const [busyAction, setBusyAction] = useState(false);
+  const [clockNowMs, setClockNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setClockNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!route || !routeSlug) return;
@@ -160,6 +183,11 @@ export default function ActiveAdventureScreen() {
   const progressPercent = Math.round((snapshot?.maxRouteProgress ?? 0) * 100);
   const sampleCount = activityState?.session.lastProcessedSequence ?? 0;
   const isPaused = sessionState === 'PAUSED';
+  const elapsedSeconds = displayedElapsedSeconds(
+    snapshot,
+    sessionState,
+    clockNowMs,
+  );
 
   async function togglePause() {
     setBusyAction(true);
@@ -240,7 +268,7 @@ export default function ActiveAdventureScreen() {
             <Text style={styles.metricLabel}>Distancia</Text>
           </View>
           <View>
-            <Text style={styles.metricValue}>{formatElapsed(snapshot?.totalElapsedSeconds ?? 0)}</Text>
+            <Text style={styles.metricValue}>{formatElapsed(elapsedSeconds)}</Text>
             <Text style={styles.metricLabel}>Tiempo</Text>
           </View>
           <View>

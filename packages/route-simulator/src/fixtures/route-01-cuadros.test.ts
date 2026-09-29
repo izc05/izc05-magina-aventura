@@ -50,4 +50,15 @@ describe('ROUTE-01 content fixture', () => {
     };
     expect(() => validateAdventureContent(invalid)).toThrow(/invalid validity window/);
   });
+
+  it('keeps editorial references and mock reward limits structurally valid', () => {
+    expect(() => validateAdventureContent({
+      ...route01CuadrosContent,
+      photoSpots: [{ ...route01CuadrosContent.photoSpots[0]!, checkpointId: 'missing-checkpoint' }],
+    })).toThrow('Unknown photo spot checkpoint');
+    expect(() => validateAdventureContent({
+      ...route01CuadrosContent,
+      sponsorRewards: [{ ...route01CuadrosContent.sponsorRewards[0]!, maxRedemptions: 1 }],
+    })).toThrow('must not be redeemable');
+  });
 });

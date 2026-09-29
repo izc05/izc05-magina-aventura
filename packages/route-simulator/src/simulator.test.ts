@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { route01CuadrosContent } from './fixtures/route-01-cuadros';
-import { advanceBySteps, advanceReplay, createSimulator, interpolatePosition, jumpToCheckpoint, routeLengthMeters, snapshot } from './simulator';
+import { advanceBySteps, advanceReplay, createSimulator, interpolatePosition, jumpToCheckpoint, resetSimulator, routeLengthMeters, snapshot } from './simulator';
 
 const geometry = { coordinates: [[-3.4, 37.7], [-3.4, 37.74], [-3.39, 37.78]] as [number, number][] };
 
@@ -52,5 +52,23 @@ describe('QA route simulator', () => {
     const a = advanceReplay(route01CuadrosContent, geometry, initial, 4_000, 4);
     const b = advanceReplay(route01CuadrosContent, geometry, initial, 4_000, 4);
     expect(b).toEqual(a);
+  });
+
+  it('resolves checkpoint prerequisites independent of editorial array order', () => {
+    const reversed = {
+      ...route01CuadrosContent,
+      checkpoints: [...route01CuadrosContent.checkpoints].reverse(),
+    };
+    const jumped = jumpToCheckpoint(reversed, geometry, createSimulator(reversed, geometry), 'sistillos');
+    expect(jumped.reachedCheckpointIds).toEqual(['portal-cuadros', 'corredor-adelfas', 'sistillos']);
+    expect(jumped.unlockedDiscoveryIds).toContain('sistillos-discovery');
+  });
+
+  it('resets to the same deterministic initial state', () => {
+    const first = resetSimulator(route01CuadrosContent, geometry, 'reset-test');
+    const advanced = advanceBySteps(route01CuadrosContent, geometry, first, 500);
+    const reset = resetSimulator(route01CuadrosContent, geometry, 'reset-test');
+    expect(advanced.progressMeters).toBeGreaterThan(first.progressMeters);
+    expect(reset).toEqual(first);
   });
 });

@@ -116,6 +116,7 @@ export function validateAdventureContent(content: AdventureContentDefinition): A
     if (new Set(values).size !== values.length) throw new Error(`${label} IDs must be unique`);
   };
   if (!content.routeId || content.contentVersion < 1) throw new Error('Invalid adventure identity');
+  if (content.routeSourceUrls.length === 0 || !content.lastVerifiedAt) throw new Error('Adventure content needs route sources');
   if (content.officialRouteStatus === 'temporarily_closed' && content.availability === 'published') {
     throw new Error('Temporarily closed routes cannot be published');
   }
@@ -130,10 +131,13 @@ export function validateAdventureContent(content: AdventureContentDefinition): A
       throw new Error(`Tradition card ${card.id} must not be presented as fact`);
     }
   }
+  const checkpointIds = new Set(content.checkpoints.map((item) => item.id));
   const checkpointById = new Map(content.checkpoints.map((item) => [item.id, item] as const));
+  const knowledgeCardIds = new Set(content.knowledgeCards.map((item) => item.id));
   const discoveryIds = new Set(content.discoveries.map((item) => item.id));
   for (const checkpoint of content.checkpoints) {
     if (checkpoint.progressMeters < 0) throw new Error(`Checkpoint ${checkpoint.id} has invalid progress`);
+    for (const knowledgeCardId of checkpoint.knowledgeCardIds) if (!knowledgeCardIds.has(knowledgeCardId)) throw new Error(`Unknown knowledge card ${knowledgeCardId}`);
     for (const prerequisite of checkpoint.prerequisiteCheckpointIds ?? []) {
       const prerequisiteCheckpoint = checkpointById.get(prerequisite);
       if (!prerequisiteCheckpoint) throw new Error(`Unknown checkpoint prerequisite ${prerequisite}`);
@@ -149,12 +153,14 @@ export function validateAdventureContent(content: AdventureContentDefinition): A
       if (!discoveryIds.has(prerequisite)) throw new Error(`Unknown discovery prerequisite ${prerequisite}`);
     }
   }
+  for (const photoSpot of content.photoSpots) if (!checkpointIds.has(photoSpot.checkpointId)) throw new Error(`Unknown photo spot checkpoint ${photoSpot.checkpointId}`);
   for (const reward of content.sponsorRewards) {
     const validFrom = rewardBoundaryMillis(reward.validFrom, false);
     const validUntil = rewardBoundaryMillis(reward.validUntil, true);
-    if (!Number.isFinite(validFrom) || !Number.isFinite(validUntil) || validFrom > validUntil) {
+    if (!Number.isFinite(validFrom) || !Number.isFinite(validUntil) || validFrom > validUntil || reward.maxRedemptions < 0) {
       throw new Error(`Sponsor reward ${reward.sponsorId} has an invalid validity window`);
     }
+    if (reward.status === 'mock' && reward.maxRedemptions !== 0) throw new Error(`Mock sponsor reward ${reward.sponsorId} must not be redeemable`);
   }
   return content;
 }

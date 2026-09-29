@@ -87,6 +87,10 @@ export function createSimulator(content: AdventureContentDefinition, geometry: R
   return advanceReplay(content, geometry, state, 0, 1);
 }
 
+export function resetSimulator(content: AdventureContentDefinition, geometry: RouteGeometry, simulationId = 'qa-route-01'): SimulatorState {
+  return createSimulator(content, geometry, simulationId);
+}
+
 export function advanceReplay(content: AdventureContentDefinition, geometry: RouteGeometry, state: SimulatorState, elapsedMs: number, speedMultiplier: 1 | 4 | 10, metersPerSecond = 1.2): SimulatorState {
   const progressMeters = Math.min(routeLengthMeters(geometry), Math.max(0, elapsedMs / 1000 * metersPerSecond * speedMultiplier));
   const progression = progressionAt(content, progressMeters, state);

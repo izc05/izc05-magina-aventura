@@ -184,7 +184,13 @@ export default function ActiveAdventureScreen() {
       setActivityState(finished);
       router.replace({
         pathname: '/adventure/[slug]/summary',
-        params: { slug: routeSlug },
+        params: {
+          slug: routeSlug,
+          distanceMeters: String(finished.snapshot.validDistanceMeters),
+          elapsedSeconds: String(finished.snapshot.totalElapsedSeconds),
+          elevationGainMeters: String(finished.snapshot.elevationGainMeters),
+          discoveryCount: String(finished.exploration?.unlockedTargetKeys.length ?? 0),
+        },
       });
     } catch (error) {
       setRuntimeError(errorCopy(error));

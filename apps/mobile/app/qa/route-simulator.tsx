@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -6,6 +6,7 @@ import {
   advanceReplayByDelta,
   createSimulator,
   jumpToCheckpoint,
+  ManualQaStepSource,
   route01CuadrosContent,
   routeLengthMeters,
   scaleAdventureCheckpointsToGeometry,
@@ -39,6 +40,7 @@ export default function QaRouteSimulatorScreen() {
   const [state, setState] = useState<SimulatorState>(() =>
     createSimulator(content, geometry, 'mobile-qa-route-01'),
   );
+  const stepSource = useRef(new ManualQaStepSource()).current;
   const [qaSteps, setQaSteps] = useState(0);
 
   const progress =
@@ -88,7 +90,8 @@ export default function QaRouteSimulatorScreen() {
     );
 
   const walk = (steps: number) => {
-    setQaSteps((current) => current + steps);
+    const reading = stepSource.addSteps(steps);
+    setQaSteps(reading.totalSteps);
     setState((current) =>
       advanceBySteps(content, geometry, current, steps),
     );
@@ -102,6 +105,7 @@ export default function QaRouteSimulatorScreen() {
     );
 
   const reset = () => {
+    stepSource.reset();
     setQaSteps(0);
     setState(createSimulator(content, geometry, 'mobile-qa-route-01'));
   };

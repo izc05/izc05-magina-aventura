@@ -1,0 +1,171 @@
+name: ROUTE-01 Official Geometry Ingest
+
+on:
+  push:
+    branches:
+      - feat/route-01-official-geometry-ingest
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: route-01-official-geometry-ingest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_URL: https://www.juntadeandalucia.es/medioambiente/portal/documents/20151/91693279/18_Las_Vinas.kml/3a861247-00ee-0c65-c0d0-7b304acc9ff3?t=1675942382809
+      PUBLISHED_LENGTH_M: '8720'
+      EXPECTED_KML_SHA256: 126ddddb1eb9ec62297e66be9138dd51b6a7042ff80fc06fd2d2fb24043faa59
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download official Junta KML
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/route-01
+          curl             --fail             --location             --retry 3             --retry-delay 2             --connect-timeout 20             --max-time 120             --user-agent 'Mozilla/5.0 (compatible; MaginaAventura-QA/1.0)'             "$SOURCE_URL"             --output artifacts/route-01/18_Las_Vinas.kml
+
+          test -s artifacts/route-01/18_Las_Vinas.kml
+          echo "Downloaded bytes: $(stat -c%s artifacts/route-01/18_Las_Vinas.kml)"
+          actual_sha=$(sha256sum artifacts/route-01/18_Las_Vinas.kml | awk '{print $1}')
+          echo "SHA-256: $actual_sha"
+          if [[ "$actual_sha" != "$EXPECTED_KML_SHA256" ]]; then
+            echo "Official source bytes changed. Expected $EXPECTED_KML_SHA256"
+            exit 1
+          fi
+
+      - name: Verify KML signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('artifacts/route-01/18_Las_Vinas.kml')
+          raw = p.read_bytes()
+          sample = raw[:4096].decode('utf-8', errors='ignore').lower()
+          if '<kml' not in sample and 'opengis.net/kml' not in sample:
+              raise SystemExit('Downloaded file does not look like KML')
+          print('KML signature check: OK')
+          PY
+
+      - name: Analyze official geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/qa/analyze-official-kml.py             artifacts/route-01/18_Las_Vinas.kml             --source-url "$SOURCE_URL"             --published-length-m "$PUBLISHED_LENGTH_M"             --output artifacts/route-01/geometry-report.json
+
+      - name: Generate canonical derived GeoJSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/routes/route-01
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import xml.etree.ElementTree as ET
+
+          source = Path("artifacts/route-01/18_Las_Vinas.kml")
+          payload = source.read_bytes()
+          actual_sha = hashlib.sha256(payload).hexdigest()
+          expected_sha = "126ddddb1eb9ec62297e66be9138dd51b6a7042ff80fc06fd2d2fb24043faa59"
+          if actual_sha != expected_sha:
+              raise SystemExit("Pinned official KML SHA-256 mismatch")
+
+          root = ET.fromstring(payload)
+          coordinates = []
+          extended = {}
+          for element in root.iter():
+              local = element.tag.rsplit("}", 1)[-1]
+              if local == "SimpleData":
+                  key = element.attrib.get("name")
+                  if key and element.text:
+                      extended[key] = element.text.strip()
+              if local == "coordinates" and element.text and not coordinates:
+                  for token in element.text.replace("\n", " ").split():
+                      parts = token.split(",")
+                      if len(parts) >= 2:
+                          coordinates.append([float(parts[0]), float(parts[1])])
+
+          if len(coordinates) != 400:
+              raise SystemExit(f"Expected 400 official coordinates, found {len(coordinates)}")
+
+          feature = {
+              "type": "Feature",
+              "properties": {
+                  "routeId": "route-01-cuadros",
+                  "geometryVersion": 1,
+                  "officialName": extended.get("nombre", "LAS VIÑAS"),
+                  "officialCode": extended.get("codigoequi", "724"),
+                  "officialShapeLengthM": float(extended.get("shape_leng", "8719.6884400576273")),
+                  "difficulty": extended.get("t_dificult", "Media"),
+                  "modality": extended.get("modalidad", "Sendero señalizado"),
+                  "source": "Junta de Andalucía · Consejería de Sostenibilidad y Medio Ambiente",
+                  "sourcePage": "https://www.juntadeandalucia.es/medioambiente/portal/areas-tematicas/biodiversidad-geodiversidad-habitats/geodiversidad/geoturismo-andalucia",
+                  "sourceAssetSha256": actual_sha,
+                  "sourceVerifiedAt": "2026-09-29",
+                  "availability": "simulation_only",
+                  "officialRouteStatus": "temporarily_closed",
+                  "attribution": "Información obtenida del Portal de la Junta de Andalucía",
+              },
+              "geometry": {
+                  "type": "LineString",
+                  "coordinates": coordinates,
+              },
+          }
+
+          out = Path("data/routes/route-01/las-vinas.geometry.geojson")
+          out.write_text(
+              json.dumps(feature, ensure_ascii=False, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          print(f"Wrote {out} ({out.stat().st_size} bytes)")
+          PY
+
+      - name: Commit canonical derived geometry to ingest branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add data/routes/route-01/las-vinas.geometry.geojson
+          if git diff --cached --quiet; then
+            echo "Canonical geometry unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data(route-01): pin verified official Las Viñas geometry"
+          git push origin HEAD:feat/route-01-official-geometry-ingest
+
+      - name: Write provenance note
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/route-01/PROVENANCE.txt <<EOF
+          Source owner: Junta de Andalucía
+          Source page: https://www.juntadeandalucia.es/medioambiente/portal/areas-tematicas/biodiversidad-geodiversidad-habitats/geodiversidad/geoturismo-andalucia
+          Listed asset: Las Viñas — KML (15 KB)
+          Direct asset URL: $SOURCE_URL
+          Retrieved by workflow: ${{ github.run_id }}
+          Git SHA: ${{ github.sha }}
+
+          This artifact is retained for QA/source verification only.
+          It does not change the product route status.
+          The Las Viñas route remains simulation_only while the official listing reports temporary closure.
+          EOF
+
+      - name: Upload source + verification report
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-01-official-geometry-${{ github.run_number }}
+          path: artifacts/route-01
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

@@ -57,13 +57,21 @@ export function interpolatePosition(geometry: RouteGeometry, progressMeters: num
 function progressionAt(content: AdventureContentDefinition, progressMeters: number, previous: SimulatorState): Pick<SimulatorState, 'reachedCheckpointIds' | 'unlockedDiscoveryIds'> {
   const reached = new Set(previous.reachedCheckpointIds);
   const discoveries = new Set(previous.unlockedDiscoveryIds);
-  for (const checkpoint of content.checkpoints) {
-    const prerequisitesMet = (checkpoint.prerequisiteCheckpointIds ?? []).every((id) => reached.has(id));
-    if (checkpoint.progressMeters <= progressMeters && prerequisitesMet) {
+
+  for (let pass = 0; pass < content.checkpoints.length; pass += 1) {
+    let changed = false;
+    for (const checkpoint of content.checkpoints) {
+      if (reached.has(checkpoint.id) || checkpoint.progressMeters > progressMeters) continue;
+      const prerequisitesMet = (checkpoint.prerequisiteCheckpointIds ?? []).every((id) => reached.has(id));
+      if (!prerequisitesMet) continue;
+
       reached.add(checkpoint.id);
       for (const discoveryId of checkpoint.discoveryIds) discoveries.add(discoveryId);
+      changed = true;
     }
+    if (!changed) break;
   }
+
   return { reachedCheckpointIds: [...reached], unlockedDiscoveryIds: [...discoveries] };
 }
 

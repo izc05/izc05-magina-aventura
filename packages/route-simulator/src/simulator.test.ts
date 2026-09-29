@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { route01CuadrosContent } from './fixtures/route-01-cuadros';
-import { advanceBySteps, advanceReplay, advanceReplayByDelta, createSimulator, interpolatePosition, jumpToCheckpoint, routeLengthMeters, snapshot } from './simulator';
+import { advanceBySteps, advanceReplay, advanceReplayByDelta, createSimulator, interpolatePosition, jumpToCheckpoint, routeLengthMeters, scaleAdventureCheckpointsToGeometry, snapshot } from './simulator';
 
 const geometry = { coordinates: [[-3.4, 37.7], [-3.4, 37.74], [-3.39, 37.78]] as [number, number][] };
 
@@ -27,6 +27,17 @@ describe('QA route simulator', () => {
 
     expect(slow.progressMeters).toBeGreaterThan(fast.progressMeters);
     expect(slow.elapsedMs).toBe(20_000);
+  });
+
+
+  it('scales authored checkpoints to provisional geometry deterministically', () => {
+    const scaled = scaleAdventureCheckpointsToGeometry(route01CuadrosContent, geometry);
+    const finalCheckpoint = scaled.checkpoints.at(-1);
+    const geometryMeters = routeLengthMeters(geometry);
+
+    expect(finalCheckpoint?.progressMeters).toBeCloseTo(geometryMeters, 5);
+    expect(scaled.checkpoints[0]?.progressMeters).toBe(0);
+    expect(route01CuadrosContent.checkpoints.at(-1)?.progressMeters).toBe(8720);
   });
 
   it('advances a virtual route by steps, never the real GPS position', () => {

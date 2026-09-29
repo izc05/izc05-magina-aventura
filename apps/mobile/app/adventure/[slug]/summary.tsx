@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 22, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
   statDivider: { width: 1, height: 30, backgroundColor: colors.border },
-  section: { marginBottom: spacing[28] },
+  section: { marginBottom: spacing[32] },
   sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', marginBottom: spacing[12] },
   infoCard: { flexDirection: 'row', alignItems: 'baseline', gap: spacing[8], backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing[20], borderWidth: 1, borderColor: colors.border },
   infoValue: { color: colors.olive900, fontSize: 28, fontWeight: '900' },

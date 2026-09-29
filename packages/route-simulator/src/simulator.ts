@@ -85,6 +85,40 @@ export function advanceReplay(content: AdventureContentDefinition, geometry: Rou
   return { ...state, context: { ...state.context, mode: 'replay' }, elapsedMs, progressMeters, position: interpolatePosition(geometry, progressMeters), ...progression };
 }
 
+export function advanceReplayByDelta(
+  content: AdventureContentDefinition,
+  geometry: RouteGeometry,
+  state: SimulatorState,
+  deltaMs: number,
+  speedMultiplier: 1 | 4 | 10,
+  metersPerSecond = 1.2,
+): SimulatorState {
+  const normalizedDeltaMs = Math.max(0, Number.isFinite(deltaMs) ? deltaMs : 0);
+  const normalizedMetersPerSecond =
+    Number.isFinite(metersPerSecond) && metersPerSecond > 0
+      ? metersPerSecond
+      : 1.2;
+  const deltaMeters =
+    (normalizedDeltaMs / 1000) *
+    normalizedMetersPerSecond *
+    speedMultiplier;
+  const progressMeters = Math.min(
+    routeLengthMeters(geometry),
+    Math.max(0, state.progressMeters + deltaMeters),
+  );
+  const elapsedMs = state.elapsedMs + normalizedDeltaMs;
+  const progression = progressionAt(content, progressMeters, state);
+
+  return {
+    ...state,
+    context: { ...state.context, mode: 'replay' },
+    elapsedMs,
+    progressMeters,
+    position: interpolatePosition(geometry, progressMeters),
+    ...progression,
+  };
+}
+
 export function advanceBySteps(content: AdventureContentDefinition, geometry: RouteGeometry, state: SimulatorState, steps: number, metersPerStep = 0.75): SimulatorState {
   const progressMeters = Math.min(routeLengthMeters(geometry), Math.max(0, state.progressMeters + Math.max(0, steps) * metersPerStep));
   return { ...state, context: { ...state.context, mode: 'walk_to_advance' }, progressMeters, position: interpolatePosition(geometry, progressMeters), ...progressionAt(content, progressMeters, state) };

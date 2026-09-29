@@ -380,6 +380,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
-    marginTop: spacing[6],
+    marginTop: spacing[8],
   },
 });

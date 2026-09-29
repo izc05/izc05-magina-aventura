@@ -14,12 +14,15 @@ import {
 import {
   createInitialGameKitState,
   getExplorerLevel,
-  reduceGameEvent,
+  reduceGameKitAction,
   XP_REWARDS,
   type GameEvent,
+  type GameKitAction,
 } from '../src/features/game-kit/model';
 import {
+  createMockFullAdventureSequence,
   MOCK_BADGES,
+  MOCK_ACTIVE_OBJECTIVE,
   MOCK_CHALLENGES,
   MOCK_COLLECTIBLES,
   MOCK_DISCOVERIES,
@@ -28,13 +31,19 @@ import {
 import { colors, radius, spacing, typography } from '../src/theme/tokens';
 
 const initialState = createInitialGameKitState(MOCK_ROUTE.checkpoints.map((checkpoint) => checkpoint.id));
-const reducer = (state: typeof initialState, event: GameEvent) => reduceGameEvent(state, event);
+const reducer = (state: typeof initialState, action: GameKitAction) => reduceGameKitAction(state, action);
 
 export default function GameKitPlaygroundScreen() {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
   const [feedback, setFeedback] = useState<GameFeedback | null>(null);
   const level = getExplorerLevel(state.xp);
+  const activeObjective = state.completed
+    ? 'Aventura demo finalizada'
+    : state.activeObjectiveId === MOCK_ACTIVE_OBJECTIVE.id
+      ? MOCK_ACTIVE_OBJECTIVE.label
+      : 'Inicia la aventura para fijar objetivo';
+  const resetDisabled = state.eventHistory.length === 0;
 
   const nextDiscovery = useMemo(
     () => MOCK_DISCOVERIES.find((discovery) => !state.discoveries.includes(discovery.id))?.title ?? 'Ruta completada',
@@ -56,7 +65,12 @@ export default function GameKitPlaygroundScreen() {
   }
 
   function emit(event: GameEvent) {
-    dispatch(event);
+    dispatch({ type: 'GAME_EVENT', event });
+  }
+
+  function resetPlayground() {
+    dispatch({ type: 'RESET_PLAYGROUND', checkpointIds: MOCK_ROUTE.checkpoints.map((checkpoint) => checkpoint.id) });
+    show('Playground reiniciado', 'Progreso, recompensas y deduplicación vuelven al estado inicial.', 'default');
   }
 
   function show(title: string, detail: string, kind: GameFeedback['kind']) {
@@ -79,6 +93,10 @@ export default function GameKitPlaygroundScreen() {
 
   function reachCheckpoint(checkpointId = MOCK_ROUTE.checkpoints[0]!.id) {
     const checkpoint = MOCK_ROUTE.checkpoints.find((item) => item.id === checkpointId);
+    if (state.checkpointStates[checkpointId] === 'DISCOVERED' || state.checkpointStates[checkpointId] === 'COMPLETED') {
+      show('Checkpoint ya alcanzado', 'La repetición no concede XP adicional.', 'checkpoint');
+      return;
+    }
     emit({ type: 'CHECKPOINT_REACHED', checkpointId });
     awardXp(XP_REWARDS.checkpoint, 'Checkpoint alcanzado');
     show('Checkpoint alcanzado', `+${XP_REWARDS.checkpoint} XP · ${checkpoint?.title ?? 'Checkpoint demo'}`, 'checkpoint');
@@ -87,6 +105,10 @@ export default function GameKitPlaygroundScreen() {
   function unlockDiscovery(discoveryId: string) {
     const discovery = MOCK_DISCOVERIES.find((item) => item.id === discoveryId);
     if (!discovery) return;
+    if (state.discoveries.includes(discoveryId)) {
+      show('Descubrimiento ya registrado', 'La repetición no concede XP adicional.', 'discovery');
+      return;
+    }
     emit({ type: 'DISCOVERY_UNLOCKED', discoveryId });
     awardXp(discovery.xp, `Descubrimiento · ${discovery.title}`);
     show(discovery.title, `+${discovery.xp} XP · descubrimiento ${discovery.category.toLowerCase()} demo`, 'discovery');
@@ -99,20 +121,35 @@ export default function GameKitPlaygroundScreen() {
     show('Insignia conseguida', `${badge.icon} ${badge.title} · prueba visual`, 'badge');
   }
 
+  function unlockFirstChallenge() {
+    const challenge = MOCK_CHALLENGES[0]!;
+    if (state.challenges.includes(challenge.id)) {
+      show('Reto ya desbloqueado', 'La repetición no concede XP adicional.', 'xp');
+      return;
+    }
+    emit({ type: 'CHALLENGE_UNLOCKED', challengeId: challenge.id });
+    awardXp(XP_REWARDS.challenge, 'Reto desbloqueado');
+    show('Reto desbloqueado', `+${XP_REWARDS.challenge} XP · ${challenge.title}`, 'xp');
+  }
+
+  function findFirstCollectible() {
+    const collectible = MOCK_COLLECTIBLES[0]!;
+    if (state.collectibles.includes(collectible.id)) {
+      show('Objeto ya encontrado', 'La repetición no concede XP adicional.', 'default');
+      return;
+    }
+    emit({ type: 'COLLECTIBLE_FOUND', collectibleId: collectible.id });
+    awardXp(XP_REWARDS.collectible, 'Objeto encontrado');
+    show('Objeto encontrado', `+${XP_REWARDS.collectible} XP · ${collectible.title}`, 'default');
+  }
+
   function runDemoSequence() {
-    emit({ type: 'ADVENTURE_STARTED' });
-    emit({ type: 'CHECKPOINT_NEARBY', checkpointId: 'gate' });
-    emit({ type: 'CHECKPOINT_REACHED', checkpointId: 'gate' });
-    awardXp(XP_REWARDS.checkpoint, 'Checkpoint demo');
-    emit({ type: 'DISCOVERY_UNLOCKED', discoveryId: 'fern' });
-    awardXp(XP_REWARDS.discovery, 'Descubrimiento demo');
-    emit({ type: 'CHALLENGE_UNLOCKED', challengeId: MOCK_CHALLENGES[0]!.id });
-    awardXp(XP_REWARDS.challenge, 'Reto demo');
-    emit({ type: 'ROUTE_PROGRESS', percent: 35, distanceKm: 2.1, elapsedMinutes: 34 });
-    show('Descubrimiento encontrado', 'El helecho de la sombra · +100 XP · vibración simulada', 'discovery');
+    for (const event of createMockFullAdventureSequence()) emit(event);
+    show('Aventura demo completada', 'Objetivo → checkpoint → descubrimiento → XP → insignias → finalización · 650 XP', 'route');
   }
 
   function completeAdventure() {
+    if (state.completed) return;
     emit({ type: 'ADVENTURE_COMPLETED' });
     awardXp(XP_REWARDS.completedRoute, 'Ruta demo completada');
     emit({ type: 'BADGE_UNLOCKED', badgeId: 'magina-explorer' });
@@ -121,7 +158,7 @@ export default function GameKitPlaygroundScreen() {
 
   const firstCheckpoint = MOCK_ROUTE.checkpoints[0]!;
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={styles.backButton} onPress={() => router.back()}>
@@ -129,7 +166,7 @@ export default function GameKitPlaygroundScreen() {
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>LABORATORIO DE DESARROLLO · QA</Text>
-          <Text style={styles.headerTitle}>Game Kit Playground</Text>
+          <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">Game Kit Playground</Text>
         </View>
         <View style={styles.demoPill}><Text style={styles.demoPillText}>MOCK</Text></View>
       </View>
@@ -151,7 +188,7 @@ export default function GameKitPlaygroundScreen() {
           <View style={[styles.mapPoint, styles.mapPointFinish]}><Text style={styles.mapPointText}>F</Text></View>
           <View style={styles.mapLabel}><Text style={styles.mapEyebrow}>RECORRIDO CONCEPTUAL</Text><Text style={styles.mapTitle}>{MOCK_ROUTE.title}</Text><Text style={styles.mapCaption}>Sin cartografía ni datos de ubicación</Text></View>
           <View style={styles.hudOverlay}>
-            <AdventureHud state={state} checkpointTotal={MOCK_ROUTE.checkpoints.length} nextDiscovery={nextDiscovery} />
+            <AdventureHud state={state} checkpointTotal={MOCK_ROUTE.checkpoints.length} nextDiscovery={nextDiscovery} activeObjective={activeObjective} />
           </View>
         </View>
 
@@ -168,14 +205,15 @@ export default function GameKitPlaygroundScreen() {
           <ActionButton icon="⌖" title="Aproximar checkpoint" onPress={() => approachCheckpoint(firstCheckpoint.id)} />
           <ActionButton icon="✓" title="Alcanzar checkpoint" onPress={() => reachCheckpoint(firstCheckpoint.id)} />
           <ActionButton icon="✧" title="Simular +150 XP" onPress={() => { awardXp(150, 'XP de prueba'); show('+150 XP', `Nivel actual · ${level.name}`, 'xp'); }} />
-          <ActionButton icon="◇" title="Desbloquear reto" onPress={() => { const challenge = MOCK_CHALLENGES[0]!; emit({ type: 'CHALLENGE_UNLOCKED', challengeId: challenge.id }); awardXp(XP_REWARDS.challenge, 'Reto desbloqueado'); show('Reto desbloqueado', `+${XP_REWARDS.challenge} XP · ${challenge.title}`, 'xp'); }} />
-          <ActionButton icon="❧" title="Encontrar objeto" onPress={() => { const collectible = MOCK_COLLECTIBLES[0]!; emit({ type: 'COLLECTIBLE_FOUND', collectibleId: collectible.id }); awardXp(XP_REWARDS.collectible, 'Objeto encontrado'); show('Objeto encontrado', `+${XP_REWARDS.collectible} XP · ${collectible.title}`, 'default'); }} />
+          <ActionButton icon="◇" title="Desbloquear reto" onPress={unlockFirstChallenge} />
+          <ActionButton icon="❧" title="Encontrar objeto" onPress={findFirstCollectible} />
           <ActionButton icon="↗" title="Avanzar progreso" onPress={() => { const percent = Math.min(100, state.progressPercent + 20); emit({ type: 'ROUTE_PROGRESS', percent, distanceKm: state.distanceKm + 0.8, elapsedMinutes: state.elapsedMinutes + 12 }); show('Progreso actualizado', `${percent}% · distancia y tiempo simulados`, 'default'); }} />
-          <ActionButton icon="▣" title="Completar ruta" onPress={completeAdventure} prominent />
+          <ActionButton icon="▣" title="Completar ruta" onPress={completeAdventure} prominent disabled={state.completed} />
+          <ActionButton icon="↺" title="Reset completo" onPress={resetPlayground} disabled={resetDisabled} />
         </View>
         <Pressable accessibilityRole="button" style={styles.sequenceButton} onPress={runDemoSequence}>
           <Text style={styles.sequenceIcon}>✦</Text>
-          <View style={styles.sequenceCopy}><Text style={styles.sequenceTitle}>Reproducir mini-secuencia demo</Text><Text style={styles.sequenceSubtitle}>Inicio → checkpoint → descubrimiento → reto → progreso</Text></View>
+          <View style={styles.sequenceCopy}><Text style={styles.sequenceTitle}>Reproducir aventura completa</Text><Text style={styles.sequenceSubtitle}>Secuencia MOCK determinista · reset para repetir desde cero</Text></View>
           <Text style={styles.sequenceArrow}>→</Text>
         </Pressable>
 
@@ -241,11 +279,11 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
   return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.sectionSubtitle}>{subtitle}</Text></View>;
 }
 
-function ActionButton({ icon, title, onPress, prominent = false }: { icon: string; title: string; onPress: () => void; prominent?: boolean }) {
+function ActionButton({ icon, title, onPress, prominent = false, disabled = false }: { icon: string; title: string; onPress: () => void; prominent?: boolean; disabled?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.actionButton, prominent && styles.actionButtonProminent]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.actionButton, prominent && styles.actionButtonProminent, disabled && styles.actionButtonDisabled]}>
       <Text style={[styles.actionIcon, prominent && styles.actionIconProminent]}>{icon}</Text>
-      <Text style={[styles.actionTitle, prominent && styles.actionTitleProminent]}>{title}</Text>
+      <Text numberOfLines={2} ellipsizeMode="tail" style={[styles.actionTitle, prominent && styles.actionTitleProminent]}>{title}</Text>
     </Pressable>
   );
 }
@@ -260,7 +298,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: 2 },
   demoPill: { borderRadius: radius.pill, paddingHorizontal: spacing[12], paddingVertical: spacing[8], backgroundColor: colors.aoveGold },
   demoPillText: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  content: { paddingHorizontal: spacing[16], paddingBottom: spacing[32] },
+  content: { paddingHorizontal: spacing[16], paddingBottom: spacing[24] },
   intro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginBottom: spacing[12] },
   mapPreview: { height: 300, borderRadius: radius.lg, backgroundColor: '#304A3B', overflow: 'hidden', position: 'relative', marginBottom: spacing[16] },
   terrainRingOne: { position: 'absolute', top: -76, right: -25, width: 250, height: 190, borderWidth: 1, borderColor: 'rgba(213, 211, 177, 0.18)', borderRadius: 120, transform: [{ rotate: '-25deg' }] },
@@ -286,6 +324,7 @@ const styles = StyleSheet.create({
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   actionButton: { width: '48.5%', minHeight: 66, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing[12], marginTop: spacing[8] },
   actionButtonProminent: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
+  actionButtonDisabled: { backgroundColor: '#EEEAE1', borderColor: colors.border, opacity: 0.65 },
   actionIcon: { color: colors.earth, fontSize: 19, fontWeight: '900', marginRight: spacing[8] },
   actionIconProminent: { color: colors.aoveGold },
   actionTitle: { flex: 1, color: colors.ink, fontSize: 10, fontWeight: '900' },

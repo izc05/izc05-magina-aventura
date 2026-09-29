@@ -1,3 +1,5 @@
+import { XP_REWARDS, type GameEvent } from './model';
+
 export type DiscoveryCategory =
   | 'Historia'
   | 'Naturaleza'
@@ -28,6 +30,11 @@ export interface MockRouteStep {
   label: string;
   kind: 'start' | 'checkpoint' | 'discovery' | 'reward' | 'finish';
 }
+
+export const MOCK_ACTIVE_OBJECTIVE = {
+  id: 'demo-find-the-window',
+  label: 'Busca la ventana al horizonte',
+} as const;
 
 export const MOCK_ROUTE = {
   id: 'demo-maginas-secret',
@@ -138,3 +145,21 @@ export const MOCK_COLLECTIBLES = [
   { id: 'olive-leaf', title: 'Hoja de olivo', family: 'Coleccionable ficticio', icon: '❧' },
   { id: 'stone-mark', title: 'Marca de piedra', family: 'Coleccionable ficticio', icon: '◈' },
 ] as const;
+
+/** Fixed event IDs make replays deterministic; reset clears the deduplication ledger. */
+export function createMockFullAdventureSequence(): readonly GameEvent[] {
+  return [
+    { type: 'ADVENTURE_STARTED', eventId: 'demo-full-v1:start' },
+    { type: 'OBJECTIVE_ACTIVATED', objectiveId: MOCK_ACTIVE_OBJECTIVE.id, eventId: 'demo-full-v1:objective' },
+    { type: 'CHECKPOINT_NEARBY', checkpointId: 'gate', eventId: 'demo-full-v1:nearby' },
+    { type: 'CHECKPOINT_REACHED', checkpointId: 'gate', eventId: 'demo-full-v1:checkpoint' },
+    { type: 'XP_GAINED', amount: XP_REWARDS.checkpoint, reason: 'Checkpoint demo', eventId: 'demo-full-v1:checkpoint-xp' },
+    { type: 'DISCOVERY_UNLOCKED', discoveryId: 'fern', eventId: 'demo-full-v1:discovery' },
+    { type: 'XP_GAINED', amount: XP_REWARDS.discovery, reason: 'Descubrimiento demo', eventId: 'demo-full-v1:discovery-xp' },
+    { type: 'BADGE_UNLOCKED', badgeId: 'first-discovery', eventId: 'demo-full-v1:badge' },
+    { type: 'ROUTE_PROGRESS', percent: 100, distanceKm: 4.2, elapsedMinutes: 82, eventId: 'demo-full-v1:progress' },
+    { type: 'ADVENTURE_COMPLETED', eventId: 'demo-full-v1:completed' },
+    { type: 'XP_GAINED', amount: XP_REWARDS.completedRoute, reason: 'Ruta demo completada', eventId: 'demo-full-v1:route-xp' },
+    { type: 'BADGE_UNLOCKED', badgeId: 'magina-explorer', eventId: 'demo-full-v1:completion-badge' },
+  ];
+}

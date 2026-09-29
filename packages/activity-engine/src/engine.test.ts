@@ -31,7 +31,11 @@ function session(): ActivitySession {
   };
 }
 
-function location(sequence: number, longitude: number, latitude = 37): LocationSample {
+function location(
+  sequence: number,
+  longitude: number,
+  latitude = 37,
+): LocationSample {
   return {
     sequence,
     timestamp: `2026-09-16T08:00:${String(sequence * 10).padStart(2, '0')}.000Z`,
@@ -48,33 +52,143 @@ function location(sequence: number, longitude: number, latitude = 37): LocationS
 
 describe('activity engine reducer', () => {
   it('runs START -> ACTIVE and accumulates accepted active samples', () => {
-    let state = createInitialEngineState(session(), '2026-09-16T08:00:00.000Z');
-    state = reduceActivity(state, { type: 'START', at: '2026-09-16T08:00:00.000Z' }, routeLine);
-    state = reduceActivity(state, { type: 'LOCATION', sample: location(1, -4.009) }, routeLine);
-    state = reduceActivity(state, { type: 'LOCATION', sample: location(2, -4.0089) }, routeLine);
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
+    state = reduceActivity(
+      state,
+      { type: 'START', at: '2026-09-16T08:00:00.000Z' },
+      routeLine,
+    );
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(1, -4.009) },
+      routeLine,
+    );
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(2, -4.0089) },
+      routeLine,
+    );
 
     expect(state.session.state).toBe('ACTIVE');
     expect(state.snapshot.state).toBe('ACTIVE');
     expect(state.snapshot.validDistanceMeters).toBeGreaterThan(0);
     expect(state.snapshot.routeProgress).toBeGreaterThan(0);
+    expect(state.snapshot.totalElapsedSeconds).toBe(20);
     expect(state.session.lastProcessedSequence).toBe(2);
+  });
+
+  it('counts active wall time from the first sample even without movement', () => {
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
+    state = reduceActivity(
+      state,
+      { type: 'START', at: '2026-09-16T08:00:00.000Z' },
+      routeLine,
+    );
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(1, -4.009) },
+      routeLine,
+    );
+
+    expect(state.snapshot.totalElapsedSeconds).toBe(10);
+    expect(state.snapshot.validDistanceMeters).toBe(0);
+  });
+
+  it('does not count paused wall time and resumes from a fresh GPS segment', () => {
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
+    const actions: ActivityAction[] = [
+      { type: 'START', at: '2026-09-16T08:00:00.000Z' },
+      { type: 'LOCATION', sample: location(1, -4.009) },
+      { type: 'PAUSE', at: '2026-09-16T08:00:11.000Z' },
+      { type: 'RESUME', at: '2026-09-16T08:00:21.000Z' },
+      { type: 'LOCATION', sample: location(3, -4.0079) },
+      { type: 'FINISH', at: '2026-09-16T08:00:31.000Z' },
+    ];
+
+    for (const action of actions) {
+      state = reduceActivity(state, action, routeLine);
+    }
+
+    expect(state.snapshot.totalElapsedSeconds).toBe(21);
+    expect(state.snapshot.movingElapsedSeconds).toBe(0);
+    expect(state.session.finishedAt).toBe('2026-09-16T08:00:31.000Z');
   });
 
   it('does not count duplicate location sequences twice', () => {
-    let state = createInitialEngineState(session(), '2026-09-16T08:00:00.000Z');
-    state = reduceActivity(state, { type: 'START', at: '2026-09-16T08:00:00.000Z' }, routeLine);
-    state = reduceActivity(state, { type: 'LOCATION', sample: location(1, -4.009) }, routeLine);
-    state = reduceActivity(state, { type: 'LOCATION', sample: location(2, -4.0089) }, routeLine);
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
+    state = reduceActivity(
+      state,
+      { type: 'START', at: '2026-09-16T08:00:00.000Z' },
+      routeLine,
+    );
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(1, -4.009) },
+      routeLine,
+    );
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(2, -4.0089) },
+      routeLine,
+    );
     const distance = state.snapshot.validDistanceMeters;
+    const elapsed = state.snapshot.totalElapsedSeconds;
 
-    state = reduceActivity(state, { type: 'LOCATION', sample: location(2, -4.0088) }, routeLine);
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: location(2, -4.0088) },
+      routeLine,
+    );
 
     expect(state.snapshot.validDistanceMeters).toBe(distance);
+    expect(state.snapshot.totalElapsedSeconds).toBe(elapsed);
     expect(state.session.lastProcessedSequence).toBe(2);
   });
 
+  it('does not advance route progress from a GPS sample far outside the route corridor', () => {
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
+    state = reduceActivity(
+      state,
+      { type: 'START', at: '2026-09-16T08:00:00.000Z' },
+      routeLine,
+    );
+
+    const farSample: LocationSample = {
+      ...location(1, -3.2, 36.5),
+      accuracyMeters: 6,
+    };
+    state = reduceActivity(
+      state,
+      { type: 'LOCATION', sample: farSample },
+      routeLine,
+    );
+
+    expect(state.snapshot.distanceToRouteMeters).toBeGreaterThan(1_000);
+    expect(state.snapshot.routeProgress).toBe(0);
+    expect(state.snapshot.maxRouteProgress).toBe(0);
+    expect(state.snapshot.offRouteState).toBe('uncertain');
+  });
+
   it('pauses, resumes and finishes without granting rewards', () => {
-    let state = createInitialEngineState(session(), '2026-09-16T08:00:00.000Z');
+    let state = createInitialEngineState(
+      session(),
+      '2026-09-16T08:00:00.000Z',
+    );
     const actions: ActivityAction[] = [
       { type: 'START', at: '2026-09-16T08:00:00.000Z' },
       { type: 'LOCATION', sample: location(1, -4.009) },
@@ -85,7 +199,9 @@ describe('activity engine reducer', () => {
       { type: 'FINISH', at: '2026-09-16T08:00:31.000Z' },
     ];
 
-    for (const action of actions) state = reduceActivity(state, action, routeLine);
+    for (const action of actions) {
+      state = reduceActivity(state, action, routeLine);
+    }
 
     expect(state.session.state).toBe('FINISHED');
     expect(state.session.finishedAt).toBe('2026-09-16T08:00:31.000Z');

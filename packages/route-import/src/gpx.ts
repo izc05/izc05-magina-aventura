@@ -6,7 +6,9 @@ import type {
 } from '@magina-aventura/contracts';
 import {
   calculateRouteBounds,
+  calculateTrackMetrics,
   validateRouteLineFeature,
+  type TrackMetrics,
 } from '@magina-aventura/geo';
 
 export interface ImportedRouteGeometry {
@@ -14,6 +16,7 @@ export interface ImportedRouteGeometry {
   start: GeoJsonPosition;
   bounds: RouteBounds;
   elevationsM: Array<number | null>;
+  metrics: TrackMetrics;
 }
 
 type GpxTrackPoint = {
@@ -86,5 +89,6 @@ export function parseGpx(
     start: coordinates[0]!,
     bounds: calculateRouteBounds(coordinates),
     elevationsM,
+    metrics: calculateTrackMetrics(line, elevationsM),
   };
 }

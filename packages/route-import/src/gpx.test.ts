@@ -8,7 +8,7 @@ const valid = `<?xml version="1.0"?>
 </trkseg></trk></gpx>`;
 
 describe('parseGpx', () => {
-  it('normalizes GPX track points', () => {
+  it('normalizes GPX track points and derives metrics', () => {
     const result = parseGpx(valid, 'route-test', 2);
 
     expect(result.line.geometry.coordinates).toEqual([
@@ -22,6 +22,9 @@ describe('parseGpx', () => {
       routeId: 'route-test',
       geometryVersion: 2,
     });
+    expect(result.metrics.distanceKm).toBeGreaterThan(0);
+    expect(result.metrics.ascentM).toBe(5);
+    expect(result.metrics.descentM).toBe(0);
   });
 
   it('rejects empty GPX', () => {

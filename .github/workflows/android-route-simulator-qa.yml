@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/route-01-simulator-visual-apk
+      - feat/route-01-official-geometry-simulator
   workflow_dispatch:
 
 permissions:

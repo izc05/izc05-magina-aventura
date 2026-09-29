@@ -14,6 +14,8 @@ La ruta se mantiene en `simulation_only` porque la fuente oficial de la Junta in
 
 La pantalla móvil está disponible en `/qa/route-simulator`. Se mantiene desactivada salvo en desarrollo o cuando la build define `EXPO_PUBLIC_ENABLE_QA_ROUTE_SIMULATOR=1`; una entrada QA opcional (`EXPO_PUBLIC_QA_ROUTE_SIMULATOR_ENTRY=1`) redirige directamente a esa pantalla sin modificar el flujo de autenticación productivo.
 
+El workflow independiente `.github/workflows/android-route-simulator-qa.yml` genera una APK ARM64 con application id `com.isivolt.maginaaventura.routesim`, etiqueta QA y metadatos que declaran `physical_gps_gate=NOT_APPLICABLE` y recompensas comerciales desactivadas. No modifica ni reutiliza el workflow del candidato de QA físico.
+
 ## Frontera QA obligatoria
 
 Cada estado contiene `qaSimulated: true`, watermark visible **`SIMULACIÓN QA`**, `publicEffectsEnabled: false`, `commercialRedemptionEnabled: false` y `physicalQaEvidence: false`. Por diseño, un snapshot QA no puede ser elegible para sponsor redemption, ranking o logros públicos. El sponsor incluido es MOCK, tiene `status: mock` y `maxRedemptions: 0`.

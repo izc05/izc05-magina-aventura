@@ -1,0 +1,125 @@
+name: Android Route Simulator QA APK
+
+on:
+  push:
+    branches:
+      - feat/route-01-content-simulator-foundation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-route-simulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_QA_BYPASS_AUTH: '1'
+      EXPO_PUBLIC_ENABLE_QA_ROUTE_SIMULATOR: '1'
+      EXPO_PUBLIC_QA_ROUTE_SIMULATOR_ENTRY: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Generate clean Android project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Isolate simulator application id and label
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_GRADLE="android/app/build.gradle"
+          STRINGS="android/app/src/main/res/values/strings.xml"
+
+          test -f "$BUILD_GRADLE"
+          test -f "$STRINGS"
+
+          sed -i 's/applicationId "com.isivolt.maginaaventura"/applicationId "com.isivolt.maginaaventura.routesim"/' "$BUILD_GRADLE"
+          sed -i 's#<string name="app_name">Mágina Aventura</string>#<string name="app_name">Mágina Aventura QA</string>#' "$STRINGS"
+
+          grep -q 'applicationId "com.isivolt.maginaaventura.routesim"' "$BUILD_GRADLE"
+          grep -q 'Mágina Aventura QA' "$STRINGS"
+
+      - name: Build standalone ARM64 simulator APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+
+      - name: Verify APK and write simulator metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          META="apps/mobile/android/app/build/outputs/apk/release/route-simulator-qa-metadata.txt"
+
+          test -f "$APK"
+
+          apk_bytes=$(stat -c%s "$APK")
+          apk_mib=$(awk "BEGIN { printf \"%.2f\", $apk_bytes / 1024 / 1024 }")
+          apk_sha256=$(sha256sum "$APK" | awk '{print $1}')
+
+          mapfile -t abis < <(unzip -Z1 "$APK" | awk -F/ '/^lib\// {print $2}' | sort -u)
+          if [[ ${#abis[@]} -ne 1 || "${abis[0]}" != "arm64-v8a" ]]; then
+            echo "Expected ARM64-only APK; found: ${abis[*]}"
+            exit 1
+          fi
+
+          {
+            echo "repository=izc05/izc05-magina-aventura"
+            echo "git_sha=${{ github.sha }}"
+            echo "workflow_run=${{ github.run_id }}"
+            echo "apk_sha256=$apk_sha256"
+            echo "apk_bytes=$apk_bytes"
+            echo "apk_mib=$apk_mib"
+            echo "abi=arm64-v8a"
+            echo "application_id=com.isivolt.maginaaventura.routesim"
+            echo "qa_route_simulator=1"
+            echo "qa_simulator_entry=1"
+            echo "qa_bypass_auth=1"
+            echo "physical_gps_gate=NOT_APPLICABLE"
+            echo "commercial_rewards=DISABLED_FOR_QA"
+          } > "$META"
+
+          cat "$META"
+
+      - name: Upload route simulator QA APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: magina-aventura-route-simulator-arm64-${{ github.run_number }}
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/build/outputs/apk/release/route-simulator-qa-metadata.txt
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

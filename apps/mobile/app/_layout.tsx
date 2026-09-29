@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { useEffect } from 'react';
 
 const qaBypassAuth = process.env.EXPO_PUBLIC_QA_BYPASS_AUTH === '1';
+const qaRouteSimulatorEntry =
+  process.env.EXPO_PUBLIC_QA_ROUTE_SIMULATOR_ENTRY === '1';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useAuth();
@@ -14,6 +16,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const inAuthGroup = segments[0] === 'login';
+    const inQaGroup = segments[0] === 'qa';
+
+    if (qaRouteSimulatorEntry) {
+      if (!inQaGroup) {
+        router.replace('/qa/route-simulator');
+      }
+      return;
+    }
 
     if (qaBypassAuth) {
       if (inAuthGroup) {

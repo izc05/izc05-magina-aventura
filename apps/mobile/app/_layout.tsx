@@ -7,8 +7,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const qaRouteSimulatorEntry = process.env.EXPO_PUBLIC_QA_ROUTE_SIMULATOR_ENTRY === '1';
 
   useEffect(() => {
+    if (qaRouteSimulatorEntry) {
+      if (segments[0] !== 'qa') router.replace('/qa/route-simulator');
+      return;
+    }
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login';
@@ -20,7 +25,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       // Redirect away from login if authenticated
       router.replace('/');
     }
-  }, [session, isLoading, segments]);
+  }, [session, isLoading, segments, router, qaRouteSimulatorEntry]);
 
   return <>{children}</>;
 }

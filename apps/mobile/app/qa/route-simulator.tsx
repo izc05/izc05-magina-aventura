@@ -76,15 +76,15 @@ export default function QaRouteSimulatorScreen() {
     () => ({
       routeId: route01CuadrosContent.routeId,
       slug: 'las-vinas-route-01-qa',
-      geometryVersion: 1,
+      geometryVersion: route01LasVinasGeometryMetadata.geometryVersion,
       start: route01LasVinasStart,
       bounds: [...route01LasVinasBounds],
       line: {
         type: 'Feature',
         properties: {
           routeId: route01CuadrosContent.routeId,
-          geometryVersion: 1,
-          source: 'Junta de Andalucía',
+          geometryVersion: route01LasVinasGeometryMetadata.geometryVersion,
+          source: route01LasVinasGeometryMetadata.source,
           qaSimulated: true,
         },
         geometry: {

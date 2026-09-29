@@ -79,6 +79,8 @@ jobs:
 
       - name: Build standalone Android GPS QA release APK
         working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_GPS_QA_AUTH_BYPASS: '1'
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleRelease --no-daemon
@@ -113,6 +115,7 @@ jobs:
           workflow_run=${{ github.run_number }}
           package_id=com.isivolt.maginaaventura
           build_type=release-gps-qa
+          qa_auth_bypass=enabled
           expo_sdk=57
           location_package=~57.0.20
           task_manager_package=~57.0.20

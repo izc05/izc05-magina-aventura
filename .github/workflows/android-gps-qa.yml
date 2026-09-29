@@ -77,18 +77,18 @@ jobs:
           grep -q 'LocationTaskService' "$location_manifest"
           grep -q 'android:foregroundServiceType="location"' "$location_manifest"
 
-      - name: Build Android GPS QA debug APK
+      - name: Build standalone Android GPS QA release APK
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+          ./gradlew :app:assembleRelease --no-daemon
 
       - name: Verify APK contents and record evidence
         shell: bash
         run: |
           set -euo pipefail
 
-          apk="apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
           evidence="apps/mobile/android/app/build/gps-qa"
           mkdir -p "$evidence"
 
@@ -112,7 +112,7 @@ jobs:
           branch=${{ github.ref_name }}
           workflow_run=${{ github.run_number }}
           package_id=com.isivolt.maginaaventura
-          build_type=debug-gps-qa
+          build_type=release-gps-qa
           expo_sdk=57
           location_package=~57.0.20
           task_manager_package=~57.0.20

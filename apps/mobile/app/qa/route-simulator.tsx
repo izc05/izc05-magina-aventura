@@ -8,6 +8,7 @@ import {
   jumpToCheckpoint,
   route01CuadrosContent,
   routeLengthMeters,
+  scaleAdventureCheckpointsToGeometry,
   snapshot,
   type RouteGeometry,
   type SimulatorState,
@@ -29,26 +30,10 @@ function km(value: number): string {
   return `${(value / 1000).toFixed(2)} km`;
 }
 
-function contentScaledToGeometry(totalMeters: number) {
-  const authoredMeters =
-    route01CuadrosContent.checkpoints.at(-1)?.progressMeters || 8720;
-  const scale = authoredMeters > 0 && totalMeters > 0
-    ? totalMeters / authoredMeters
-    : 1;
-
-  return {
-    ...route01CuadrosContent,
-    checkpoints: route01CuadrosContent.checkpoints.map((checkpoint) => ({
-      ...checkpoint,
-      progressMeters: checkpoint.progressMeters * scale,
-    })),
-  };
-}
-
 export default function QaRouteSimulatorScreen() {
   const totalMeters = useMemo(() => routeLengthMeters(geometry), []);
   const content = useMemo(
-    () => contentScaledToGeometry(totalMeters),
+    () => scaleAdventureCheckpointsToGeometry(route01CuadrosContent, geometry),
     [totalMeters],
   );
   const [state, setState] = useState<SimulatorState>(() =>

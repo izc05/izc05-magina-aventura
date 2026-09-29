@@ -73,6 +73,11 @@ function createProvider(): LocationProvider & {
       backgroundGranted: true,
       servicesEnabled: true,
     })),
+    requestBackgroundPermission: vi.fn(async () => ({
+      foregroundGranted: true,
+      backgroundGranted: true,
+      servicesEnabled: true,
+    })),
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
   };

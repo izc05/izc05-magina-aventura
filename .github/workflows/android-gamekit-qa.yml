@@ -1,0 +1,131 @@
+name: Android Game Kit QA APK
+
+on:
+  push:
+    branches:
+      - feat/game-00e-android-physical-gate
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-qa-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_QA_BYPASS_AUTH: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Generate clean Android project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Verify Android location manifest contract
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_MANIFEST="android/app/src/main/AndroidManifest.xml"
+          LOCATION_MANIFEST="node_modules/expo-location/android/src/main/AndroidManifest.xml"
+
+          test -f "$APP_MANIFEST"
+          test -f "$LOCATION_MANIFEST"
+
+          grep -q 'android.permission.ACCESS_FINE_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.ACCESS_COARSE_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.ACCESS_BACKGROUND_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.FOREGROUND_SERVICE' "$APP_MANIFEST"
+          grep -q 'android.permission.FOREGROUND_SERVICE_LOCATION' "$APP_MANIFEST"
+
+          grep -q 'LocationTaskService' "$LOCATION_MANIFEST"
+          grep -q 'android:foregroundServiceType="location"' "$LOCATION_MANIFEST"
+
+      - name: Build standalone ARM64 release APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+
+      - name: Verify APK and write QA metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          MANIFEST="apps/mobile/android/app/src/main/AndroidManifest.xml"
+          META="apps/mobile/android/app/build/outputs/apk/release/qa-metadata.txt"
+
+          test -f "$APK"
+          test -f "$MANIFEST"
+
+          apk_bytes=$(stat -c%s "$APK")
+          apk_mib=$(awk "BEGIN { printf \"%.2f\", $apk_bytes / 1024 / 1024 }")
+          apk_sha256=$(sha256sum "$APK" | awk '{print $1}')
+
+          mapfile -t abis < <(unzip -Z1 "$APK" | awk -F/ '/^lib\// {print $2}' | sort -u)
+          printf 'ABIs in APK: %s\n' "${abis[*]}"
+
+          if [[ ${#abis[@]} -ne 1 || "${abis[0]}" != "arm64-v8a" ]]; then
+            echo "Expected ARM64-only APK; found: ${abis[*]}"
+            exit 1
+          fi
+
+          {
+            echo "repository=izc05/izc05-magina-aventura"
+            echo "git_sha=${{ github.sha }}"
+            echo "workflow_run=${{ github.run_id }}"
+            echo "apk_sha256=$apk_sha256"
+            echo "apk_bytes=$apk_bytes"
+            echo "apk_mib=$apk_mib"
+            echo "abi=arm64-v8a"
+            echo "qa_bypass_auth=1"
+            echo "expo_sdk=57"
+            echo "react_native=0.86.2"
+            echo "expo_location=57.0.20"
+            echo "expo_task_manager=57.0.20"
+            echo "expo_sqlite=57.0.3"
+          } > "$META"
+
+          cat "$META"
+
+      - name: Upload Android physical-QA bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: magina-aventura-gamekit-arm64-${{ github.run_number }}
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            apps/mobile/android/app/src/main/AndroidManifest.xml
+            apps/mobile/android/app/build/outputs/apk/release/qa-metadata.txt
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

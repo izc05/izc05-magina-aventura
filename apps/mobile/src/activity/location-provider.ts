@@ -31,7 +31,13 @@ export interface NativeLocationAdapter {
 
 export interface LocationProvider {
   getPermissionState(): Promise<LocationPermissionState>;
+  /**
+   * Requests only the permission required to begin a visible adventure.
+   * Background permission is intentionally separate because Android 11+
+   * can route that request through system Settings and recreate the Activity.
+   */
   requestAdventurePermissions(): Promise<LocationPermissionState>;
+  requestBackgroundPermission(): Promise<LocationPermissionState>;
   start(
     activityId: string,
     onForegroundLocation?: (point: ForegroundLocationPoint) => void,
@@ -62,6 +68,20 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
     async requestAdventurePermissions(): Promise<LocationPermissionState> {
       const servicesEnabled = await adapter.isServicesEnabled();
       const foreground = await adapter.requestForegroundPermission();
+      const background = granted(foreground)
+        ? await adapter.getBackgroundPermission()
+        : 'denied';
+
+      return {
+        foregroundGranted: granted(foreground),
+        backgroundGranted: granted(background),
+        servicesEnabled,
+      };
+    },
+
+    async requestBackgroundPermission(): Promise<LocationPermissionState> {
+      const servicesEnabled = await adapter.isServicesEnabled();
+      const foreground = await adapter.getForegroundPermission();
 
       if (!granted(foreground)) {
         return {
@@ -72,6 +92,7 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
       }
 
       const background = await adapter.requestBackgroundPermission();
+
       return {
         foregroundGranted: true,
         backgroundGranted: granted(background),

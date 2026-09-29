@@ -65,33 +65,52 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
-          import re
 
           build_gradle = Path("android/app/build.gradle")
           strings = Path("android/app/src/main/res/values/strings.xml")
 
-          gradle_text = build_gradle.read_text(encoding="utf-8")
-          gradle_text, app_id_changes = re.subn(
-              r"(applicationId\\s+['\"])com\\.isivolt\\.maginaaventura(['\"])",
-              r"\\1com.isivolt.maginaaventura.routesim\\2",
-              gradle_text,
-              count=1,
-          )
-          if app_id_changes != 1:
-              raise SystemExit("Could not locate exactly one generated applicationId")
+          gradle_lines = build_gradle.read_text(encoding="utf-8").splitlines()
+          app_id_lines = [
+              index
+              for index, line in enumerate(gradle_lines)
+              if "applicationId" in line
+              and "com.isivolt.maginaaventura" in line
+          ]
+          if len(app_id_lines) != 1:
+              print("Generated applicationId lines:")
+              for line in gradle_lines:
+                  if "applicationId" in line:
+                      print(line)
+              raise SystemExit(
+                  f"Expected exactly one generated applicationId, found {len(app_id_lines)}"
+              )
 
-          strings_text = strings.read_text(encoding="utf-8")
-          strings_text, label_changes = re.subn(
-              r'(<string\\s+name="app_name">).*?(</string>)',
-              r'\\1Mágina Aventura QA\\2',
-              strings_text,
-              count=1,
+          app_index = app_id_lines[0]
+          gradle_lines[app_index] = gradle_lines[app_index].replace(
+              "com.isivolt.maginaaventura",
+              "com.isivolt.maginaaventura.routesim",
+              1,
           )
-          if label_changes != 1:
-              raise SystemExit("Could not locate generated app_name resource")
 
-          build_gradle.write_text(gradle_text, encoding="utf-8")
-          strings.write_text(strings_text, encoding="utf-8")
+          string_lines = strings.read_text(encoding="utf-8").splitlines()
+          app_name_lines = [
+              index
+              for index, line in enumerate(string_lines)
+              if 'name="app_name"' in line
+          ]
+          if len(app_name_lines) != 1:
+              raise SystemExit(
+                  f"Expected exactly one generated app_name, found {len(app_name_lines)}"
+              )
+
+          label_index = app_name_lines[0]
+          label_line = string_lines[label_index]
+          prefix = label_line.split(">", 1)[0]
+          string_lines[label_index] = f"{prefix}>Mágina Aventura QA</string>"
+
+          build_gradle.write_text("\n".join(gradle_lines) + "\n", encoding="utf-8")
+          strings.write_text("\n".join(string_lines) + "\n", encoding="utf-8")
+
           PY
 
           grep -Eq 'applicationId[[:space:]]+['"'"'\"]com\.isivolt\.maginaaventura\.routesim['"'"'\"]' "$BUILD_GRADLE"

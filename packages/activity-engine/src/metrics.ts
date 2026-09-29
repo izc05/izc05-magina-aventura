@@ -33,7 +33,10 @@ export function updateActivityMetrics(
   const base: ActivitySnapshot = {
     ...snapshot,
     state,
-    lastProcessedSequence: Math.max(snapshot.lastProcessedSequence, sample.sequence),
+    lastProcessedSequence: Math.max(
+      snapshot.lastProcessedSequence,
+      sample.sequence,
+    ),
   };
 
   if (!sample.validForMetrics || !previousAccepted?.validForMetrics) {
@@ -45,12 +48,9 @@ export function updateActivityMetrics(
   const elapsedSeconds = elapsedSecondsBetween(previousAccepted, sample);
   if (elapsedSeconds === null) return base;
 
-  const totalElapsedSeconds = snapshot.totalElapsedSeconds + elapsedSeconds;
-
   if (state !== 'ACTIVE') {
     return {
       ...base,
-      totalElapsedSeconds,
       lastValidSample: sample,
       currentSpeedMps: null,
       paceSecondsPerKm: null,
@@ -58,7 +58,10 @@ export function updateActivityMetrics(
   }
 
   const segmentDistanceMeters = distanceMeters(
-    { latitude: previousAccepted.latitude, longitude: previousAccepted.longitude },
+    {
+      latitude: previousAccepted.latitude,
+      longitude: previousAccepted.longitude,
+    },
     { latitude: sample.latitude, longitude: sample.longitude },
   );
   const currentSpeedMps = segmentDistanceMeters / elapsedSeconds;
@@ -74,7 +77,8 @@ export function updateActivityMetrics(
     previousAccepted.altitudeMeters !== null &&
     sample.altitudeMeters !== null
   ) {
-    const altitudeDelta = sample.altitudeMeters - previousAccepted.altitudeMeters;
+    const altitudeDelta =
+      sample.altitudeMeters - previousAccepted.altitudeMeters;
 
     if (Math.abs(altitudeDelta) >= config.elevationNoiseThresholdMeters) {
       if (altitudeDelta > 0) elevationGainMeters += altitudeDelta;
@@ -84,9 +88,10 @@ export function updateActivityMetrics(
 
   return {
     ...base,
-    validDistanceMeters: snapshot.validDistanceMeters + segmentDistanceMeters,
-    totalElapsedSeconds,
-    movingElapsedSeconds: snapshot.movingElapsedSeconds + elapsedSeconds,
+    validDistanceMeters:
+      snapshot.validDistanceMeters + segmentDistanceMeters,
+    movingElapsedSeconds:
+      snapshot.movingElapsedSeconds + elapsedSeconds,
     currentSpeedMps,
     paceSecondsPerKm,
     elevationGainMeters,

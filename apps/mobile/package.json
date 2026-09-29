@@ -27,7 +27,11 @@
     "react": "19.2.3",
     "react-native": "0.86.2",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-screens": "~4.26.0",
+    "@magina-aventura/activity-engine": "workspace:*",
+    "expo-sqlite": "~57.0.3",
+    "expo-location": "~57.0.20",
+    "expo-task-manager": "~57.0.20"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

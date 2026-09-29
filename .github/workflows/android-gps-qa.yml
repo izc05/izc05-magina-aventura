@@ -1,0 +1,130 @@
+name: Android GPS QA APK
+
+on:
+  push:
+    branches:
+      - feat/adventure-game-kit-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-gps-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: apps/mobile/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Verify Android GPS manifest contract
+        shell: bash
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+
+          app_manifest="android/app/src/main/AndroidManifest.xml"
+          location_manifest="node_modules/expo-location/android/src/main/AndroidManifest.xml"
+
+          test -f "$app_manifest"
+          test -f "$location_manifest"
+
+          for permission in \
+            android.permission.ACCESS_FINE_LOCATION \
+            android.permission.ACCESS_COARSE_LOCATION \
+            android.permission.ACCESS_BACKGROUND_LOCATION \
+            android.permission.FOREGROUND_SERVICE \
+            android.permission.FOREGROUND_SERVICE_LOCATION; do
+            grep -q "$permission" "$app_manifest" || {
+              echo "Missing required permission: $permission"
+              exit 1
+            }
+          done
+
+          grep -q 'LocationTaskService' "$location_manifest"
+          grep -q 'android:foregroundServiceType="location"' "$location_manifest"
+
+      - name: Build standalone Android GPS QA release APK
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Verify APK contents and record evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          evidence="apps/mobile/android/app/build/gps-qa"
+          mkdir -p "$evidence"
+
+          test -s "$apk"
+
+          if ! unzip -Z1 "$apk" | grep -Eq '^assets/index\.android\.bundle$'; then
+            echo "ERROR: JavaScript bundle missing from APK"
+            exit 1
+          fi
+
+          if ! unzip -Z1 "$apk" | grep -Eq '^lib/[^/]+/libhermesvm\.so$'; then
+            echo "ERROR: Hermes VM library missing from APK"
+            exit 1
+          fi
+
+          cp "$apk" "$evidence/magina-aventura-gps-qa.apk"
+          sha256sum "$evidence/magina-aventura-gps-qa.apk" > "$evidence/SHA256SUMS.txt"
+
+          cat > "$evidence/BUILD_INFO.txt" <<EOF
+          commit=${{ github.sha }}
+          branch=${{ github.ref_name }}
+          workflow_run=${{ github.run_number }}
+          package_id=com.isivolt.maginaaventura
+          build_type=release-gps-qa
+          expo_sdk=57
+          location_package=~57.0.20
+          task_manager_package=~57.0.20
+          sqlite_package=~57.0.3
+          generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+
+      - name: Upload Android GPS QA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: magina-aventura-gps-qa-${{ github.run_number }}
+          path: apps/mobile/android/app/build/gps-qa
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

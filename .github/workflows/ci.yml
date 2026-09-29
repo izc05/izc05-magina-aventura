@@ -37,6 +37,24 @@ jobs:
         working-directory: apps/mobile
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
+      - name: Verify Android location manifest contract
+        working-directory: apps/mobile
+        run: |
+          APP_MANIFEST="android/app/src/main/AndroidManifest.xml"
+          LOCATION_MANIFEST="node_modules/expo-location/android/src/main/AndroidManifest.xml"
+
+          test -f "$APP_MANIFEST"
+          test -f "$LOCATION_MANIFEST"
+
+          grep -q 'android.permission.ACCESS_FINE_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.ACCESS_COARSE_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.ACCESS_BACKGROUND_LOCATION' "$APP_MANIFEST"
+          grep -q 'android.permission.FOREGROUND_SERVICE' "$APP_MANIFEST"
+          grep -q 'android.permission.FOREGROUND_SERVICE_LOCATION' "$APP_MANIFEST"
+
+          grep -q 'LocationTaskService' "$LOCATION_MANIFEST"
+          grep -q 'android:foregroundServiceType="location"' "$LOCATION_MANIFEST"
+
       - name: Verify pure package boundaries
         run: |
           if grep -R -n -E --exclude-dir=node_modules --exclude-dir=.pnpm "from ['\"]expo|@supabase|maplibre|react-native" packages/domain/src packages/geo/src packages/contracts/src packages/offline-sync/src packages/route-import/src; then

@@ -161,8 +161,9 @@ export default function PrepareRouteAdventureScreen() {
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Comprobaciones previas</Text>
           <Text style={styles.noticeBody}>
-            Esta build ya comprueba los permisos reales del teléfono. Puedes continuar con
-            seguimiento solo en primer plano si Android no concede el permiso en segundo plano.
+            Esta build comprueba los permisos reales del teléfono. Para evitar que Android
+            saque la app a Ajustes al iniciar, el comienzo de la ruta solicita solo la ubicación
+            necesaria en primer plano. El seguimiento en segundo plano se valida por separado.
           </Text>
         </View>
 

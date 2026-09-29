@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { useEffect } from 'react';
+import { isGpsQaAuthBypassEnabled } from '../src/qa/gps-qa-mode';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useAuth();
@@ -11,6 +12,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    if (isGpsQaAuthBypassEnabled()) {
+      if (segments[0] === 'login') router.replace('/');
+      return;
+    }
+
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login';

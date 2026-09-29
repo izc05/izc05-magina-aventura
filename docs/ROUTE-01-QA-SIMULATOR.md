@@ -12,6 +12,8 @@ La ruta se mantiene en `simulation_only` porque la fuente oficial de la Junta in
 - **Walk-to-advance**: convierte pasos en progreso virtual (fallback configurable, 0,75 m/paso por defecto); no reescribe GPS real.
 - **Checkpoint-jump**: mueve la posición virtual al progreso editorial del checkpoint y respeta prerrequisitos.
 
+La pantalla móvil está disponible en `/qa/route-simulator`. Se mantiene desactivada salvo en desarrollo o cuando la build define `EXPO_PUBLIC_ENABLE_QA_ROUTE_SIMULATOR=1`; una entrada QA opcional (`EXPO_PUBLIC_QA_ROUTE_SIMULATOR_ENTRY=1`) redirige directamente a esa pantalla sin modificar el flujo de autenticación productivo.
+
 ## Frontera QA obligatoria
 
 Cada estado contiene `qaSimulated: true`, watermark visible **`SIMULACIÓN QA`**, `publicEffectsEnabled: false`, `commercialRedemptionEnabled: false` y `physicalQaEvidence: false`. Por diseño, un snapshot QA no puede ser elegible para sponsor redemption, ranking o logros públicos. El sponsor incluido es MOCK, tiene `status: mock` y `maxRedemptions: 0`.

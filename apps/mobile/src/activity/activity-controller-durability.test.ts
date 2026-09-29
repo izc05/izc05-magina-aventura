@@ -214,6 +214,48 @@ describe('ActivityController durability boundaries', () => {
     expect(locationProvider.stop).not.toHaveBeenCalled();
   });
 
+  it('reopening after finish does not recover the session or duplicate the outbox', async () => {
+    const database = createMemoryActivityStoreDatabase();
+    const firstStore = new MemoryActivityStore(database);
+    const inbox = new MemoryBackgroundLocationInbox();
+    const first = createActivityController({
+      store: firstStore,
+      inbox,
+      locationProvider: provider(),
+      createActivityId: () => 'activity-finish-reopen',
+      now: () => '2026-09-28T08:25:00.000Z',
+    });
+
+    await first.start(definition, route);
+    await inbox.append('activity-finish-reopen', [
+      point(Date.parse('2026-09-28T08:25:05.000Z'), 37.82),
+      point(Date.parse('2026-09-28T08:25:15.000Z'), 37.82008),
+    ]);
+    await first.refresh();
+    await first.finish();
+
+    expect(database.sessions.get('activity-finish-reopen')?.state).toBe('FINISHED');
+    expect(database.syncBatches.size).toBe(1);
+
+    const reopenedStore = new MemoryActivityStore(database);
+    const reopened = createActivityController({
+      store: reopenedStore,
+      inbox,
+      locationProvider: provider(),
+      createActivityId: () => 'unused-after-reopen',
+      now: () => '2026-09-28T08:26:00.000Z',
+    });
+
+    await expect(reopened.recover(definition, route)).resolves.toBeNull();
+
+    const pending = await reopenedStore.loadPendingSyncBatches(
+      'activity-finish-reopen',
+    );
+    expect(pending).toHaveLength(1);
+    expect(database.syncBatches.size).toBe(1);
+    expect(database.sessions.get('activity-finish-reopen')?.state).toBe('FINISHED');
+  });
+
   it('persists FINISHED and the sync outbox together on successful finish', async () => {
     const database = createMemoryActivityStoreDatabase();
     const store = new MemoryActivityStore(database);

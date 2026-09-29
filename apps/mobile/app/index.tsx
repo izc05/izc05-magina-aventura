@@ -96,6 +96,26 @@ export default function RoutesHomeScreen() {
           <Text style={styles.testerArrow}>→</Text>
         </Pressable>
 
+        {__DEV__ ? (
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.testerBanner, styles.gameKitBanner]}
+            onPress={() => router.push('/game-kit-playground')}
+          >
+            <View style={styles.testerIconBox}>
+              <Text style={styles.testerIcon}>⌖</Text>
+            </View>
+            <View style={styles.testerCopy}>
+              <Text style={styles.testerEyebrow}>SOLO DESARROLLO / QA</Text>
+              <Text style={styles.testerTitle}>Game Kit Playground</Text>
+              <Text style={styles.testerBody}>
+                Simula eventos, HUD, descubrimientos, XP e insignias sin GPS.
+              </Text>
+            </View>
+            <Text style={styles.testerArrow}>→</Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Rutas destacadas</Text>
@@ -196,6 +216,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.olive900,
     padding: spacing[16],
     marginVertical: spacing[12],
+  },
+  gameKitBanner: {
+    backgroundColor: colors.earth,
+    marginTop: 0,
   },
   testerIconBox: {
     width: 42,

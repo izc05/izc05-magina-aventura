@@ -104,6 +104,13 @@ export interface ProgressionSnapshot {
   sponsorRedemptionEligible: boolean;
 }
 
+function rewardBoundaryMillis(value: string, endOfDay: boolean): number {
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`
+    : value;
+  return Date.parse(normalized);
+}
+
 export function validateAdventureContent(content: AdventureContentDefinition): AdventureContentDefinition {
   const unique = (values: string[], label: string) => {
     if (new Set(values).size !== values.length) throw new Error(`${label} IDs must be unique`);
@@ -123,18 +130,30 @@ export function validateAdventureContent(content: AdventureContentDefinition): A
       throw new Error(`Tradition card ${card.id} must not be presented as fact`);
     }
   }
-  const checkpointIds = new Set(content.checkpoints.map((item) => item.id));
+  const checkpointById = new Map(content.checkpoints.map((item) => [item.id, item] as const));
   const discoveryIds = new Set(content.discoveries.map((item) => item.id));
   for (const checkpoint of content.checkpoints) {
     if (checkpoint.progressMeters < 0) throw new Error(`Checkpoint ${checkpoint.id} has invalid progress`);
     for (const prerequisite of checkpoint.prerequisiteCheckpointIds ?? []) {
-      if (!checkpointIds.has(prerequisite)) throw new Error(`Unknown checkpoint prerequisite ${prerequisite}`);
+      const prerequisiteCheckpoint = checkpointById.get(prerequisite);
+      if (!prerequisiteCheckpoint) throw new Error(`Unknown checkpoint prerequisite ${prerequisite}`);
+      if (prerequisite === checkpoint.id) throw new Error(`Checkpoint ${checkpoint.id} cannot require itself`);
+      if (prerequisiteCheckpoint.progressMeters > checkpoint.progressMeters) {
+        throw new Error(`Checkpoint prerequisite ${prerequisite} must not come after ${checkpoint.id}`);
+      }
     }
     for (const discoveryId of checkpoint.discoveryIds) if (!discoveryIds.has(discoveryId)) throw new Error(`Unknown discovery ${discoveryId}`);
   }
   for (const discovery of content.discoveries) {
     for (const prerequisite of discovery.prerequisiteDiscoveryIds ?? []) {
       if (!discoveryIds.has(prerequisite)) throw new Error(`Unknown discovery prerequisite ${prerequisite}`);
+    }
+  }
+  for (const reward of content.sponsorRewards) {
+    const validFrom = rewardBoundaryMillis(reward.validFrom, false);
+    const validUntil = rewardBoundaryMillis(reward.validUntil, true);
+    if (!Number.isFinite(validFrom) || !Number.isFinite(validUntil) || validFrom > validUntil) {
+      throw new Error(`Sponsor reward ${reward.sponsorId} has an invalid validity window`);
     }
   }
   return content;
@@ -152,6 +171,25 @@ export function qaProgressionSnapshot(progressMeters: number, reachedCheckpointI
   };
 }
 
-export function canRedeemSponsorReward(reward: SponsorReward, snapshot: ProgressionSnapshot, serverAuthorized: boolean): boolean {
-  return !snapshot.qaSimulated && snapshot.sponsorRedemptionEligible && serverAuthorized && reward.status === 'active';
+export function isSponsorRewardActiveAt(reward: SponsorReward, at: Date | string | number = new Date()): boolean {
+  const timestamp = at instanceof Date ? at.getTime() : typeof at === 'number' ? at : Date.parse(at);
+  const validFrom = rewardBoundaryMillis(reward.validFrom, false);
+  const validUntil = rewardBoundaryMillis(reward.validUntil, true);
+  return Number.isFinite(timestamp) && Number.isFinite(validFrom) && Number.isFinite(validUntil)
+    && timestamp >= validFrom
+    && timestamp <= validUntil;
+}
+
+export function canRedeemSponsorReward(
+  reward: SponsorReward,
+  snapshot: ProgressionSnapshot,
+  serverAuthorized: boolean,
+  at: Date | string | number = new Date(),
+): boolean {
+  return !snapshot.qaSimulated
+    && snapshot.sponsorRedemptionEligible
+    && serverAuthorized
+    && reward.status === 'active'
+    && reward.maxRedemptions > 0
+    && isSponsorRewardActiveAt(reward, at);
 }

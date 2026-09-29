@@ -63,11 +63,39 @@ jobs:
           test -f "$BUILD_GRADLE"
           test -f "$STRINGS"
 
-          sed -i 's/applicationId "com.isivolt.maginaaventura"/applicationId "com.isivolt.maginaaventura.routesim"/' "$BUILD_GRADLE"
-          sed -i 's#<string name="app_name">Mágina Aventura</string>#<string name="app_name">Mágina Aventura QA</string>#' "$STRINGS"
+          python - <<'PY'
+          from pathlib import Path
+          import re
 
-          grep -q 'applicationId "com.isivolt.maginaaventura.routesim"' "$BUILD_GRADLE"
-          grep -q 'Mágina Aventura QA' "$STRINGS"
+          build_gradle = Path("android/app/build.gradle")
+          strings = Path("android/app/src/main/res/values/strings.xml")
+
+          gradle_text = build_gradle.read_text(encoding="utf-8")
+          gradle_text, app_id_changes = re.subn(
+              r"(applicationId\\s+['\"])com\\.isivolt\\.maginaaventura(['\"])",
+              r"\\1com.isivolt.maginaaventura.routesim\\2",
+              gradle_text,
+              count=1,
+          )
+          if app_id_changes != 1:
+              raise SystemExit("Could not locate exactly one generated applicationId")
+
+          strings_text = strings.read_text(encoding="utf-8")
+          strings_text, label_changes = re.subn(
+              r'(<string\\s+name="app_name">).*?(</string>)',
+              r'\\1Mágina Aventura QA\\2',
+              strings_text,
+              count=1,
+          )
+          if label_changes != 1:
+              raise SystemExit("Could not locate generated app_name resource")
+
+          build_gradle.write_text(gradle_text, encoding="utf-8")
+          strings.write_text(strings_text, encoding="utf-8")
+          PY
+
+          grep -Eq 'applicationId[[:space:]]+['"'"'\"]com\.isivolt\.maginaaventura\.routesim['"'"'\"]' "$BUILD_GRADLE"
+          grep -Fq 'Mágina Aventura QA' "$STRINGS"
 
       - name: Build standalone ARM64 simulator APK
         working-directory: apps/mobile/android

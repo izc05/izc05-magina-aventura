@@ -14,6 +14,7 @@
   "dependencies": {
     "@magina-aventura/contracts": "workspace:*",
     "@magina-aventura/offline-sync": "workspace:*",
+    "@magina-aventura/route-simulator": "workspace:*",
     "@maplibre/maplibre-react-native": "^11.3.10",
     "@react-native-async-storage/async-storage": "^2.1.1",
     "@supabase/supabase-js": "^2.49.1",

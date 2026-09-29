@@ -67,10 +67,47 @@ export function createInitialEngineState(
   };
 }
 
+function elapsedSince(earlier: string, later: string): number {
+  const earlierMs = Date.parse(earlier);
+  const laterMs = Date.parse(later);
+  if (!Number.isFinite(earlierMs) || !Number.isFinite(laterMs)) return 0;
+  return Math.max(0, (laterMs - earlierMs) / 1000);
+}
+
+function advanceActiveClock(
+  snapshot: ActivitySnapshot,
+  isActive: boolean,
+  at: string,
+): ActivitySnapshot {
+  if (!isActive) return snapshot;
+
+  const earlierMs = Date.parse(snapshot.createdAt);
+  const laterMs = Date.parse(at);
+  if (
+    !Number.isFinite(earlierMs) ||
+    !Number.isFinite(laterMs) ||
+    laterMs <= earlierMs
+  ) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    totalElapsedSeconds:
+      snapshot.totalElapsedSeconds + (laterMs - earlierMs) / 1000,
+    createdAt: at,
+  };
+}
+
 function reduceLifecycleAction(
   state: ActivityEngineState,
   action: Exclude<ActivityAction, { type: 'LOCATION' }>,
 ): ActivityEngineState {
+  const clockedSnapshot = advanceActiveClock(
+    state.snapshot,
+    state.session.state === 'ACTIVE',
+    action.at,
+  );
   const nextState = transitionActivityState(state.session.state, action.type);
   const nextSession: ActivitySession = {
     ...state.session,
@@ -89,11 +126,15 @@ function reduceLifecycleAction(
     ...state,
     session: nextSession,
     snapshot: {
-      ...state.snapshot,
+      ...clockedSnapshot,
       state: nextState,
       createdAt: action.at,
-      currentSpeedMps: nextState === 'ACTIVE' ? state.snapshot.currentSpeedMps : null,
-      paceSecondsPerKm: nextState === 'ACTIVE' ? state.snapshot.paceSecondsPerKm : null,
+      currentSpeedMps: null,
+      paceSecondsPerKm: null,
+      lastValidSample:
+        action.type === 'RESUME'
+          ? null
+          : clockedSnapshot.lastValidSample,
     },
     shouldPersistSnapshot: true,
     acceptedSamplesSinceSnapshot: 0,
@@ -101,13 +142,6 @@ function reduceLifecycleAction(
     acceptedSample: null,
     rejectedSample: null,
   };
-}
-
-function elapsedSince(earlier: string, later: string): number {
-  const earlierMs = Date.parse(earlier);
-  const laterMs = Date.parse(later);
-  if (!Number.isFinite(earlierMs) || !Number.isFinite(laterMs)) return 0;
-  return Math.max(0, (laterMs - earlierMs) / 1000);
 }
 
 export function reduceActivity(
@@ -130,8 +164,13 @@ export function reduceActivity(
     };
   }
 
-  let snapshot = updateActivityMetrics(
+  const clockedSnapshot = advanceActiveClock(
     state.snapshot,
+    state.session.state === 'ACTIVE',
+    sample.timestamp,
+  );
+  let snapshot = updateActivityMetrics(
+    clockedSnapshot,
     state.snapshot.lastValidSample,
     sample,
     state.session.state,
@@ -151,10 +190,22 @@ export function reduceActivity(
       sample.accuracyMeters,
       config,
     );
+
+    const effectiveCorridorMeters = Math.max(
+      config.offRouteBaseCorridorMeters,
+      Math.max(0, sample.accuracyMeters) * config.offRouteAccuracyMultiplier,
+    );
+    const insideRouteCorridor =
+      progress.distanceToRouteMeters <= effectiveCorridorMeters;
+
     snapshot = {
       ...snapshot,
-      routeProgress: progress.currentProgress,
-      maxRouteProgress: progress.maxProgress,
+      routeProgress: insideRouteCorridor
+        ? progress.currentProgress
+        : state.snapshot.routeProgress,
+      maxRouteProgress: insideRouteCorridor
+        ? progress.maxProgress
+        : state.snapshot.maxRouteProgress,
       distanceToRouteMeters: progress.distanceToRouteMeters,
       offRouteState: offRouteEvidence.state,
     };
@@ -168,7 +219,8 @@ export function reduceActivity(
     nextAcceptedCount >= config.snapshotEveryAcceptedSamples;
   const dueByTime =
     sample.validForMetrics &&
-    elapsedSince(state.lastSnapshotAt, sample.timestamp) >= config.snapshotEverySeconds;
+    elapsedSince(state.lastSnapshotAt, sample.timestamp) >=
+      config.snapshotEverySeconds;
   const shouldPersistSnapshot = dueByCount || dueByTime;
 
   return {
@@ -181,7 +233,9 @@ export function reduceActivity(
     offRouteEvidence,
     shouldPersistSnapshot,
     acceptedSamplesSinceSnapshot: shouldPersistSnapshot ? 0 : nextAcceptedCount,
-    lastSnapshotAt: shouldPersistSnapshot ? sample.timestamp : state.lastSnapshotAt,
+    lastSnapshotAt: shouldPersistSnapshot
+      ? sample.timestamp
+      : state.lastSnapshotAt,
     acceptedSample: sample.validForMetrics ? sample : null,
     rejectedSample: sample.validForMetrics ? null : sample,
   };

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/adventure-game-kit-v1
+      - fix/gps-qa-auth-bypass
   workflow_dispatch:
 
 permissions:

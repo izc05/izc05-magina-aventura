@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import { distanceMeters } from '@magina-aventura/geo';
 
+import { route01CuadrosContent } from './route-01-cuadros';
 import {
   route01LasVinasBounds,
   route01LasVinasCoordinates,
   route01LasVinasGeometryMetadata,
   route01LasVinasStart,
 } from './route-01-las-vinas-geometry';
-import { routeLengthMeters } from '../simulator';
+import {
+  interpolatePosition,
+  routeLengthMeters,
+  scaleAdventureCheckpointsToGeometry,
+} from '../simulator';
 
 describe('ROUTE-01 official Las Viñas geometry', () => {
   const geometry = { coordinates: route01LasVinasCoordinates };
@@ -44,6 +49,40 @@ describe('ROUTE-01 official Las Viñas geometry', () => {
         { latitude: current[1], longitude: current[0] },
       );
       expect(segment).toBeLessThanOrEqual(250);
+    }
+  });
+
+  it('projects all eight authored checkpoints monotonically onto the official line', () => {
+    const scaled = scaleAdventureCheckpointsToGeometry(
+      route01CuadrosContent,
+      geometry,
+    );
+    const routeMeters = routeLengthMeters(geometry);
+
+    expect(scaled.checkpoints).toHaveLength(8);
+    expect(scaled.checkpoints[0]?.progressMeters).toBe(0);
+    expect(scaled.checkpoints.at(-1)?.progressMeters).toBeCloseTo(
+      routeMeters,
+      5,
+    );
+
+    for (let index = 1; index < scaled.checkpoints.length; index += 1) {
+      expect(scaled.checkpoints[index]!.progressMeters).toBeGreaterThan(
+        scaled.checkpoints[index - 1]!.progressMeters,
+      );
+    }
+
+    for (const checkpoint of scaled.checkpoints) {
+      const position = interpolatePosition(
+        geometry,
+        checkpoint.progressMeters,
+      );
+      expect(Number.isFinite(position[0])).toBe(true);
+      expect(Number.isFinite(position[1])).toBe(true);
+      expect(position[0]).toBeGreaterThanOrEqual(route01LasVinasBounds[0]);
+      expect(position[0]).toBeLessThanOrEqual(route01LasVinasBounds[2]);
+      expect(position[1]).toBeGreaterThanOrEqual(route01LasVinasBounds[1]);
+      expect(position[1]).toBeLessThanOrEqual(route01LasVinasBounds[3]);
     }
   });
 

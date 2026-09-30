@@ -12,6 +12,7 @@ import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils
 import { RouteMap } from '../../src/map/RouteMap';
 import type { EnhancedRoutePayload } from '../../src/map/map-layers';
 import { colors, radius, spacing } from '../../src/theme/tokens';
+import { checkpointViewModel } from '../../src/adventure/checkpoint-view-model';
 
 export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
@@ -112,6 +113,22 @@ export default function ActiveAdventureScreen() {
 
   const nextPoi = mapPayload?.pois?.[0];
   const snapshot = activityState?.snapshot;
+  const nextCheckpoint = definition?.checkpoints?.[0] ?? null;
+  const checkpoint = nextCheckpoint && activityState?.exploration
+    ? checkpointViewModel(nextCheckpoint, activityState.exploration, snapshot?.lastValidSample ?? null)
+    : null;
+  const checkpointStatusLabel = checkpoint?.status === 'discovered'
+    ? 'DESCUBIERTO'
+    : checkpoint?.status === 'verifying'
+      ? 'EN ZONA'
+      : 'PRÓXIMO';
+  const objectiveDistanceLabel = checkpoint
+    ? checkpoint.distanceMeters == null
+      ? 'Esperando GPS'
+      : `${Math.round(checkpoint.distanceMeters)} m`
+    : snapshot?.lastValidSample
+      ? 'Sin checkpoint activo'
+      : 'Esperando GPS';
   const distanceKm = (snapshot?.validDistanceMeters ?? 0) / 1000;
   const elapsedSeconds = snapshot?.totalElapsedSeconds ?? 0;
   const elapsedMinutes = Math.floor(elapsedSeconds / 60);
@@ -206,7 +223,7 @@ export default function ActiveAdventureScreen() {
               {nextPoi?.name ?? 'Descubrimiento de prueba'}
             </Text>
             <Text style={styles.objectiveDistance}>
-              140 m · {nextPoi?.category ? nextPoi.category.toUpperCase() : 'POIs'}
+              {objectiveDistanceLabel} · {checkpoint ? checkpointStatusLabel : nextPoi?.category ? nextPoi.category.toUpperCase() : 'POIs'}
             </Text>
           </View>
         </View>

@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
 import { colors, radius, spacing } from '../../../src/theme/tokens';
-import { XPRewardCard } from '../../../src/components/progression/XPRewardCard';
-import { CollectionCard } from '../../../src/components/progression/CollectionCard';
+ import { activityRuntime } from '../../../src/activity/activity-runtime';
 
 export default function ActivitySummaryScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
@@ -17,48 +16,47 @@ export default function ActivitySummaryScreen() {
     return null;
   }
 
+  const finished = activityRuntime.current();
+  const snapshot = finished?.snapshot;
+  const distanceKm = (snapshot?.validDistanceMeters ?? 0) / 1000;
+  const elapsedSeconds = snapshot?.totalElapsedSeconds ?? 0;
+  const elapsedHours = Math.floor(elapsedSeconds / 3600);
+  const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const elapsedDisplay = `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}`;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>¡AVENTURA COMPLETADA!</Text>
+          <Text style={styles.eyebrow}>AVENTURA FINALIZADA</Text>
           <Text style={styles.title}>{route.title}</Text>
-          <Text style={styles.subtitle}>Has dominado esta ruta de {route.municipalityName}</Text>
+          <Text style={styles.subtitle}>Recorrido guardado · {route.municipalityName}</Text>
         </View>
 
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>14.2</Text>
+            <Text style={styles.statValue}>{distanceKm.toFixed(2)}</Text>
             <Text style={styles.statLabel}>km</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>03:45</Text>
+            <Text style={styles.statValue}>{elapsedDisplay}</Text>
             <Text style={styles.statLabel}>horas</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>+650</Text>
-            <Text style={styles.statLabel}>m</Text>
+            <Text style={styles.statValue}>{finished?.session.lastProcessedSequence ?? 0}</Text>
+            <Text style={styles.statLabel}>muestras GPS</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recompensas</Text>
-          <XPRewardCard xp={500} reason="Ruta completada" />
-          <XPRewardCard xp={150} reason="3 Descubrimientos" />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Colección Mágina</Text>
-          <View style={styles.grid}>
-            <CollectionCard emoji="🌿" name="Piorno Azul" family="Flora" collected={true} />
-            <CollectionCard emoji="🏛" name="Castillo Almodóvar" family="Patrimonio" collected={true} />
-            <CollectionCard emoji="🫒" name="Olivo Centenario" family="Cultura" collected={true} />
-            <CollectionCard emoji="🦅" name="Águila Real" family="Fauna" collected={false} />
-          </View>
+          <Text style={styles.sectionTitle}>Resumen de esta prueba</Text>
+          <Text style={styles.subtitle}>
+            Los datos mostrados proceden de la sesión GPS real. Las recompensas y colecciones se activarán cuando el Game Kit vuelva a entrar en el roadmap.
+          </Text>
         </View>
 
       </ScrollView>

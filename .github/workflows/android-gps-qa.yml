@@ -5,6 +5,7 @@ on:
     branches:
       - feat/adventure-game-kit-v1
       - fix/gps-qa-auth-bypass
+      - feat/game-01a-checkpoint-view-model
   workflow_dispatch:
 
 permissions:

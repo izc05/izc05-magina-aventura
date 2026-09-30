@@ -42,11 +42,16 @@ describe('LocationProvider permissions', () => {
   });
 
 
-  it('keeps a valid foreground-only permission state when background is denied', async () => {
+  it('keeps a valid foreground-only permission state without requesting background', async () => {
+    let backgroundRequests = 0;
     const provider = createLocationProvider(
       fakeAdapter({
         requestForegroundPermission: async () => 'granted',
-        requestBackgroundPermission: async () => 'denied',
+        getBackgroundPermission: async () => 'denied',
+        requestBackgroundPermission: async () => {
+          backgroundRequests += 1;
+          return 'granted';
+        },
       }),
     );
 
@@ -55,23 +60,29 @@ describe('LocationProvider permissions', () => {
       backgroundGranted: false,
       servicesEnabled: true,
     });
+    expect(backgroundRequests).toBe(0);
   });
 
-  it('starts native background updates with the active activity id when fully ready', async () => {
-    const startedActivities: string[] = [];
+  it('uses foreground tracking during physical QA even when background permission already exists', async () => {
+    let foregroundStarts = 0;
+    let backgroundStarts = 0;
     const provider = createLocationProvider(
       fakeAdapter({
         getForegroundPermission: async () => 'granted',
         getBackgroundPermission: async () => 'granted',
-        startBackgroundUpdates: async (activityId) => {
-          startedActivities.push(activityId);
+        startForegroundUpdates: async () => {
+          foregroundStarts += 1;
+        },
+        startBackgroundUpdates: async () => {
+          backgroundStarts += 1;
         },
       }),
     );
 
-    await provider.start('activity-123');
+    await provider.start('activity-123', () => undefined);
 
-    expect(startedActivities).toEqual(['activity-123']);
+    expect(foregroundStarts).toBe(1);
+    expect(backgroundStarts).toBe(0);
   });
 
   it('falls back to foreground tracking when background permission is denied', async () => {

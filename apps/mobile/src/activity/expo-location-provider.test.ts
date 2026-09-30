@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   startLocationUpdatesAsync: vi.fn(async () => undefined),
+  watchPositionAsync: vi.fn(async () => ({ remove: vi.fn() })),
 }));
 
 vi.mock('expo-location', () => ({
@@ -14,23 +15,25 @@ vi.mock('expo-location', () => ({
   hasStartedLocationUpdatesAsync: vi.fn(async () => false),
   startLocationUpdatesAsync: mocks.startLocationUpdatesAsync,
   stopLocationUpdatesAsync: vi.fn(async () => undefined),
+  watchPositionAsync: mocks.watchPositionAsync,
 }));
 
-import { ACTIVITY_LOCATION_TASK } from './expo-location-adapter';
 import { expoLocationProvider } from './expo-location-provider';
 
 beforeEach(() => {
   mocks.startLocationUpdatesAsync.mockClear();
+  mocks.watchPositionAsync.mockClear();
 });
 
 describe('expoLocationProvider native wiring', () => {
-  it('starts the Expo background task through the shared provider contract', async () => {
-    await expoLocationProvider.start('activity-native-wiring');
+  it('uses Expo foreground GPS during the physical QA isolation gate', async () => {
+    await expoLocationProvider.start('activity-native-wiring', () => undefined);
 
-    expect(mocks.startLocationUpdatesAsync).toHaveBeenCalledTimes(1);
-    expect(mocks.startLocationUpdatesAsync).toHaveBeenCalledWith(
-      ACTIVITY_LOCATION_TASK,
-      expect.objectContaining({ distanceInterval: 8 }),
+    expect(mocks.watchPositionAsync).toHaveBeenCalledTimes(1);
+    expect(mocks.watchPositionAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ distanceInterval: 8, timeInterval: 5000 }),
+      expect.any(Function),
     );
+    expect(mocks.startLocationUpdatesAsync).not.toHaveBeenCalled();
   });
 });

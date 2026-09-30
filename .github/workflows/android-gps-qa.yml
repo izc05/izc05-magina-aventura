@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/adventure-game-kit-v1
+      - fix/gps-qa-auth-bypass
   workflow_dispatch:
 
 permissions:
@@ -37,6 +38,22 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      - name: Enable auth bypass in QA artifact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="apps/mobile/src/qa/gps-qa-mode.ts"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("apps/mobile/src/qa/gps-qa-mode.ts")
+          source = path.read_text()
+          expected = "  return value === '1';"
+          if expected not in source:
+              raise SystemExit("QA bypass source contract changed; refusing to build")
+          path.write_text(source.replace(expected, "  return true; // QA artifact only", 1))
+          PY
+          grep -Fq 'return true; // QA artifact only' "$file"
 
       - name: Generate Android project
         working-directory: apps/mobile
@@ -79,6 +96,8 @@ jobs:
 
       - name: Build standalone Android GPS QA release APK
         working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_GPS_QA_AUTH_BYPASS: '1'
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleRelease --no-daemon
@@ -113,6 +132,7 @@ jobs:
           workflow_run=${{ github.run_number }}
           package_id=com.isivolt.maginaaventura
           build_type=release-gps-qa
+          qa_auth_bypass=enabled
           expo_sdk=57
           location_package=~57.0.20
           task_manager_package=~57.0.20

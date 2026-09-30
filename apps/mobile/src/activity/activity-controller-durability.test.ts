@@ -178,6 +178,51 @@ describe('ActivityController durability boundaries', () => {
       .toEqual([1, 2]);
   });
 
+  it('durably pauses a recovered ACTIVE session when GPS restart fails', async () => {
+    const database = createMemoryActivityStoreDatabase();
+    const inbox = new MemoryBackgroundLocationInbox();
+    const first = createActivityController({
+      store: new MemoryActivityStore(database),
+      inbox,
+      locationProvider: provider(),
+      createActivityId: () => 'activity-recover-provider-failure',
+      now: () => '2026-09-28T08:15:00.000Z',
+    });
+
+    await first.start(definition, route);
+
+    const failingProvider = provider();
+    failingProvider.start.mockRejectedValueOnce(new Error('simulated GPS restart failure'));
+    const secondStore = new MemoryActivityStore(database);
+    const second = createActivityController({
+      store: secondStore,
+      inbox,
+      locationProvider: failingProvider,
+      createActivityId: () => 'unused',
+      now: () => '2026-09-28T08:16:00.000Z',
+    });
+
+    await expect(second.recover(definition, route)).rejects.toThrow(
+      'simulated GPS restart failure',
+    );
+
+    expect(second.current()?.session.state).toBe('PAUSED');
+    expect((await secondStore.loadActiveSession())?.session.state).toBe('PAUSED');
+
+    const thirdProvider = provider();
+    const third = createActivityController({
+      store: new MemoryActivityStore(database),
+      inbox,
+      locationProvider: thirdProvider,
+      createActivityId: () => 'unused-again',
+      now: () => '2026-09-28T08:17:00.000Z',
+    });
+
+    const recoveredPaused = await third.recover(definition, route);
+    expect(recoveredPaused?.session.state).toBe('PAUSED');
+    expect(thirdProvider.start).not.toHaveBeenCalled();
+  });
+
   it('keeps the in-memory activity ACTIVE when atomic finish persistence fails', async () => {
     const store = new MemoryActivityStore();
     const inbox = new MemoryBackgroundLocationInbox();

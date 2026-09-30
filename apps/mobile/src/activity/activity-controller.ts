@@ -130,6 +130,8 @@ export function createActivityController(dependencies: ActivityControllerDepende
   let initialized = false;
   let lastConsumedInboxId = 0;
   let refreshInFlight: Promise<ActivityEngineState | null> | null = null;
+  let acceptingLocation = false;
+  let locationInFlight = Promise.resolve();
 
   function applyExploration(
     state: ActivityEngineState,
@@ -169,8 +171,13 @@ export function createActivityController(dependencies: ActivityControllerDepende
 
   async function startLocation(activityId: string): Promise<void> {
     await dependencies.locationProvider.start(activityId, async (point) => {
-      await dependencies.inbox.append(activityId, [point]);
-      await refresh();
+      const operation = locationInFlight.then(async () => {
+        if (!acceptingLocation) return;
+        await dependencies.inbox.append(activityId, [point]);
+        await refresh();
+      });
+      locationInFlight = operation.catch(() => undefined);
+      await operation;
     });
   }
 
@@ -264,6 +271,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState> {
       await initializeStores();
+      if (await dependencies.store.loadActiveSession()) {
+        throw new Error('An active or paused adventure already exists');
+      }
       const validatedDefinition = validateDefinitionForRoute(definition, route);
       explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
       const permissions = await dependencies.locationProvider.requestAdventurePermissions();
@@ -303,10 +313,13 @@ export function createActivityController(dependencies: ActivityControllerDepende
         explorationFromEngine(startedState),
       );
       engineState = startedState;
+      acceptingLocation = true;
 
       try {
         await startLocation(startedState.session.activityId);
       } catch (error) {
+        acceptingLocation = false;
+        await locationInFlight;
         const pausedState = reduceActivity(
           startedState,
           { type: 'PAUSE', at: dependencies.now() },
@@ -348,9 +361,12 @@ export function createActivityController(dependencies: ActivityControllerDepende
       engineState = rehydrateEngineState(recovered, routeLine, applyExploration);
 
       if (engineState.session.state === 'ACTIVE') {
+        acceptingLocation = true;
         try {
           await startLocation(engineState.session.activityId);
         } catch (error) {
+          acceptingLocation = false;
+          await locationInFlight;
           const pausedState = reduceActivity(
             engineState,
             { type: 'PAUSE', at: dependencies.now() },
@@ -374,6 +390,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
     async pause(): Promise<ActivityEngineState> {
       const current = await refresh();
       if (!current) throw new Error('No active adventure');
+
+      acceptingLocation = false;
+      await locationInFlight;
 
       const pausedState = reduceActivity(
         current,
@@ -404,10 +423,13 @@ export function createActivityController(dependencies: ActivityControllerDepende
         explorationFromEngine(resumedState),
       );
       engineState = resumedState;
+      acceptingLocation = true;
 
       try {
         await startLocation(resumedState.session.activityId);
       } catch (error) {
+        acceptingLocation = false;
+        await locationInFlight;
         const pausedState = reduceActivity(
           resumedState,
           { type: 'PAUSE', at: dependencies.now() },
@@ -426,6 +448,8 @@ export function createActivityController(dependencies: ActivityControllerDepende
     },
 
     async finish(): Promise<ActivityEngineState> {
+      acceptingLocation = false;
+      await locationInFlight;
       const current = await refresh();
       if (!current) throw new Error('No active adventure');
 

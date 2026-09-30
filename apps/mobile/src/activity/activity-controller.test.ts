@@ -171,6 +171,55 @@ describe('ActivityController', () => {
     );
   });
 
+
+  it('recovers a persisted PAUSED activity without restarting GPS until resume', async () => {
+    const storeDb = createMemoryActivityStoreDatabase();
+    const inboxDb = createMemoryBackgroundLocationInboxDatabase();
+    const provider = createProvider();
+
+    const first = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'activity-paused-recovery',
+      now: () => '2026-09-16T10:00:00.000Z',
+    });
+
+    await first.start(adventureDefinition, route);
+    await new MemoryBackgroundLocationInbox(inboxDb).append('activity-paused-recovery', [
+      rawPoint(Date.parse('2026-09-16T10:00:05.000Z'), 37.82, -3.41),
+      rawPoint(Date.parse('2026-09-16T10:00:12.000Z'), 37.82006, -3.41),
+    ]);
+    const beforePause = await first.refresh();
+    expect(beforePause?.snapshot.validDistanceMeters).toBeGreaterThan(0);
+
+    const paused = await first.pause();
+    expect(paused.session.state).toBe('PAUSED');
+    expect(provider.start).toHaveBeenCalledTimes(1);
+    expect(provider.stop).toHaveBeenCalledTimes(1);
+
+    const restarted = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'unused',
+      now: () => '2026-09-16T10:01:00.000Z',
+    });
+
+    const recovered = await restarted.recover(adventureDefinition, route);
+    expect(recovered?.session.activityId).toBe('activity-paused-recovery');
+    expect(recovered?.session.state).toBe('PAUSED');
+    expect(recovered?.snapshot.validDistanceMeters).toBeCloseTo(
+      beforePause?.snapshot.validDistanceMeters ?? 0,
+      3,
+    );
+    expect(provider.start).toHaveBeenCalledTimes(1);
+
+    const resumed = await restarted.resume();
+    expect(resumed.session.state).toBe('ACTIVE');
+    expect(provider.start).toHaveBeenCalledTimes(2);
+  });
+
   it('refuses recovery with a newer AdventureDefinition version', async () => {
     const storeDb = createMemoryActivityStoreDatabase();
     const inboxDb = createMemoryBackgroundLocationInboxDatabase();

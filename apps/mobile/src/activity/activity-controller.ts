@@ -348,7 +348,22 @@ export function createActivityController(dependencies: ActivityControllerDepende
       engineState = rehydrateEngineState(recovered, routeLine, applyExploration);
 
       if (engineState.session.state === 'ACTIVE') {
-        await startLocation(engineState.session.activityId);
+        try {
+          await startLocation(engineState.session.activityId);
+        } catch (error) {
+          const pausedState = reduceActivity(
+            engineState,
+            { type: 'PAUSE', at: dependencies.now() },
+            routeLine,
+          );
+          await dependencies.store.updateSession(
+            pausedState.session,
+            pausedState.snapshot,
+            explorationFromEngine(pausedState),
+          );
+          engineState = pausedState;
+          throw error;
+        }
       }
 
       return refresh();

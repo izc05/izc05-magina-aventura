@@ -351,6 +351,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
       if (!recovered || recovered.session.routeId !== route.id) {
         engineState = null;
         lastConsumedInboxId = 0;
+        if (!recovered) {
+          await dependencies.locationProvider.stop();
+        }
         return null;
       }
 

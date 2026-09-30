@@ -85,6 +85,10 @@ export default function ActiveAdventureScreen() {
         if (active) setActivityState(next);
       } catch (error) {
         if (active) {
+          const current = activityRuntime.current();
+          if (current?.session.state === 'PAUSED' && current.session.routeId === route?.id) {
+            setActivityState(current);
+          }
           setActivityError(error instanceof Error ? error.message : 'No se pudo iniciar el GPS');
         }
       } finally {
@@ -206,7 +210,7 @@ export default function ActiveAdventureScreen() {
 
       <View style={styles.bottomCard}>
         <Text style={styles.bottomEyebrow}>
-          {activityError ? 'GPS · ERROR' : starting ? 'GPS · INICIANDO' : activityState ? `GPS REAL · ${activityState.session.state}` : 'GPS · PREPARANDO'}
+          {activityError ? 'GPS · ERROR' : starting ? 'GPS · INICIANDO' : activityState ? `GPS SOLO EN PRIMER PLANO · ${activityState.session.state}` : 'GPS · PREPARANDO'}
         </Text>
         {activityError ? (
           <Pressable onPress={() => Alert.alert('GPS', activityError)}>

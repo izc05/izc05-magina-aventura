@@ -292,6 +292,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
         activityId: dependencies.createActivityId(),
         adventureSlug: validatedDefinition.slug,
         adventureVersion: validatedDefinition.version,
+        recordingSource: dependencies.locationProvider.recordingSource,
         routeId: route.id,
         routeSlug: route.slug,
         geometryVersion: route.geometryVersion,

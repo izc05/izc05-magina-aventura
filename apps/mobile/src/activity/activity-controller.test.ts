@@ -58,11 +58,14 @@ const adventureDefinition: AdventureDefinition = {
   progression: { xpRulesetVersion: 1, rewards: [] },
 };
 
-function createProvider(): LocationProvider & {
+function createProvider(
+  recordingSource: LocationProvider['recordingSource'] = 'mock',
+): LocationProvider & {
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
 } {
   return {
+    recordingSource,
     getPermissionState: vi.fn(async () => ({
       foregroundGranted: true,
       backgroundGranted: true,
@@ -105,6 +108,7 @@ describe('ActivityController', () => {
 
     const started = await controller.start(adventureDefinition, route);
     expect(started.session.state).toBe('ACTIVE');
+    expect(started.session.recordingSource).toBe('mock');
     expect(provider.start).toHaveBeenCalledWith('activity-1', expect.any(Function));
 
     await inbox.append('activity-1', [
@@ -131,6 +135,21 @@ describe('ActivityController', () => {
     const pending = await store.loadPendingSyncBatches('activity-1');
     expect(pending).toHaveLength(1);
     expect(pending[0]?.idempotencyKey).toBe('activity:activity-1:track:1-2');
+  });
+
+  it('preserves physical GPS provenance for a fixture route without importing fixture route metrics', async () => {
+    const provider = createProvider('device-gps');
+    const controller = createActivityController({
+      store: new MemoryActivityStore(),
+      inbox: new MemoryBackgroundLocationInbox(),
+      locationProvider: provider,
+      createActivityId: () => 'activity-real-route',
+      now: () => '2026-09-16T10:00:00.000Z',
+    });
+
+    const started = await controller.start(adventureDefinition, route);
+
+    expect(started.session.recordingSource).toBe('device-gps');
   });
 
   it('recovers samples stored after the latest snapshot after process-like restart', async () => {

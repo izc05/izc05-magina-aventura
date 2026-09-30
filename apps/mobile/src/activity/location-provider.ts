@@ -16,6 +16,8 @@ export interface LocationPermissionState {
   servicesEnabled: boolean;
 }
 
+export type LocationCaptureSource = 'device-gps' | 'mock';
+
 export interface NativeLocationAdapter {
   isServicesEnabled(): Promise<boolean>;
   getForegroundPermission(): Promise<LocationPermissionStatus>;
@@ -30,6 +32,7 @@ export interface NativeLocationAdapter {
 }
 
 export interface LocationProvider {
+  readonly recordingSource: LocationCaptureSource;
   getPermissionState(): Promise<LocationPermissionState>;
   requestAdventurePermissions(): Promise<LocationPermissionState>;
   start(
@@ -43,8 +46,12 @@ function granted(status: LocationPermissionStatus): boolean {
   return status === 'granted';
 }
 
-export function createLocationProvider(adapter: NativeLocationAdapter): LocationProvider {
+export function createLocationProvider(
+  adapter: NativeLocationAdapter,
+  recordingSource: LocationCaptureSource = 'mock',
+): LocationProvider {
   return {
+    recordingSource,
     async getPermissionState(): Promise<LocationPermissionState> {
       const [servicesEnabled, foreground, background] = await Promise.all([
         adapter.isServicesEnabled(),

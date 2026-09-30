@@ -1,13 +1,37 @@
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../src/theme/tokens';
 import { useAuth } from '../src/context/AuthContext';
+import { sqliteActivityStore } from '../src/activity/sqlite-activity-store';
+import {
+  PassportGpsMetricsPanel,
+  type PassportGpsLoadState,
+} from '../src/features/passport/PassportGpsMetricsPanel';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [passportGpsState, setPassportGpsState] = useState<PassportGpsLoadState>({
+    status: 'loading',
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    void sqliteActivityStore.loadPassportGpsMetrics()
+      .then((metrics) => {
+        if (mounted) setPassportGpsState({ status: 'ready', metrics });
+      })
+      .catch(() => {
+        if (mounted) setPassportGpsState({ status: 'error' });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -33,12 +57,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Aún no hay progreso registrado</Text>
-            <Text style={styles.emptyStateBody}>
-              Aquí aparecerán tus rutas completadas, descubrimientos e insignias cuando se registren.
-            </Text>
-          </View>
+          <PassportGpsMetricsPanel state={passportGpsState} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -78,13 +97,6 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.ink, fontSize: 24, fontWeight: '900' },
   userInfo: { flex: 1 },
   userName: { color: colors.white, fontSize: 20, fontWeight: '900' },
-  emptyState: {
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: spacing[16],
-  },
-  emptyStateTitle: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  emptyStateBody: { color: colors.limestone, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
   logoutButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.1)' },
   logoutText: { color: colors.white, fontSize: 12, fontWeight: '700' },
 });

@@ -63,6 +63,7 @@ function provider(): LocationProvider & {
   stop: ReturnType<typeof vi.fn>;
 } {
   return {
+    recordingSource: 'mock',
     getPermissionState: vi.fn(async () => ({
       foregroundGranted: true,
       backgroundGranted: true,

@@ -12,11 +12,16 @@ export interface CheckpointViewModel {
   sequence: number;
 }
 
+export type CheckpointDataOrigin = 'verified' | 'development-simulation' | 'unverified';
+
 export function checkpointViewModel(
   target: AdventureTargetDefinition,
   exploration: ExplorationState,
   lastValidSample: LocationSample | null,
-): CheckpointViewModel {
+  origin: CheckpointDataOrigin,
+): CheckpointViewModel | null {
+  if (origin !== 'verified') return null;
+
   const key = explorationTargetKey(target.kind, target.id);
   const discovered = exploration.unlockedTargetKeys.includes(key);
   const progress = exploration.progressByTargetKey[key];

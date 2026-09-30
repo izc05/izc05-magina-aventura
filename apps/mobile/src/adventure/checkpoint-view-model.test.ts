@@ -30,8 +30,15 @@ const sample: LocationSample = {
 };
 
 describe('checkpointViewModel', () => {
+  it('does not project simulated or unverified targets into the route UI', () => {
+    const state = createExplorationState([`checkpoint:${target.id}`]);
+
+    expect(checkpointViewModel(target, state, sample, 'development-simulation')).toBeNull();
+    expect(checkpointViewModel(target, state, sample, 'unverified')).toBeNull();
+  });
+
   it('is nearby and has no invented distance before a valid sample exists', () => {
-    expect(checkpointViewModel(target, createExplorationState(), null)).toEqual({
+    expect(checkpointViewModel(target, createExplorationState(), null, 'verified')).toEqual({
       key: `checkpoint:${target.id}`,
       status: 'nearby',
       distanceMeters: null,
@@ -47,7 +54,7 @@ describe('checkpointViewModel', () => {
       lastEvidenceAt: sample.timestamp,
     };
 
-    expect(checkpointViewModel(target, state, sample)).toMatchObject({
+    expect(checkpointViewModel(target, state, sample, 'verified')).toMatchObject({
       status: 'verifying',
       distanceMeters: 0,
     });
@@ -59,7 +66,7 @@ describe('checkpointViewModel', () => {
     expect(checkpointViewModel(target, state, {
       ...sample,
       latitude: 37.0001,
-    })).toMatchObject({
+    }, 'verified')).toMatchObject({
       status: 'discovered',
       required: true,
       sequence: 0,
@@ -67,7 +74,7 @@ describe('checkpointViewModel', () => {
     expect(checkpointViewModel(target, state, {
       ...sample,
       latitude: 37.0001,
-    }).distanceMeters).toBeGreaterThan(0);
+    }, 'verified')?.distanceMeters).toBeGreaterThan(0);
   });
 
   it('gives discovered precedence over stale evidence', () => {
@@ -78,6 +85,6 @@ describe('checkpointViewModel', () => {
       lastEvidenceAt: sample.timestamp,
     };
 
-    expect(checkpointViewModel(target, state, sample).status).toBe('discovered');
+    expect(checkpointViewModel(target, state, sample, 'verified')?.status).toBe('discovered');
   });
 });

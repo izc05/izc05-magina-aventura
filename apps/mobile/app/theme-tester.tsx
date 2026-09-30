@@ -94,6 +94,12 @@ export default function ThemeTesterScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.qaNotice}>
+          <Text style={styles.qaNoticeTitle}>SIMULACIÓN DE DESARROLLO</Text>
+          <Text style={styles.qaNoticeBody}>
+            Mapa, altimetría, checkpoints, descubrimientos y recompensas de esta pantalla son datos de prueba; no representan una ruta verificada.
+          </Text>
+        </View>
         {activeTab === 'map' ? (
           <View>
             <Text style={styles.sectionHeader}>Selección de Tema Cartográfico</Text>
@@ -153,11 +159,10 @@ export default function ThemeTesterScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoCardTitle}>Detalles de las Capas Activas</Text>
               <Text style={styles.infoCardBody}>
-                • Track oficial: 8.7 km · {mockRoutePayload.line.geometry.coordinates.length} puntos de geometría.{'\n'}
-                • Checkpoints: {mockRoutePayload.checkpoints.length} puntos verificados.{'\n'}
-                • Descubrimientos (POIs): {poiCount} puntos categorizados (Flora, Olivares, Patrimonio, Paisaje).{'\n'}
-                • Delimitación: Parque Natural Sierra Mágina.{'\n'}
-                • Posición senderista simulada en tiempo real.
+                • Geometría de prueba: {mockRoutePayload.line.geometry.coordinates.length} puntos.{'\n'}
+                • Checkpoints simulados: {mockRoutePayload.checkpoints.length}.{'\n'}
+                • POIs de demostración: {poiCount}.{'\n'}
+                • Posición senderista simulada; sin tracking físico de ruta.
               </Text>
             </View>
           </View>
@@ -230,7 +235,7 @@ export default function ThemeTesterScreen() {
 
             <XPRewardCard
               xp={750}
-              reason="Sendero de Cuadros completado"
+              reason="Muestra de interfaz · sin recompensa real"
             />
           </View>
         ) : null}
@@ -304,6 +309,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[40],
     minHeight: '100%',
   },
+  qaNotice: { backgroundColor: colors.limestone, borderRadius: radius.md, padding: spacing[16], borderWidth: 1, borderColor: colors.border },
+  qaNoticeTitle: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  qaNoticeBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
   sectionHeader: {
     color: colors.ink,
     fontSize: typography.section,

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { developmentRouteMapRepository } from '../../../src/features/routes/development-route-map-repository';
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
+import { routePresentationViewModel } from '../../../src/features/routes/route-presentation-view-model';
 import { expoRoutePackagePort } from '../../../src/offline/expo-route-package-port';
 import { colors, radius, spacing, typography } from '../../../src/theme/tokens';
 
@@ -25,10 +26,21 @@ export default function PrepareRouteAdventureScreen() {
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
+  const presentation = route
+    ? routePresentationViewModel(
+        route,
+        route.developmentFixture ? 'development-simulation' : 'unverified',
+      )
+    : null;
   const [offlineState, setOfflineState] = useState<PrepareOfflineState>('unavailable');
 
   useEffect(() => {
     if (!routeSlug) return;
+
+    if (presentation?.showVerifiedOfflinePackage !== true) {
+      setOfflineState('unavailable');
+      return;
+    }
 
     let active = true;
 
@@ -58,7 +70,7 @@ export default function PrepareRouteAdventureScreen() {
     return () => {
       active = false;
     };
-  }, [routeSlug]);
+  }, [presentation?.showVerifiedOfflinePackage, routeSlug]);
 
   if (!route) {
     return (
@@ -75,10 +87,10 @@ export default function PrepareRouteAdventureScreen() {
   }
 
   const readinessRows = [
-    ['Ubicación', 'Pendiente'],
-    ['GPS en segundo plano', 'Pendiente'],
+    ['Contenido y mapa', presentation?.preparationLabel ?? 'En preparación'],
+    ['Tracking GPS', presentation?.canCaptureTechnicalGps ? 'Técnico · métricas reales' : 'Pendiente'],
     ['Ruta offline', offlineCopy[offlineState]],
-    ['Seguridad', 'Revisar'],
+    ['Checkpoints', presentation?.checkpointStatusLabel ?? 'Sin datos verificados'],
   ] as const;
 
   const offlineReady = offlineState === 'ready';
@@ -92,14 +104,14 @@ export default function PrepareRouteAdventureScreen() {
           <Text style={styles.backText}>←</Text>
         </Pressable>
 
-        <Text style={styles.eyebrow}>ANTES DE SALIR</Text>
-        <Text style={styles.title}>Prepara tu aventura</Text>
-        <Text style={styles.routeName}>{route.title} · {route.municipalityName}</Text>
+        <Text style={styles.eyebrow}>QA · CAPTURA GPS</Text>
+        <Text style={styles.title}>Prueba técnica GPS</Text>
+        <Text style={styles.routeName}>{presentation?.title ?? 'Contenido en preparación'}</Text>
 
         <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>Comprobaciones previas</Text>
+          <Text style={styles.noticeTitle}>Contenido y mapa en preparación</Text>
           <Text style={styles.noticeBody}>
-            Esta pantalla separa el estado del paquete offline de los permisos GPS. Ubicación y seguimiento en segundo plano seguirán pendientes hasta el plan específico del motor de actividad.
+            {presentation?.technicalGpsNotice ?? 'No hay una ruta y un checkpoint verificados para iniciar una aventura física.'}
           </Text>
         </View>
 
@@ -127,7 +139,7 @@ export default function PrepareRouteAdventureScreen() {
             {offlineReady
               ? 'La versión instalada coincide con la geometría y el contenido publicados para esta ruta.'
               : offlineState === 'unavailable'
-                ? 'Esta ruta todavía no tiene un paquete cartográfico verificado asociado.'
+                ? 'No hay un paquete cartográfico verificado asociado.'
                 : 'Vuelve a la ficha de la ruta para descargar o actualizar el paquete antes de salir.'}
           </Text>
         </View>
@@ -135,7 +147,8 @@ export default function PrepareRouteAdventureScreen() {
 
       <View style={styles.footer}>
         <Pressable
-          style={styles.startButton}
+          style={[styles.startButton, !presentation?.canCaptureTechnicalGps && styles.disabledButton]}
+          disabled={!presentation?.canCaptureTechnicalGps}
           onPress={() =>
             router.push({
               pathname: '/adventure/[slug]',
@@ -143,7 +156,7 @@ export default function PrepareRouteAdventureScreen() {
             })
           }
         >
-          <Text style={styles.startButtonText}>Continuar en modo desarrollo</Text>
+          <Text style={styles.startButtonText}>Iniciar captura GPS técnica</Text>
           <Text style={styles.startArrow}>→</Text>
         </Pressable>
       </View>
@@ -173,6 +186,7 @@ const styles = StyleSheet.create({
   offlineBody: { color: colors.limestone, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing[20], backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
   startButton: { minHeight: 58, borderRadius: radius.md, paddingHorizontal: spacing[20], backgroundColor: colors.olive900, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  disabledButton: { opacity: 0.45 },
   startButtonText: { color: colors.white, fontSize: 16, fontWeight: '900' },
   startArrow: { color: colors.aoveGold, fontSize: 22, fontWeight: '900' },
   notFound: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },

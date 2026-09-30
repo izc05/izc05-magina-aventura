@@ -5,20 +5,29 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { AdventureDefinition } from '@magina-aventura/contracts';
-import { elapsedSecondsAt, type ActivityEngineState } from '@magina-aventura/activity-engine';
+import type { ActivityEngineState } from '@magina-aventura/activity-engine';
 import { activityRuntime } from '../../src/activity/activity-runtime';
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
+import { routePresentationViewModel } from '../../src/features/routes/route-presentation-view-model';
 import { RouteMap } from '../../src/map/RouteMap';
 import type { EnhancedRoutePayload } from '../../src/map/map-layers';
 import { colors, radius, spacing } from '../../src/theme/tokens';
 import { checkpointViewModel } from '../../src/adventure/checkpoint-view-model';
+import { technicalGpsMetricsViewModel } from '../../src/adventure/technical-gps-view-model';
 
 export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
+  const routePresentation = route
+    ? routePresentationViewModel(
+        route,
+        route.developmentFixture ? 'development-simulation' : 'unverified',
+      )
+    : null;
+  const isTechnicalGpsQa = routePresentation?.mode === 'technical-gps-qa';
 
   const [mapPayload, setMapPayload] = useState<EnhancedRoutePayload | null>(null);
   const [activityState, setActivityState] = useState<ActivityEngineState | null>(null);
@@ -29,6 +38,10 @@ export default function ActiveAdventureScreen() {
 
   useEffect(() => {
     if (!routeSlug) return;
+    if (routePresentation?.showVerifiedMap !== true) {
+      setMapPayload(null);
+      return;
+    }
     let active = true;
 
     async function loadMapData() {
@@ -46,7 +59,7 @@ export default function ActiveAdventureScreen() {
     return () => {
       active = false;
     };
-  }, [routeSlug]);
+  }, [routePresentation?.showVerifiedMap, routeSlug]);
 
   const definition = useMemo<AdventureDefinition | null>(() => {
     if (!route) return null;
@@ -72,14 +85,16 @@ export default function ActiveAdventureScreen() {
   }, [route]);
 
   useEffect(() => {
-    if (!route || !definition || !mapPayload) return;
+    if (!route || !definition || (!isTechnicalGpsQa && !mapPayload)) return;
     let active = true;
     setStarting(true);
     setActivityError(null);
 
     async function startOrRecover() {
       try {
-        const line = mapPayload?.line.geometry.coordinates ?? [];
+        const line = isTechnicalGpsQa
+          ? []
+          : mapPayload?.line.geometry.coordinates ?? [];
         const recovered = await activityRuntime.recover(definition!, route!, line);
         const next = recovered ?? await activityRuntime.start(definition!, route!, line);
         if (active) setActivityState(next);
@@ -98,7 +113,7 @@ export default function ActiveAdventureScreen() {
 
     void startOrRecover();
     return () => { active = false; };
-  }, [route, definition, mapPayload]);
+  }, [route, definition, mapPayload, isTechnicalGpsQa]);
 
   useEffect(() => {
     if (!activityState) return;
@@ -117,11 +132,11 @@ export default function ActiveAdventureScreen() {
     return null;
   }
 
-  const nextPoi = mapPayload?.pois?.[0];
+  const nextPoi = isTechnicalGpsQa ? undefined : mapPayload?.pois?.[0];
   const snapshot = activityState?.snapshot;
   const nextCheckpoint = definition?.checkpoints?.[0] ?? null;
-  const checkpoint = nextCheckpoint && activityState?.exploration
-    ? checkpointViewModel(nextCheckpoint, activityState.exploration, snapshot?.lastValidSample ?? null)
+  const checkpoint = !isTechnicalGpsQa && routePresentation?.showVerifiedCheckpoints && nextCheckpoint && activityState?.exploration
+    ? checkpointViewModel(nextCheckpoint, activityState.exploration, snapshot?.lastValidSample ?? null, 'verified')
     : null;
   const checkpointStatusLabel = checkpoint?.status === 'discovered'
     ? 'DESCUBIERTO'
@@ -135,53 +150,68 @@ export default function ActiveAdventureScreen() {
     : snapshot?.lastValidSample
       ? 'Sin checkpoint activo'
       : 'Esperando GPS';
-  const distanceKm = (snapshot?.validDistanceMeters ?? 0) / 1000;
-  const elapsedSeconds = snapshot && activityState
-    ? elapsedSecondsAt(
-        snapshot,
-        activityState.session.state,
-        new Date(clockNowMs).toISOString(),
-      )
-    : 0;
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  const elapsedRemainder = Math.floor(elapsedSeconds % 60);
-  const progressPercent = Math.round((snapshot?.routeProgress ?? 0) * 100);
-  const gpsSamples = activityState?.session.lastProcessedSequence ?? 0;
+  const gpsMetrics = technicalGpsMetricsViewModel(activityState, clockNowMs);
+  const distanceValue = gpsMetrics.distanceKm === null
+    ? '—'
+    : `${gpsMetrics.distanceKm.toFixed(2)} km`;
+  const elapsedSeconds = gpsMetrics.elapsedSeconds;
+  const elapsedTimeLabel = elapsedSeconds === null
+    ? '—'
+    : `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(Math.floor(elapsedSeconds % 60)).padStart(2, '0')}`;
+  const progressPercent = routePresentation?.showVerifiedMap
+    ? Math.round((snapshot?.routeProgress ?? 0) * 100)
+    : null;
+  const gpsSamples = gpsMetrics.gpsSamples;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
 
       <View style={styles.mapContainer}>
-        <RouteMap
-          payload={mapPayload}
-          developmentMode={route.developmentFixture}
-          showLayerControls={true}
-          height={600}
-        />
+        {isTechnicalGpsQa ? (
+          <View style={styles.preparationMap}>
+            <Text style={styles.preparationMapTitle}>Contenido y mapa en preparación</Text>
+            <Text style={styles.preparationMapBody}>
+              La captura GPS es técnica; no hay una ruta ni un checkpoint verificados.
+            </Text>
+          </View>
+        ) : (
+          <RouteMap
+            payload={mapPayload}
+            developmentMode={route.developmentFixture}
+            showLayerControls={true}
+            height={600}
+          />
+        )}
       </View>
 
       <View style={styles.topHud}>
         <View style={styles.topHudHeader}>
           <View>
-            <Text style={styles.routeName}>{route.title}</Text>
-            <Text style={styles.routePlace}>{route.municipalityName}</Text>
+            <Text style={styles.routeName}>{routePresentation?.title ?? 'Contenido en preparación'}</Text>
+            <Text style={styles.routePlace}>
+              {isTechnicalGpsQa ? 'Sin ruta oficial verificada' : routePresentation?.municipalityName ?? 'Contenido en preparación'}
+            </Text>
           </View>
           <View style={styles.progressBadge}>
-            <Text style={styles.progressText}>{progressPercent} %</Text>
+            <Text style={styles.progressText}>
+              {isTechnicalGpsQa ? 'GPS QA' : progressPercent === null ? '—' : `${progressPercent} %`}
+            </Text>
           </View>
         </View>
         <View style={styles.metrics}>
           <View>
-            <Text style={styles.metricValue}>{distanceKm.toFixed(2)} km</Text>
-            <Text style={styles.metricLabel}>Distancia</Text>
+            <Text style={styles.metricValue}>{distanceValue}</Text>
+            <Text style={styles.metricLabel}>{isTechnicalGpsQa ? 'Distancia GPS' : 'Distancia'}</Text>
           </View>
           <View>
-            <Text style={styles.metricValue}>{String(elapsedMinutes).padStart(2, '0')}:{String(elapsedRemainder).padStart(2, '0')}</Text>
-            <Text style={styles.metricLabel}>Tiempo activo</Text>
+            <Text style={styles.metricValue}>
+              {elapsedTimeLabel}
+            </Text>
+            <Text style={styles.metricLabel}>{isTechnicalGpsQa ? 'Tiempo GPS' : 'Tiempo activo'}</Text>
           </View>
           <View>
-            <Text style={styles.metricValue}>{gpsSamples}</Text>
+            <Text style={styles.metricValue}>{gpsSamples ?? '—'}</Text>
             <Text style={styles.metricLabel}>Muestras GPS</Text>
           </View>
         </View>
@@ -196,10 +226,12 @@ export default function ActiveAdventureScreen() {
             return;
           }
           Alert.alert(
-            'Salir de la aventura',
-            'La ruta seguirá guardada para que puedas continuarla después.',
+            isTechnicalGpsQa ? 'Salir de la prueba GPS' : 'Salir de la aventura',
+            isTechnicalGpsQa
+              ? 'La captura técnica GPS seguirá guardada para continuarla después.'
+              : 'La ruta seguirá guardada para que puedas continuarla después.',
             [
-              { text: 'Seguir en ruta', style: 'cancel' },
+              { text: isTechnicalGpsQa ? 'Seguir con la prueba' : 'Seguir en ruta', style: 'cancel' },
               { text: 'Salir', onPress: () => router.back() },
             ],
           );
@@ -210,14 +242,23 @@ export default function ActiveAdventureScreen() {
 
       <View style={styles.bottomCard}>
         <Text style={styles.bottomEyebrow}>
-          {activityError ? 'GPS · ERROR' : starting ? 'GPS · INICIANDO' : activityState ? `GPS SOLO EN PRIMER PLANO · ${activityState.session.state}` : 'GPS · PREPARANDO'}
+          {activityError
+            ? 'GPS · ERROR'
+            : starting
+              ? isTechnicalGpsQa ? 'GPS TÉCNICO · INICIANDO' : 'GPS · INICIANDO'
+              : activityState
+                ? isTechnicalGpsQa ? `GPS TÉCNICO · MÉTRICAS REALES · ${activityState.session.state}` : `GPS SOLO EN PRIMER PLANO · ${activityState.session.state}`
+                : isTechnicalGpsQa ? 'GPS TÉCNICO · PREPARANDO' : 'GPS · PREPARANDO'}
         </Text>
+        {isTechnicalGpsQa ? (
+          <Text style={styles.technicalNotice}>{routePresentation?.technicalGpsNotice}</Text>
+        ) : null}
         {activityError ? (
           <Pressable onPress={() => Alert.alert('GPS', activityError)}>
             <Text style={styles.errorText}>Toca para ver el error · {activityError}</Text>
           </Pressable>
         ) : null}
-        <Text style={styles.bottomTitle}>Siguiente objetivo</Text>
+        <Text style={styles.bottomTitle}>{isTechnicalGpsQa ? 'Sin checkpoint verificado' : 'Siguiente objetivo'}</Text>
         <View style={styles.objectiveRow}>
           <View style={styles.objectiveIcon}>
             <Text style={styles.objectiveIconText}>
@@ -232,17 +273,21 @@ export default function ActiveAdventureScreen() {
           </View>
           <View style={styles.objectiveCopy}>
             <Text style={styles.objectiveName}>
-              {nextPoi?.name ?? 'Descubrimiento de prueba'}
+              {isTechnicalGpsQa ? 'No hay checkpoint verificado' : nextPoi?.name ?? 'Sin objetivo cargado'}
             </Text>
             <Text style={styles.objectiveDistance}>
-              {objectiveDistanceLabel} · {checkpoint ? checkpointStatusLabel : nextPoi?.category ? nextPoi.category.toUpperCase() : 'POIs'}
+              {isTechnicalGpsQa
+                ? 'Los objetivos simulados no se muestran como reales'
+                : `${objectiveDistanceLabel} · ${checkpoint ? checkpointStatusLabel : nextPoi?.category ? nextPoi.category.toUpperCase() : 'POIs'}`}
             </Text>
           </View>
         </View>
         <View style={styles.actionRow}>
-          <Pressable style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>⚑ Ruta</Text>
-          </Pressable>
+          {!isTechnicalGpsQa ? (
+            <Pressable style={styles.actionButton}>
+              <Text style={styles.actionButtonText}>⚑ Ruta</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             style={styles.pauseButton}
             onPress={() => {
@@ -257,7 +302,9 @@ export default function ActiveAdventureScreen() {
             }}
           >
             <Text style={styles.pauseButtonText}>
-              {activityState?.session.state === 'PAUSED' ? '▶ Reanudar' : 'Ⅱ Pausar'}
+              {activityState?.session.state === 'PAUSED'
+                ? isTechnicalGpsQa ? '▶ Reanudar GPS' : '▶ Reanudar'
+                : isTechnicalGpsQa ? 'Ⅱ Pausar GPS' : 'Ⅱ Pausar'}
             </Text>
           </Pressable>
           <Pressable
@@ -265,12 +312,14 @@ export default function ActiveAdventureScreen() {
             disabled={finishing || !activityState}
             onPress={() => {
               Alert.alert(
-                'Finalizar aventura',
-                'Se guardará el recorrido y la aventura quedará cerrada. Esta acción no es lo mismo que pausar.',
+                isTechnicalGpsQa ? 'Finalizar captura GPS' : 'Finalizar aventura',
+                isTechnicalGpsQa
+                  ? 'Se guardarán las métricas GPS reales de la prueba. No se validará ninguna ruta, checkpoint ni recompensa.'
+                  : 'Se guardará el recorrido y la aventura quedará cerrada. Esta acción no es lo mismo que pausar.',
                 [
                   { text: 'Cancelar', style: 'cancel' },
                   {
-                    text: 'Finalizar',
+                    text: isTechnicalGpsQa ? 'Finalizar captura' : 'Finalizar',
                     style: 'destructive',
                     onPress: () => {
                       setFinishing(true);
@@ -290,7 +339,9 @@ export default function ActiveAdventureScreen() {
               );
             }}
           >
-            <Text style={styles.actionButtonText}>{finishing ? 'Finalizando…' : '✓ Finalizar'}</Text>
+            <Text style={styles.actionButtonText}>
+              {finishing ? 'Finalizando…' : isTechnicalGpsQa ? '✓ Finalizar GPS' : '✓ Finalizar'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -301,6 +352,9 @@ export default function ActiveAdventureScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.warmBackground },
   mapContainer: { flex: 1, marginHorizontal: -spacing[20], marginTop: -spacing[12] },
+  preparationMap: { flex: 1, marginHorizontal: spacing[20], marginVertical: spacing[12], borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: spacing[24] },
+  preparationMapTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', textAlign: 'center' },
+  preparationMapBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[8], textAlign: 'center' },
   topHud: {
     position: 'absolute',
     top: spacing[12],
@@ -349,6 +403,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   bottomEyebrow: { color: colors.aoveGold, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  technicalNotice: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
   bottomTitle: { color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: spacing[8] },
   errorText: { color: colors.muted, fontSize: 10, marginTop: spacing[4] },
   objectiveRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing[12] },

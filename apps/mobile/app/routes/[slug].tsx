@@ -19,6 +19,7 @@ import {
   durationLabel,
   getDevelopmentRouteBySlug,
 } from '../../src/features/routes/route-utils';
+import { routePresentationViewModel } from '../../src/features/routes/route-presentation-view-model';
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
 import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
@@ -62,6 +63,12 @@ export default function RouteDetailScreen() {
   const router = useRouter();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
+  const presentation = route
+    ? routePresentationViewModel(
+        route,
+        route.developmentFixture ? 'development-simulation' : 'unverified',
+      )
+    : null;
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
   const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
@@ -73,6 +80,14 @@ export default function RouteDetailScreen() {
 
   useEffect(() => {
     if (!routeSlug) return;
+
+    if (presentation?.showVerifiedMap !== true) {
+      setMapPayload(null);
+      setOfflineManifest(null);
+      setOfflineState('unavailable');
+      setMapStyle(null);
+      return;
+    }
 
     let active = true;
 
@@ -125,7 +140,7 @@ export default function RouteDetailScreen() {
     return () => {
       active = false;
     };
-  }, [baseMapStyle, routeSlug]);
+  }, [baseMapStyle, presentation?.showVerifiedMap, routeSlug]);
 
   async function handleOfflineDownload() {
     if (!offlineManifest) return;
@@ -168,6 +183,7 @@ export default function RouteDetailScreen() {
   }
 
   const canDownloadOffline =
+    presentation?.showVerifiedOfflinePackage === true &&
     offlineManifest !== null &&
     offlineState !== 'ready' &&
     offlineState !== 'downloading';
@@ -189,30 +205,39 @@ export default function RouteDetailScreen() {
             </View>
           ) : null}
           <View style={styles.heroCopy}>
-            <Text style={styles.municipality}>{route.municipalityName.toUpperCase()}</Text>
-            <Text style={styles.title}>{route.title}</Text>
-            <Text style={styles.difficulty}>{difficultyLabel(route.difficulty)}</Text>
+            <Text style={styles.municipality}>
+              {presentation?.municipalityName?.toUpperCase() ?? presentation?.preparationLabel}
+            </Text>
+            <Text style={styles.title}>{presentation?.title}</Text>
+            <Text style={styles.difficulty}>
+              {presentation?.stats ? difficultyLabel(route.difficulty) : 'No es una ruta física verificada'}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.statsCard}>
+        {presentation?.stats ? <View style={styles.statsCard}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{route.distanceKm.toFixed(1)} km</Text>
+            <Text style={styles.statValue}>{presentation.stats.distanceKm.toFixed(1)} km</Text>
             <Text style={styles.statLabel}>Distancia</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>+{route.elevationGainM} m</Text>
+            <Text style={styles.statValue}>+{presentation.stats.elevationGainM} m</Text>
             <Text style={styles.statLabel}>Desnivel</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{durationLabel(route.durationMinutes)}</Text>
+            <Text style={styles.statValue}>{durationLabel(presentation.stats.durationMinutes)}</Text>
             <Text style={styles.statLabel}>Duración</Text>
           </View>
-        </View>
+        </View> : (
+          <View style={styles.preparationCard}>
+            <Text style={styles.preparationTitle}>{presentation?.preparationLabel}</Text>
+            <Text style={styles.preparationBody}>No se muestran métricas de ruta ni recompensas hasta disponer de contenido verificado.</Text>
+          </View>
+        )}
 
-        {mapStyle ? (
+        {presentation?.showVerifiedMap && mapStyle ? (
           <RouteMap
             payload={mapPayload}
             mapStyle={mapStyle}
@@ -227,32 +252,32 @@ export default function RouteDetailScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Tu aventura</Text>
-        <Text style={styles.body}>{route.description}</Text>
+        <Text style={styles.sectionTitle}>{presentation?.description ? 'Tu aventura' : 'Contenido de ruta'}</Text>
+        <Text style={styles.body}>{presentation?.description ?? 'Contenido y mapa en preparación.'}</Text>
 
-        <View style={styles.rewardCard}>
+        {presentation?.rewardPreview ? <View style={styles.rewardCard}>
           <Text style={styles.rewardEyebrow}>RECOMPENSAS DE ESTA AVENTURA</Text>
           <Text style={styles.rewardTitle}>
-            Hasta {route.rewardPreview.xp} XP · {route.rewardPreview.olives} 🫒
+            Hasta {presentation.rewardPreview.xp} XP · {presentation.rewardPreview.olives} 🫒
           </Text>
           <Text style={styles.rewardBody}>
-            {route.rewardPreview.discoveries} descubrimientos disponibles en la ruta.
+            {presentation.rewardPreview.discoveries} descubrimientos disponibles en la ruta.
           </Text>
-        </View>
+        </View> : null}
 
-        <View style={styles.safetyCard}>
+        {presentation?.safetyNotes.length ? <View style={styles.safetyCard}>
           <Text style={styles.safetyTitle}>Seguridad</Text>
-          {route.safetyNotes.map((note) => (
+          {presentation.safetyNotes.map((note) => (
             <Text key={note} style={styles.safetyNote}>• {note}</Text>
           ))}
-        </View>
+        </View> : null}
 
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
             <Text style={styles.infoIcon}>◫</Text>
-            <Text style={styles.infoTitle}>Track oficial</Text>
+            <Text style={styles.infoTitle}>Geometría de ruta</Text>
             <Text style={styles.infoCopy}>
-              {mapPayload ? `Geometría v${mapPayload.geometryVersion}` : 'Pendiente de verificar'}
+              {presentation?.showVerifiedMap && mapPayload ? `Geometría v${mapPayload.geometryVersion}` : presentation?.mapStatusLabel}
             </Text>
           </View>
           <View style={styles.infoCard}>
@@ -264,17 +289,17 @@ export default function RouteDetailScreen() {
             <Text style={styles.infoIcon}>◎</Text>
             <Text style={styles.infoTitle}>Checkpoints</Text>
             <Text style={styles.infoCopy}>
-              {mapPayload ? `${mapPayload.checkpoints.length} verificados` : 'Sin datos verificados'}
+              {presentation?.showVerifiedCheckpoints && mapPayload ? `${mapPayload.checkpoints.length} verificados` : presentation?.checkpointStatusLabel}
             </Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoIcon}>!</Text>
             <Text style={styles.infoTitle}>Seguridad</Text>
-            <Text style={styles.infoCopy}>Revisar antes de salir</Text>
+            <Text style={styles.infoCopy}>{presentation?.showVerifiedMap ? 'Revisar antes de salir' : 'Pendiente de verificación'}</Text>
           </View>
         </View>
 
-        {offlineManifest ? (
+        {presentation?.showVerifiedOfflinePackage && offlineManifest ? (
           <View style={styles.offlineActionCard}>
             <View style={styles.offlineActionCopy}>
               <Text style={styles.offlineActionEyebrow}>PAQUETE OFFLINE</Text>
@@ -302,7 +327,9 @@ export default function RouteDetailScreen() {
             })
           }
         >
-          <Text style={styles.primaryButtonText}>Preparar aventura</Text>
+          <Text style={styles.primaryButtonText}>
+            {presentation?.canStartPhysicalRoute ? 'Preparar aventura' : 'Ver prueba técnica GPS'}
+          </Text>
           <Text style={styles.primaryButtonArrow}>→</Text>
         </Pressable>
       </ScrollView>
@@ -330,6 +357,9 @@ const styles = StyleSheet.create({
   statValue: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   statLabel: { color: colors.muted, fontSize: 11, marginTop: 3 },
   divider: { width: 1, height: 36, backgroundColor: colors.border, marginHorizontal: spacing[8] },
+  preparationCard: { marginHorizontal: spacing[20], marginTop: -24, padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  preparationTitle: { color: colors.olive900, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  preparationBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
   mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
   mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },

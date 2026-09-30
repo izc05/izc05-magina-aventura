@@ -100,7 +100,23 @@ function rehydrateEngineState(
       ...recovered.session,
       lastProcessedSequence: recovered.snapshot.lastProcessedSequence,
     },
-    snapshot: recovered.snapshot,
+    snapshot: {
+      ...recovered.snapshot,
+      activeIntervalStartedAt:
+        recovered.session.state === 'ACTIVE'
+          ? recovered.snapshot.activeIntervalStartedAt ?? recovered.snapshot.createdAt
+          : null,
+      gpsGapSecondsExcluded: recovered.snapshot.gpsGapSecondsExcluded ?? 0,
+      lastValidSample:
+        recovered.session.state === 'ACTIVE' &&
+        recovered.snapshot.lastValidSample &&
+        Date.parse(recovered.snapshot.lastValidSample.timestamp) >=
+          Date.parse(
+            recovered.snapshot.activeIntervalStartedAt ?? recovered.snapshot.createdAt,
+          )
+          ? recovered.snapshot.lastValidSample
+          : null,
+    },
     offRouteEvidence: {
       state: recovered.snapshot.offRouteState,
       outsideSamples: 0,

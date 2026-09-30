@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { AdventureDefinition } from '@magina-aventura/contracts';
-import type { ActivityEngineState } from '@magina-aventura/activity-engine';
+import { elapsedSecondsAt, type ActivityEngineState } from '@magina-aventura/activity-engine';
 import { activityRuntime } from '../../src/activity/activity-runtime';
 import { developmentRouteMapRepository } from '../../src/features/routes/development-route-map-repository';
 import { getDevelopmentRouteBySlug } from '../../src/features/routes/route-utils';
@@ -22,6 +22,7 @@ export default function ActiveAdventureScreen() {
 
   const [mapPayload, setMapPayload] = useState<EnhancedRoutePayload | null>(null);
   const [activityState, setActivityState] = useState<ActivityEngineState | null>(null);
+  const [clockNowMs, setClockNowMs] = useState(() => Date.now());
   const [activityError, setActivityError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -98,6 +99,7 @@ export default function ActiveAdventureScreen() {
   useEffect(() => {
     if (!activityState) return;
     const timer = setInterval(() => {
+      setClockNowMs(Date.now());
       void activityRuntime.refresh().then((next) => {
         if (next) setActivityState(next);
       }).catch((error) => {
@@ -130,7 +132,13 @@ export default function ActiveAdventureScreen() {
       ? 'Sin checkpoint activo'
       : 'Esperando GPS';
   const distanceKm = (snapshot?.validDistanceMeters ?? 0) / 1000;
-  const elapsedSeconds = snapshot?.totalElapsedSeconds ?? 0;
+  const elapsedSeconds = snapshot && activityState
+    ? elapsedSecondsAt(
+        snapshot,
+        activityState.session.state,
+        new Date(clockNowMs).toISOString(),
+      )
+    : 0;
   const elapsedMinutes = Math.floor(elapsedSeconds / 60);
   const elapsedRemainder = Math.floor(elapsedSeconds % 60);
   const progressPercent = Math.round((snapshot?.routeProgress ?? 0) * 100);
@@ -166,7 +174,7 @@ export default function ActiveAdventureScreen() {
           </View>
           <View>
             <Text style={styles.metricValue}>{String(elapsedMinutes).padStart(2, '0')}:{String(elapsedRemainder).padStart(2, '0')}</Text>
-            <Text style={styles.metricLabel}>Tiempo</Text>
+            <Text style={styles.metricLabel}>Tiempo activo</Text>
           </View>
           <View>
             <Text style={styles.metricValue}>{gpsSamples}</Text>

@@ -1,5 +1,5 @@
 import type { AdventureDefinition, RouteDetail } from '@magina-aventura/contracts';
-import type { ExplorationTarget } from '@magina-aventura/activity-engine';
+import { elapsedSecondsAt, type ExplorationTarget } from '@magina-aventura/activity-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -169,6 +169,47 @@ describe('ActivityController', () => {
       beforeRestart?.snapshot.validDistanceMeters ?? 0,
       3,
     );
+  });
+
+  it('preserves full ACTIVE duration without GPS and after recovery', async () => {
+    const storeDb = createMemoryActivityStoreDatabase();
+    const inboxDb = createMemoryBackgroundLocationInboxDatabase();
+    const provider = createProvider();
+    let now = '2026-09-16T10:00:00.000Z';
+
+    const first = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'activity-time-recovery',
+      now: () => now,
+    });
+    await first.start(adventureDefinition, route);
+
+    now = '2026-09-16T10:00:10.000Z';
+    const paused = await first.pause();
+    expect(paused.snapshot.totalElapsedSeconds).toBe(10);
+
+    now = '2026-09-16T10:01:00.000Z';
+    const resumed = await first.resume();
+    expect(resumed.snapshot.totalElapsedSeconds).toBe(10);
+
+    now = '2026-09-16T10:01:10.000Z';
+    const restarted = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'unused',
+      now: () => now,
+    });
+    const recovered = await restarted.recover(adventureDefinition, route);
+
+    expect(recovered?.snapshot.totalElapsedSeconds).toBe(10);
+    expect(elapsedSecondsAt(
+      recovered!.snapshot,
+      recovered!.session.state,
+      now,
+    )).toBe(20);
   });
 
   it('refuses recovery with a newer AdventureDefinition version', async () => {

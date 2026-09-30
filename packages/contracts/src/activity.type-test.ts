@@ -42,6 +42,8 @@ const snapshot: ActivitySnapshot = {
   lastProcessedSequence: sample.sequence,
   validDistanceMeters: 0,
   totalElapsedSeconds: 0,
+  activeIntervalStartedAt: sample.timestamp,
+  gpsGapSecondsExcluded: 0,
   movingElapsedSeconds: 0,
   currentSpeedMps: null,
   paceSecondsPerKm: null,

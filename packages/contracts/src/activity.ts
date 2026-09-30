@@ -51,6 +51,10 @@ export interface ActivitySnapshot {
   lastProcessedSequence: number;
   validDistanceMeters: number;
   totalElapsedSeconds: number;
+  /** Start of the currently open START/RESUME interval; null when not ACTIVE. */
+  activeIntervalStartedAt: string | null;
+  /** Seconds beyond GPS sample gaps excluded from GPS-derived metrics; never deducted from ACTIVE elapsed time. */
+  gpsGapSecondsExcluded: number;
   movingElapsedSeconds: number;
   currentSpeedMps: number | null;
   paceSecondsPerKm: number | null;

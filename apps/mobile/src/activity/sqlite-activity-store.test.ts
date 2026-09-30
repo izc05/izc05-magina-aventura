@@ -78,6 +78,8 @@ function snapshot(state: ActivitySnapshot['state'] = 'ACTIVE'): ActivitySnapshot
     lastProcessedSequence: 2,
     validDistanceMeters: 18,
     totalElapsedSeconds: 10,
+    activeIntervalStartedAt: state === 'ACTIVE' ? '2026-09-28T08:00:00.000Z' : null,
+    gpsGapSecondsExcluded: 0,
     movingElapsedSeconds: 10,
     currentSpeedMps: 1,
     paceSecondsPerKm: 600,
@@ -182,6 +184,8 @@ describe('SQLiteActivityStore durability contract', () => {
 
     expect(recovered?.lastConsumedInboxId).toBe(37);
     expect(recovered?.session.activityId).toBe('activity-sqlite');
+    expect(recovered?.snapshot.activeIntervalStartedAt).toBe('2026-09-28T08:00:00.000Z');
+    expect(recovered?.snapshot.gpsGapSecondsExcluded).toBe(0);
   });
 
   it('persists FINISHED state and sync outbox inside one exclusive transaction', async () => {

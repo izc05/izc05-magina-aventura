@@ -26,6 +26,8 @@ function recoveredActivity(): RecoveredActivity {
       lastProcessedSequence: 0,
       validDistanceMeters: 0,
       totalElapsedSeconds: 0,
+      activeIntervalStartedAt: '2026-09-16T10:00:00.000Z',
+      gpsGapSecondsExcluded: 0,
       movingElapsedSeconds: 0,
       currentSpeedMps: null,
       paceSecondsPerKm: null,

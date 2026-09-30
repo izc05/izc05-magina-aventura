@@ -10,7 +10,7 @@ import {
   defaultActivityEngineConfig,
   type ActivityEngineConfig,
 } from './config';
-import { updateActivityMetrics } from './metrics';
+import { elapsedSecondsAt, updateActivityMetrics } from './metrics';
 import {
   createInitialOffRouteEvidence,
   updateOffRouteState,
@@ -45,6 +45,8 @@ export function createInitialEngineState(
       lastProcessedSequence: session.lastProcessedSequence,
       validDistanceMeters: 0,
       totalElapsedSeconds: 0,
+      activeIntervalStartedAt: null,
+      gpsGapSecondsExcluded: 0,
       movingElapsedSeconds: 0,
       currentSpeedMps: null,
       paceSecondsPerKm: null,
@@ -72,6 +74,12 @@ function reduceLifecycleAction(
   action: Exclude<ActivityAction, { type: 'LOCATION' }>,
 ): ActivityEngineState {
   const nextState = transitionActivityState(state.session.state, action.type);
+  const commitsActiveInterval =
+    state.session.state === 'ACTIVE' &&
+    (action.type === 'PAUSE' || action.type === 'FINISH');
+  const totalElapsedSeconds = commitsActiveInterval
+    ? elapsedSecondsAt(state.snapshot, state.session.state, action.at)
+    : state.snapshot.totalElapsedSeconds;
   const nextSession: ActivitySession = {
     ...state.session,
     state: nextState,
@@ -91,9 +99,16 @@ function reduceLifecycleAction(
     snapshot: {
       ...state.snapshot,
       state: nextState,
+      totalElapsedSeconds,
+      activeIntervalStartedAt: nextState === 'ACTIVE' ? action.at : null,
+      gpsGapSecondsExcluded: 0,
       createdAt: action.at,
       currentSpeedMps: nextState === 'ACTIVE' ? state.snapshot.currentSpeedMps : null,
       paceSecondsPerKm: nextState === 'ACTIVE' ? state.snapshot.paceSecondsPerKm : null,
+      lastValidSample:
+        action.type === 'RESUME' || nextState !== 'ACTIVE'
+          ? null
+          : state.snapshot.lastValidSample,
     },
     shouldPersistSnapshot: true,
     acceptedSamplesSinceSnapshot: 0,
@@ -130,16 +145,32 @@ export function reduceActivity(
     };
   }
 
-  let snapshot = updateActivityMetrics(
-    state.snapshot,
-    state.snapshot.lastValidSample,
-    sample,
-    state.session.state,
-    config,
+  const sampleTimestampMs = Date.parse(sample.timestamp);
+  const activeIntervalStartMs = Date.parse(
+    state.snapshot.activeIntervalStartedAt ?? state.snapshot.createdAt,
   );
+  const predatesActiveInterval =
+    state.session.state === 'ACTIVE' &&
+    Number.isFinite(sampleTimestampMs) &&
+    Number.isFinite(activeIntervalStartMs) &&
+    sampleTimestampMs < activeIntervalStartMs;
+  let snapshot = predatesActiveInterval
+    ? { ...state.snapshot, lastProcessedSequence: sample.sequence }
+    : updateActivityMetrics(
+        state.snapshot,
+        state.snapshot.lastValidSample,
+        sample,
+        state.session.state,
+        config,
+      );
   let offRouteEvidence = state.offRouteEvidence;
 
-  if (sample.validForMetrics && routeLine.length >= 2) {
+  if (
+    sample.validForMetrics &&
+    !predatesActiveInterval &&
+    state.session.state === 'ACTIVE' &&
+    routeLine.length >= 2
+  ) {
     const progress = calculateRouteProgress(
       [sample.longitude, sample.latitude],
       routeLine,

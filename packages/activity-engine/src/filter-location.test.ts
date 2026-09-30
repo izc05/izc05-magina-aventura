@@ -64,6 +64,21 @@ describe('normalizeLocationSample', () => {
     expect(sample.rejectionReason).toBe('impossible_speed');
   });
 
+  it('accepts a new reference after a prolonged GPS gap without deriving speed across it', () => {
+    const sample = normalizeLocationSample(
+      raw({
+        timestamp: '2026-09-15T10:00:20.000Z',
+        latitude: 37.003,
+        speedMps: null,
+      }),
+      previous,
+      defaultActivityEngineConfig,
+    );
+
+    expect(sample.validForMetrics).toBe(true);
+    expect(sample.rejectionReason).toBeNull();
+  });
+
   it('accepts a good sample and preserves its sequence', () => {
     const sample = normalizeLocationSample(raw(), previous, defaultActivityEngineConfig);
     expect(sample.validForMetrics).toBe(true);

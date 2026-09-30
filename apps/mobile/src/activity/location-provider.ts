@@ -71,7 +71,12 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
         };
       }
 
-      const background = await adapter.requestBackgroundPermission();
+      // Background permission is deliberately not requested during activity
+      // startup. Android may move this flow to system settings and some OEMs
+      // are unstable when a foreground service is started immediately after.
+      // First prove foreground GPS on the physical QA gate; background tracking
+      // is enabled in a separate, explicit step once foreground is stable.
+      const background = await adapter.getBackgroundPermission();
       return {
         foregroundGranted: true,
         backgroundGranted: granted(background),
@@ -90,13 +95,11 @@ export function createLocationProvider(adapter: NativeLocationAdapter): Location
         throw new Error('Foreground location permission is required');
       }
 
-      const background = await adapter.getBackgroundPermission();
-      if (granted(background)) {
-        const alreadyStarted = await adapter.hasStartedBackgroundUpdates();
-        if (alreadyStarted) return;
-        await adapter.startBackgroundUpdates(activityId);
-        return;
-      }
+      // Foreground tracking is the safe baseline for physical QA. Do not
+      // automatically start the Android foreground/background service here,
+      // even if the user granted background permission in an earlier build.
+      // This isolates native service crashes from the core GPS/session gate.
+      void activityId;
 
       if (!onForegroundLocation) {
         throw new Error('Foreground location callback is required without background permission');

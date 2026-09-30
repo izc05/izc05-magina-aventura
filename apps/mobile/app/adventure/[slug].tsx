@@ -23,6 +23,7 @@ export default function ActiveAdventureScreen() {
   const [activityState, setActivityState] = useState<ActivityEngineState | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   useEffect(() => {
     if (!routeSlug) return;
@@ -157,7 +158,24 @@ export default function ActiveAdventureScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.exitButton} onPress={() => router.back()}>
+      <Pressable
+        style={styles.exitButton}
+        onPress={() => {
+          if (finishing) return;
+          if (!activityRuntime.current()) {
+            router.back();
+            return;
+          }
+          Alert.alert(
+            'Salir de la aventura',
+            'La ruta seguirá guardada para que puedas continuarla después.',
+            [
+              { text: 'Seguir en ruta', style: 'cancel' },
+              { text: 'Salir', onPress: () => router.back() },
+            ],
+          );
+        }}
+      >
         <Text style={styles.exitButtonText}>✕</Text>
       </Pressable>
 
@@ -213,8 +231,37 @@ export default function ActiveAdventureScreen() {
               {activityState?.session.state === 'PAUSED' ? '▶ Reanudar' : 'Ⅱ Pausar'}
             </Text>
           </Pressable>
-          <Pressable style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>! SOS</Text>
+          <Pressable
+            style={styles.actionButton}
+            disabled={finishing || !activityState}
+            onPress={() => {
+              Alert.alert(
+                'Finalizar aventura',
+                'Se guardará el recorrido y la aventura quedará cerrada. Esta acción no es lo mismo que pausar.',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  {
+                    text: 'Finalizar',
+                    style: 'destructive',
+                    onPress: () => {
+                      setFinishing(true);
+                      setActivityError(null);
+                      void activityRuntime.finish()
+                        .then((finished) => {
+                          setActivityState(finished);
+                          router.replace(`/adventure/${route.slug}/summary` as any);
+                        })
+                        .catch((error) => {
+                          setActivityError(error instanceof Error ? error.message : 'No se pudo finalizar la aventura');
+                        })
+                        .finally(() => setFinishing(false));
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={styles.actionButtonText}>{finishing ? 'Finalizando…' : '✓ Finalizar'}</Text>
           </Pressable>
         </View>
       </View>

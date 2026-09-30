@@ -14,6 +14,8 @@ import { developmentRoutes } from '../src/features/routes/fixtures';
 import { colors, radius, spacing, typography } from '../src/theme/tokens';
 import { HeroTerritory } from '../src/components/ui/HeroTerritory';
 import { RouteCard } from '../src/components/ui/RouteCard';
+import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
+import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 const navItems = [
@@ -107,6 +109,15 @@ export default function RoutesHomeScreen() {
         <RouteCard 
           route={route} 
           onPress={() => router.push({ pathname: '/routes/[slug]', params: { slug: route.slug } })} 
+        />
+
+        <MunicipalRouteInformationCard
+          onPress={() =>
+            router.push({
+              pathname: '/municipal-routes/[slug]',
+              params: { slug: municipalRouteInformation.slug },
+            })
+          }
         />
 
         <View style={styles.challengeCard}>

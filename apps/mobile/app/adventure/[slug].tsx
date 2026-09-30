@@ -69,7 +69,7 @@ export default function ActiveAdventureScreen() {
   }, [route]);
 
   useEffect(() => {
-    if (!route || !definition || !mapPayload || starting || activityState) return;
+    if (!route || !definition || !mapPayload) return;
     let active = true;
     setStarting(true);
     setActivityError(null);
@@ -91,7 +91,7 @@ export default function ActiveAdventureScreen() {
 
     void startOrRecover();
     return () => { active = false; };
-  }, [route, definition, mapPayload, starting, activityState]);
+  }, [route, definition, mapPayload]);
 
   useEffect(() => {
     if (!activityState) return;

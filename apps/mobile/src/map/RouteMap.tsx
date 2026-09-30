@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Camera, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, type CameraRef, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../theme/tokens';
@@ -7,6 +7,7 @@ import type { RouteMapProps } from './map-types';
 import {
   defaultLayerVisibility,
   buildRouteMapOverlayData,
+  buildBaseMapDeviceLocationFeature,
   type MapLayerVisibility,
   type MapThemeId,
 } from './map-layers';
@@ -29,6 +30,7 @@ export function RouteMap({
   onThemeChange,
   onLayerVisibilityChange,
   height = 280,
+  deviceLocation,
 }: RouteMapProps) {
   const [activeThemeId, setActiveThemeId] = useState<MapThemeId>(themeId);
   const [visibility, setVisibility] = useState<MapLayerVisibility>({
@@ -37,11 +39,35 @@ export function RouteMap({
   });
   const [mapLoadState, setMapLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [mapKey, setMapKey] = useState(0);
+  const cameraRef = useRef<CameraRef>(null);
+  const centeredOnDeviceLocation = useRef(false);
 
   const theme = getMapTheme(activeThemeId);
   const initialViewState = getInitialMapViewState(payload, baseMapOnly);
   const { routeLine, checkpointShape, poiShape, hikerShape } =
     buildRouteMapOverlayData(payload, baseMapOnly);
+  const deviceLocationShape = useMemo(
+    () => buildBaseMapDeviceLocationFeature(deviceLocation, baseMapOnly),
+    [baseMapOnly, deviceLocation?.[0], deviceLocation?.[1]],
+  );
+
+  useEffect(() => {
+    if (!baseMapOnly || !deviceLocation) {
+      centeredOnDeviceLocation.current = false;
+      return;
+    }
+    if (mapLoadState === 'loading') {
+      centeredOnDeviceLocation.current = false;
+      return;
+    }
+    if (mapLoadState !== 'ready' || centeredOnDeviceLocation.current || !cameraRef.current) {
+      return;
+    }
+
+    const center: [number, number] = [deviceLocation[0], deviceLocation[1]];
+    cameraRef.current.easeTo({ center, zoom: 15, duration: 300 });
+    centeredOnDeviceLocation.current = true;
+  }, [baseMapOnly, deviceLocation?.[0], deviceLocation?.[1], mapLoadState]);
 
   function handleToggleLayer(key: keyof MapLayerVisibility) {
     const updated = { ...visibility, [key]: !visibility[key] };
@@ -65,7 +91,7 @@ export function RouteMap({
         onDidFinishLoadingMap={() => setMapLoadState('ready')}
         onDidFailLoadingMap={() => setMapLoadState('error')}
       >
-        <Camera initialViewState={initialViewState as any} />
+        <Camera ref={cameraRef} initialViewState={initialViewState as any} />
 
         {/* Route and POI overlays only come from the verified route payload. */}
         {routeLine && visibility.routeTrack ? (
@@ -158,6 +184,21 @@ export function RouteMap({
                 'circle-radius': 7,
                 'circle-stroke-color': colors.white,
                 'circle-stroke-width': 2,
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
+
+        {deviceLocationShape ? (
+          <GeoJSONSource id="technical-device-location" data={deviceLocationShape as any}>
+            <Layer
+              id="technical-device-location-pin"
+              type="circle"
+              paint={{
+                'circle-color': '#1769FF',
+                'circle-radius': 8,
+                'circle-stroke-color': colors.white,
+                'circle-stroke-width': 3,
               } as any}
             />
           </GeoJSONSource>

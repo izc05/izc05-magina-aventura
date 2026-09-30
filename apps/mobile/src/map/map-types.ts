@@ -1,4 +1,4 @@
-import type { RouteMapPayload } from '@magina-aventura/contracts';
+import type { GeoJsonPosition, RouteMapPayload } from '@magina-aventura/contracts';
 import type { MapLayerVisibility, MapThemeId, EnhancedRoutePayload } from './map-layers';
 
 export interface RouteMapProps {
@@ -13,4 +13,6 @@ export interface RouteMapProps {
   onThemeChange?: (themeId: MapThemeId) => void;
   onLayerVisibilityChange?: (visibility: MapLayerVisibility) => void;
   height?: number;
+  /** Current device sample for technical base-map mode only; never a track. */
+  deviceLocation?: GeoJsonPosition | null;
 }

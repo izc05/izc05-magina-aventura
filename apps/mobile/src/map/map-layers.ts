@@ -91,6 +91,28 @@ export function buildHikerPositionFeature(
   };
 }
 
+/** A single current-device Point; no route, track, heading, or accuracy geometry. */
+export function buildBaseMapDeviceLocationFeature(
+  position: GeoJsonPosition | null | undefined,
+  baseMapOnly: boolean,
+) {
+  if (!baseMapOnly || !position) return null;
+
+  return {
+    type: 'FeatureCollection' as const,
+    features: [
+      {
+        type: 'Feature' as const,
+        properties: { role: 'device-location' as const },
+        geometry: {
+          type: 'Point' as const,
+          coordinates: position,
+        },
+      },
+    ],
+  };
+}
+
 export interface RouteMapOverlayData {
   routeLine: RouteMapPayload['line'] | null;
   checkpointShape: ReturnType<typeof buildCheckpointFeatureCollection> | null;

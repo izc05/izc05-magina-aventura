@@ -158,6 +158,18 @@ export default function ActiveAdventureScreen() {
   const elapsedTimeLabel = elapsedSeconds === null
     ? '—'
     : `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(Math.floor(elapsedSeconds % 60)).padStart(2, '0')}`;
+  const deviceMapPosition = useMemo(
+    () => gpsMetrics.devicePosition,
+    [gpsMetrics.deviceLocationSample],
+  );
+  const deviceLocationStatusLabel = {
+    waiting: 'Esperando ubicación GPS del dispositivo',
+    available: 'Ubicación GPS del dispositivo disponible',
+    degraded: 'Posición GPS recibida · calidad limitada',
+    paused: 'Captura pausada · el pin GPS está detenido',
+    finished: 'Captura finalizada · el pin GPS está detenido',
+    unavailable: 'Ubicación GPS física no disponible en esta sesión',
+  }[gpsMetrics.deviceLocationState];
   const progressPercent = routePresentation?.showVerifiedMap
     ? Math.round((snapshot?.routeProgress ?? 0) * 100)
     : null;
@@ -169,12 +181,23 @@ export default function ActiveAdventureScreen() {
 
       <View style={styles.mapContainer}>
         {isTechnicalGpsQa ? (
-          <View style={styles.preparationMap}>
-            <Text style={styles.preparationMapTitle}>Contenido y mapa en preparación</Text>
-            <Text style={styles.preparationMapBody}>
-              La captura GPS es técnica; no hay una ruta ni un checkpoint verificados.
-            </Text>
-          </View>
+          <>
+            <RouteMap
+              payload={null}
+              baseMapOnly={true}
+              attribution={true}
+              showLayerControls={false}
+              deviceLocation={deviceMapPosition}
+              height={600}
+            />
+            <View pointerEvents="none" style={styles.technicalMapNotice}>
+              <Text style={styles.technicalMapNoticeTitle}>Posición GPS del dispositivo</Text>
+              <Text style={styles.technicalMapNoticeCopy}>
+                Prueba técnica; sin navegación ni ruta verificada.
+              </Text>
+              <Text style={styles.technicalMapNoticeStatus}>{deviceLocationStatusLabel}</Text>
+            </View>
+          </>
         ) : (
           <RouteMap
             payload={mapPayload}
@@ -355,6 +378,10 @@ const styles = StyleSheet.create({
   preparationMap: { flex: 1, marginHorizontal: spacing[20], marginVertical: spacing[12], borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: spacing[24] },
   preparationMapTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', textAlign: 'center' },
   preparationMapBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[8], textAlign: 'center' },
+  technicalMapNotice: { position: 'absolute', top: 206, left: spacing[20], right: spacing[20], padding: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.white, elevation: 3 },
+  technicalMapNoticeTitle: { color: colors.ink, fontSize: 12, fontWeight: '900' },
+  technicalMapNoticeCopy: { color: colors.olive900, fontSize: 11, fontWeight: '800', marginTop: spacing[4] },
+  technicalMapNoticeStatus: { color: colors.muted, fontSize: 11, fontWeight: '700', marginTop: spacing[4] },
   topHud: {
     position: 'absolute',
     top: spacing[12],

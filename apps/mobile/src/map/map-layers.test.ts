@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildBaseMapDeviceLocationFeature,
   buildCheckpointFeatureCollection,
   buildHikerPositionFeature,
   buildPOIFeatureCollection,
@@ -62,6 +63,33 @@ describe('Map Layers & Theme Utilities', () => {
       poiShape: null,
       hikerShape: null,
     });
+  });
+
+  it('renders exactly one current-device Point on the base map and no route geometry', () => {
+    const position = [-3.4123, 37.8234] as const;
+    const marker = buildBaseMapDeviceLocationFeature(position, true);
+
+    expect(marker).toEqual({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: { role: 'device-location' },
+        geometry: { type: 'Point', coordinates: position },
+      }],
+    });
+    expect(marker?.features).toHaveLength(1);
+    expect(marker?.features.map((feature) => feature.geometry.type)).toEqual(['Point']);
+    expect(buildRouteMapOverlayData(mockRoutePayload, true)).toEqual({
+      routeLine: null,
+      checkpointShape: null,
+      poiShape: null,
+      hikerShape: null,
+    });
+  });
+
+  it('never renders the device marker outside the technical base-map-only mode', () => {
+    expect(buildBaseMapDeviceLocationFeature([-3.4123, 37.8234], false)).toBeNull();
+    expect(buildBaseMapDeviceLocationFeature(null, true)).toBeNull();
   });
 
   it('retrieves all 4 defined themes (olive, topo, satellite, night)', () => {

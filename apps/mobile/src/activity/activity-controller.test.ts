@@ -249,5 +249,18 @@ describe('ActivityController', () => {
     expect(recovered?.exploration?.unlockedTargetKeys).toEqual([
       'checkpoint:00000000-0000-4000-8000-000000000011',
     ]);
+    expect(recovered?.explorationObservations).toHaveLength(1);
+
+    await new MemoryBackgroundLocationInbox(inboxDb).append('activity-exploration', [
+      rawPoint(Date.parse('2026-09-16T10:01:05.000Z'), 37.82, -3.41),
+      rawPoint(Date.parse('2026-09-16T10:01:10.000Z'), 37.82, -3.41),
+    ]);
+    const afterReentry = await restarted.refresh();
+
+    expect(afterReentry?.exploration?.unlockedTargetKeys).toEqual([
+      'checkpoint:00000000-0000-4000-8000-000000000011',
+    ]);
+    expect(afterReentry?.explorationObservations).toHaveLength(1);
+    expect(afterReentry?.session.state).toBe('ACTIVE');
   });
 });

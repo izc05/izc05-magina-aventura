@@ -22,6 +22,12 @@ import {
 import { routePresentationViewModel } from '../../src/features/routes/route-presentation-view-model';
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
+import {
+  createBaseMapReferenceProps,
+  MAP_BASE_OFFLINE_NOTICE,
+  MAP_BASE_REFERENCE_WARNING,
+  OPENFREEMAP_LIBERTY_STYLE_URL,
+} from '../../src/map/map-reference';
 import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
 import { downloadRoutePackage } from '../../src/offline/route-package-store';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
@@ -71,7 +77,7 @@ export default function RouteDetailScreen() {
     : null;
 
   const configuredStyle = process.env.EXPO_PUBLIC_MAP_STYLE_URL;
-  const baseMapStyle = configuredStyle ?? (__DEV__ ? 'https://demotiles.maplibre.org/style.json' : null);
+  const baseMapStyle = configuredStyle ?? OPENFREEMAP_LIBERTY_STYLE_URL;
 
   const [mapPayload, setMapPayload] = useState<RouteMapPayload | null>(null);
   const [offlineManifest, setOfflineManifest] = useState<OfflineRoutePackageManifest | null>(null);
@@ -85,7 +91,7 @@ export default function RouteDetailScreen() {
       setMapPayload(null);
       setOfflineManifest(null);
       setOfflineState('unavailable');
-      setMapStyle(null);
+      setMapStyle(OPENFREEMAP_LIBERTY_STYLE_URL);
       return;
     }
 
@@ -237,19 +243,21 @@ export default function RouteDetailScreen() {
           </View>
         )}
 
-        {presentation?.showVerifiedMap && mapStyle ? (
+        {presentation?.showVerifiedMap ? (
           <RouteMap
             payload={mapPayload}
-            mapStyle={mapStyle}
+            mapStyle={mapStyle ?? baseMapStyle}
             developmentMode={route.developmentFixture}
           />
         ) : (
-          <View style={styles.mapUnavailable}>
-            <Text style={styles.mapUnavailableTitle}>Mapa no configurado</Text>
-            <Text style={styles.mapUnavailableBody}>
-              La cartografía verificada aún no está disponible para esta ruta.
-            </Text>
-          </View>
+          <>
+            <RouteMap {...createBaseMapReferenceProps()} />
+            <View style={styles.mapReferenceNotice}>
+              <Text style={styles.mapReferenceWarning}>{MAP_BASE_REFERENCE_WARNING}</Text>
+              <Text style={styles.mapReferenceOffline}>{MAP_BASE_OFFLINE_NOTICE}</Text>
+              <Text style={styles.mapReferenceArea}>Bedmar y Garcíez · zona municipal aproximada</Text>
+            </View>
+          </>
         )}
 
         <Text style={styles.sectionTitle}>{presentation?.description ? 'Tu aventura' : 'Contenido de ruta'}</Text>
@@ -360,9 +368,10 @@ const styles = StyleSheet.create({
   preparationCard: { marginHorizontal: spacing[20], marginTop: -24, padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   preparationTitle: { color: colors.olive900, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   preparationBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
-  mapUnavailable: { margin: spacing[20], padding: spacing[20], borderRadius: radius.lg, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  mapUnavailableTitle: { color: colors.ink, fontSize: 15, fontWeight: '900' },
-  mapUnavailableBody: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  mapReferenceNotice: { marginHorizontal: spacing[20], marginBottom: spacing[16], padding: spacing[16], borderRadius: radius.md, backgroundColor: colors.olive900, borderWidth: 1, borderColor: colors.aoveGold },
+  mapReferenceWarning: { color: colors.white, fontSize: 13, lineHeight: 19, fontWeight: '900' },
+  mapReferenceOffline: { color: colors.limestone, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
+  mapReferenceArea: { color: colors.aoveGold, fontSize: 10, fontWeight: '800', marginTop: spacing[8] },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900', marginHorizontal: spacing[20] },
   body: { color: colors.muted, fontSize: 14, lineHeight: 21, marginHorizontal: spacing[20], marginTop: spacing[8] },
   rewardCard: { margin: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.olive900 },

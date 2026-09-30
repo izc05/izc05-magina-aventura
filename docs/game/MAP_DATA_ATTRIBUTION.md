@@ -45,6 +45,15 @@ If product design uses a custom attribution affordance:
 - it must not be automatically hidden solely for aesthetics;
 - it must work offline where the attribution/license information still needs to be readable.
 
+## Public reference basemap
+
+The route-detail reference view uses the public OpenFreeMap Liberty style:
+`https://tiles.openfreemap.org/styles/liberty`.
+
+OpenFreeMap's [quick start](https://openfreemap.org/quick_start/) documents the same styles for mobile apps with MapLibre Native. The [official service page](https://openfreemap.org/) states that its public instance needs no API key, permits commercial use, and requires attribution; MapLibre adds attribution automatically. Keep MapLibre React Native's `attribution` control enabled so the style-provided credits remain visible/reachable; do not replace this source with `tile.openstreetmap.org`. The reference view is online-only: it does not download or prefetch tiles for offline use.
+
+The view is centered approximately on Bedmar's main population nucleus using the [Andalusian IECA/SIMA municipal data](https://ws089.juntadeandalucia.es/sima/ficha.htm?mun=23902). This is a town-area camera context only, not a route, checkpoint, start point or navigation instruction. Do not overlay development fixture geometry or POIs.
+
 ## Contract extension recommended
 
 Extend future `OfflineMapAsset` / map manifest with an attribution structure similar to:

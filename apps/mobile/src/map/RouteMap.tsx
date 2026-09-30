@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { Camera, GeoJSONSource, Layer, Map } from '@maplibre/maplibre-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../theme/tokens';
 import type { RouteMapProps } from './map-types';
 import {
-  buildCheckpointFeatureCollection,
-  buildHikerPositionFeature,
-  buildPOIFeatureCollection,
   defaultLayerVisibility,
-  sierraMaginaParkBoundaryGeoJSON,
+  buildRouteMapOverlayData,
   type MapLayerVisibility,
   type MapThemeId,
-  type EnhancedRoutePayload,
 } from './map-layers';
 import { getMapTheme } from './map-theme';
 import { LayerControlOverlay } from './LayerControlOverlay';
+import {
+  getInitialMapViewState,
+  OPENFREEMAP_LIBERTY_STYLE_URL,
+} from './map-reference';
 
 export function RouteMap({
   payload,
   mapStyle,
+  baseMapOnly = false,
+  attribution = true,
   developmentMode,
   themeId = 'olive',
   layerVisibility: initialVisibility,
@@ -33,31 +35,13 @@ export function RouteMap({
     ...defaultLayerVisibility,
     ...initialVisibility,
   });
+  const [mapLoadState, setMapLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [mapKey, setMapKey] = useState(0);
 
   const theme = getMapTheme(activeThemeId);
-  const enhancedPayload = payload as EnhancedRoutePayload | null;
-
-  const initialViewState = payload
-    ? {
-        bounds: payload.bounds,
-        padding: { top: 32, right: 32, bottom: 32, left: 32 },
-      }
-    : { center: [-3.47, 37.71] as [number, number], zoom: 11 };
-
-  const checkpointShape = payload
-    ? buildCheckpointFeatureCollection(payload.checkpoints)
-    : null;
-
-  const poiShape = enhancedPayload?.pois
-    ? buildPOIFeatureCollection(enhancedPayload.pois)
-    : null;
-
-  const hikerShape = enhancedPayload?.hikerPosition
-    ? buildHikerPositionFeature(
-        enhancedPayload.hikerPosition,
-        enhancedPayload.hikerHeadingDeg ?? 45,
-      )
-    : null;
+  const initialViewState = getInitialMapViewState(payload, baseMapOnly);
+  const { routeLine, checkpointShape, poiShape, hikerShape } =
+    buildRouteMapOverlayData(payload, baseMapOnly);
 
   function handleToggleLayer(key: keyof MapLayerVisibility) {
     const updated = { ...visibility, [key]: !visibility[key] };
@@ -72,34 +56,20 @@ export function RouteMap({
 
   return (
     <View style={[styles.container, { height, backgroundColor: theme.backgroundColor }]}>
-      <Map style={styles.map} mapStyle={mapStyle as any}>
+      <Map
+        key={mapKey}
+        style={styles.map}
+        mapStyle={(mapStyle ?? OPENFREEMAP_LIBERTY_STYLE_URL) as any}
+        attribution={attribution}
+        onWillStartLoadingMap={() => setMapLoadState('loading')}
+        onDidFinishLoadingMap={() => setMapLoadState('ready')}
+        onDidFailLoadingMap={() => setMapLoadState('error')}
+      >
         <Camera initialViewState={initialViewState as any} />
 
-        {/* Capa 1: Parque Natural Sierra Mágina Boundary */}
-        {visibility.parkBoundary ? (
-          <GeoJSONSource id="park-boundary-source" data={sierraMaginaParkBoundaryGeoJSON as any}>
-            <Layer
-              id="park-boundary-fill"
-              type="fill"
-              paint={{
-                'fill-color': theme.parkBoundaryFill,
-              } as any}
-            />
-            <Layer
-              id="park-boundary-line"
-              type="line"
-              paint={{
-                'line-color': theme.parkBoundaryLine,
-                'line-width': 1.5,
-                'line-dasharray': [4, 3],
-              } as any}
-            />
-          </GeoJSONSource>
-        ) : null}
-
-        {/* Capa 2: Route Track Line */}
-        {payload && visibility.routeTrack ? (
-          <GeoJSONSource id="route-line" data={payload.line as any}>
+        {/* Route and POI overlays only come from the verified route payload. */}
+        {routeLine && visibility.routeTrack ? (
+          <GeoJSONSource id="route-line" data={routeLine as any}>
             <Layer
               id="route-line-casing"
               type="line"
@@ -123,7 +93,6 @@ export function RouteMap({
           </GeoJSONSource>
         ) : null}
 
-        {/* Capa 3: Checkpoints */}
         {checkpointShape && visibility.checkpoints ? (
           <GeoJSONSource id="route-checkpoints" data={checkpointShape as any}>
             <Layer
@@ -139,7 +108,6 @@ export function RouteMap({
           </GeoJSONSource>
         ) : null}
 
-        {/* Capa 4: POIs / Descubrimientos */}
         {poiShape && visibility.pois ? (
           <GeoJSONSource id="route-pois" data={poiShape as any}>
             <Layer
@@ -171,7 +139,6 @@ export function RouteMap({
           </GeoJSONSource>
         ) : null}
 
-        {/* Capa 5: Posición Senderista / Hiker Location */}
         {hikerShape && visibility.hikerPosition ? (
           <GeoJSONSource id="hiker-position" data={hikerShape as any}>
             <Layer
@@ -197,13 +164,37 @@ export function RouteMap({
         ) : null}
       </Map>
 
-      {!payload ? (
+      {!payload && !baseMapOnly ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>Track verificado no disponible todavía</Text>
         </View>
       ) : null}
 
-      {showLayerControls ? (
+      {baseMapOnly && mapLoadState === 'loading' ? (
+        <View pointerEvents="none" style={styles.mapStatus}>
+          <Text style={styles.mapStatusText}>Cargando cartografía base…</Text>
+        </View>
+      ) : null}
+
+      {baseMapOnly && mapLoadState === 'error' ? (
+        <View style={[styles.mapStatus, styles.mapError]}>
+          <Text style={styles.mapStatusText}>
+            No se pudo cargar el mapa base. Comprueba la conexión.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reintentar cargar cartografía base"
+            onPress={() => {
+              setMapLoadState('loading');
+              setMapKey((current) => current + 1);
+            }}
+          >
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {!baseMapOnly && showLayerControls ? (
         <LayerControlOverlay
           visibility={visibility}
           onToggleLayer={handleToggleLayer}
@@ -212,7 +203,7 @@ export function RouteMap({
         />
       ) : null}
 
-      {developmentMode ? (
+      {!baseMapOnly && developmentMode ? (
         <View style={styles.devBadge}>
           <Text style={styles.devText}>DESARROLLO · {theme.name.toUpperCase()}</Text>
         </View>
@@ -241,6 +232,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   noticeText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
+  mapStatus: {
+    position: 'absolute',
+    top: spacing[12],
+    left: spacing[12],
+    right: spacing[12],
+    padding: spacing[12],
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+  },
+  mapError: { borderWidth: 1, borderColor: colors.aoveGold },
+  mapStatusText: { color: colors.ink, fontSize: 12, fontWeight: '800' },
+  retryText: { color: colors.olive900, fontSize: 12, fontWeight: '900', marginTop: spacing[8] },
   devBadge: {
     position: 'absolute',
     bottom: spacing[12],

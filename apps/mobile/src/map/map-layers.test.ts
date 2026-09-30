@@ -3,11 +3,12 @@ import {
   buildCheckpointFeatureCollection,
   buildHikerPositionFeature,
   buildPOIFeatureCollection,
-  sierraMaginaParkBoundaryGeoJSON,
+  buildRouteMapOverlayData,
   type DetailedPOI,
 } from './map-layers';
 import { MAP_THEMES, getMapTheme } from './map-theme';
 import type { RouteMapCheckpoint } from '@magina-aventura/contracts';
+import { mockRoutePayload } from '../features/routes/development-route-map-repository';
 
 describe('Map Layers & Theme Utilities', () => {
   it('builds checkpoint feature collection with correct properties', () => {
@@ -45,9 +46,22 @@ describe('Map Layers & Theme Utilities', () => {
     expect(hiker.features[0]?.geometry.coordinates).toEqual([-3.41, 37.81]);
   });
 
-  it('contains valid Sierra Mágina Natural Park polygon boundary', () => {
-    expect(sierraMaginaParkBoundaryGeoJSON.features[0]?.geometry.type).toBe('Polygon');
-    expect(sierraMaginaParkBoundaryGeoJSON.features[0]?.geometry.coordinates[0]?.length).toBeGreaterThan(4);
+  it('returns no map overlays when route data is absent', () => {
+    expect(buildRouteMapOverlayData(null)).toEqual({
+      routeLine: null,
+      checkpointShape: null,
+      poiShape: null,
+      hikerShape: null,
+    });
+  });
+
+  it('suppresses mock route, checkpoint, POI and hiker geometry in base-only mode', () => {
+    expect(buildRouteMapOverlayData(mockRoutePayload, true)).toEqual({
+      routeLine: null,
+      checkpointShape: null,
+      poiShape: null,
+      hikerShape: null,
+    });
   });
 
   it('retrieves all 4 defined themes (olive, topo, satellite, night)', () => {

@@ -4,6 +4,8 @@ import type { MapLayerVisibility, MapThemeId, EnhancedRoutePayload } from './map
 export interface RouteMapProps {
   payload: EnhancedRoutePayload | RouteMapPayload | null;
   mapStyle?: string | Record<string, unknown>;
+  baseMapOnly?: boolean;
+  attribution?: boolean;
   developmentMode?: boolean;
   themeId?: MapThemeId;
   layerVisibility?: Partial<MapLayerVisibility>;

@@ -1,6 +1,5 @@
 import type {
   GeoJsonPosition,
-  RouteBounds,
   RouteMapCheckpoint,
   RouteMapDiscoveryHint,
   RouteMapPayload,
@@ -12,7 +11,6 @@ export interface MapLayerVisibility {
   routeTrack: boolean;
   checkpoints: boolean;
   pois: boolean;
-  parkBoundary: boolean;
   hikerPosition: boolean;
   elevationGrid: boolean;
 }
@@ -30,31 +28,6 @@ export interface EnhancedRoutePayload extends RouteMapPayload {
   hikerPosition?: GeoJsonPosition;
   hikerHeadingDeg?: number;
 }
-
-// Sierra Mágina Natural Park Boundary approximate GeoJSON Polygon
-export const sierraMaginaParkBoundaryGeoJSON = {
-  type: 'FeatureCollection' as const,
-  features: [
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Parque Natural Sierra Mágina' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [
-          [
-            [-3.52, 37.85],
-            [-3.38, 37.85],
-            [-3.35, 37.75],
-            [-3.40, 37.65],
-            [-3.55, 37.66],
-            [-3.58, 37.76],
-            [-3.52, 37.85],
-          ],
-        ],
-      },
-    },
-  ],
-};
 
 export function buildCheckpointFeatureCollection(
   checkpoints: RouteMapCheckpoint[],
@@ -118,11 +91,51 @@ export function buildHikerPositionFeature(
   };
 }
 
+export interface RouteMapOverlayData {
+  routeLine: RouteMapPayload['line'] | null;
+  checkpointShape: ReturnType<typeof buildCheckpointFeatureCollection> | null;
+  poiShape: ReturnType<typeof buildPOIFeatureCollection> | null;
+  hikerShape: ReturnType<typeof buildHikerPositionFeature> | null;
+}
+
+/**
+ * The caller controls whether route data is authoritative before it is rendered.
+ * Reference-map mode suppresses even a mistakenly supplied payload.
+ */
+export function buildRouteMapOverlayData(
+  payload: EnhancedRoutePayload | RouteMapPayload | null,
+  baseMapOnly = false,
+): RouteMapOverlayData {
+  if (!payload || baseMapOnly) {
+    return {
+      routeLine: null,
+      checkpointShape: null,
+      poiShape: null,
+      hikerShape: null,
+    };
+  }
+
+  const enhancedPayload = payload as EnhancedRoutePayload;
+
+  return {
+    routeLine: payload.line,
+    checkpointShape: buildCheckpointFeatureCollection(payload.checkpoints),
+    poiShape: enhancedPayload.pois?.length
+      ? buildPOIFeatureCollection(enhancedPayload.pois)
+      : null,
+    hikerShape: enhancedPayload.hikerPosition
+      ? buildHikerPositionFeature(
+          enhancedPayload.hikerPosition,
+          enhancedPayload.hikerHeadingDeg ?? 45,
+        )
+      : null,
+  };
+}
+
 export const defaultLayerVisibility: MapLayerVisibility = {
   routeTrack: true,
   checkpoints: true,
   pois: true,
-  parkBoundary: true,
   hikerPosition: true,
   elevationGrid: true,
 };

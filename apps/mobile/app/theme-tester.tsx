@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
   Pressable,
@@ -37,6 +37,8 @@ export default function ThemeTesterScreen() {
     defaultLayerVisibility,
   );
   const [activeTab, setActiveTab] = useState<'map' | 'elevation' | 'components' | 'tokens'>('map');
+
+  if (!__DEV__) return <Redirect href="/" />;
 
   const theme = getMapTheme(selectedThemeId);
   const route = developmentRoutes[0]!;

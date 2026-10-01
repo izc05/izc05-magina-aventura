@@ -222,6 +222,20 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     expect(mocks.openURL).toHaveBeenCalledWith(municipalRouteInformation.communityReference.sourceUrl);
   });
 
+  it('provides an accessible back action from the municipal detail to Home routes', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const backButton = collectElements(tree).find(
+      (element) => element.type === 'Pressable' && element.props?.accessibilityLabel === 'Volver',
+    );
+
+    expect(backButton?.props?.accessibilityRole).toBe('button');
+    expect(backButton?.props?.accessibilityHint).toContain('lista de rutas');
+    expect(typeof backButton?.props?.onPress).toBe('function');
+
+    (backButton?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.back).toHaveBeenCalledOnce();
+  });
+
   it('renders an accessible recovery action for an unknown route slug', () => {
     mocks.slug = 'unknown-route';
     const tree = MunicipalRouteInformationScreen();

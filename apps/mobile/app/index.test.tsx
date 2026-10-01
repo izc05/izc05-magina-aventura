@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('expo-router', () => ({ router: { push: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock('expo-router', () => ({ router: { push: mocks.push } }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('react-native', () => ({
   Pressable: 'Pressable',
@@ -13,10 +15,6 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 vi.mock('../src/components/ui/HeroTerritory', () => ({ HeroTerritory: 'HeroTerritory' }));
 vi.mock('../src/components/ui/RouteCard', () => ({ RouteCard: 'RouteCard' }));
-vi.mock('../src/components/ui/MunicipalRouteInformationCard', () => ({ MunicipalRouteInformationCard: 'MunicipalRouteInformationCard' }));
-vi.mock('../src/features/routes/municipal-route-information', () => ({
-  municipalRouteInformation: { slug: 'bedmar-info' },
-}));
 vi.mock('../src/theme/tokens', () => ({
   colors: {
     aoveGold: '#c90', border: '#ddd', earth: '#654', ink: '#123', limestone: '#eee',
@@ -28,6 +26,8 @@ vi.mock('../src/theme/tokens', () => ({
 }));
 
 import RoutesHomeScreen from './index';
+import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
+import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -56,7 +56,10 @@ function renderHome(isDev: boolean) {
   return RoutesHomeScreen();
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
 
 describe('Home inactive controls', () => {
   it('exposes search, difficulty filters and “Ver todas” as unavailable, labelled controls', () => {
@@ -110,5 +113,37 @@ describe('Home inactive controls', () => {
 
     const developmentText = visibleText(renderHome(true)).join(' ');
     expect(developmentText).toContain('Probador Visual & Capas');
+  });
+});
+
+describe('Home to Bedmar municipal information navigation', () => {
+  it('exposes an accessible, non-GPS Bedmar information card that opens its municipal detail', () => {
+    const tree = renderHome(false);
+    const homeCard = collectElements(tree).find(
+      (element) => element.type === MunicipalRouteInformationCard,
+    );
+
+    expect(visibleText(tree)).toContain('Empieza por Bedmar y Garcíez');
+    expect(typeof homeCard?.props?.onPress).toBe('function');
+
+    const cardTree = MunicipalRouteInformationCard({
+      onPress: homeCard?.props?.onPress as () => void,
+    });
+    const cardButton = collectElements(cardTree).find((element) => element.type === 'Pressable');
+    const cardText = visibleText(cardTree).join(' ');
+
+    expect(cardButton?.props?.accessibilityRole).toBe('button');
+    expect(cardButton?.props?.accessibilityLabel).toBe(
+      `Abrir ficha QA de ${municipalRouteInformation.title}`,
+    );
+    expect(cardButton?.props?.accessibilityHint).toContain('ficha informativa');
+    expect(cardText).toContain('Abrir ficha completa');
+    expect(cardText).toContain('sin navegación GPS');
+
+    (cardButton?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith({
+      pathname: '/municipal-routes/[slug]',
+      params: { slug: municipalRouteInformation.slug },
+    });
   });
 });

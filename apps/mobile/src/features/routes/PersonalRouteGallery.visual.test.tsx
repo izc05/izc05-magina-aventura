@@ -6,6 +6,11 @@ const mocks = vi.hoisted(() => ({
   user: { id: 'test-account' } as null | { id: string },
   authLoading: false,
   push: vi.fn(),
+  getCameraPermissions: vi.fn(),
+  requestCameraPermissions: vi.fn(),
+  launchCamera: vi.fn(),
+  launchImageLibrary: vi.fn(),
+  alert: vi.fn(),
 }));
 
 vi.mock('react', () => ({
@@ -19,7 +24,12 @@ vi.mock('react', () => ({
     return [index === 5 ? false : value, vi.fn()];
   },
 }));
-vi.mock('expo-image-picker', () => ({ launchImageLibraryAsync: vi.fn() }));
+vi.mock('expo-image-picker', () => ({
+  getCameraPermissionsAsync: mocks.getCameraPermissions,
+  requestCameraPermissionsAsync: mocks.requestCameraPermissions,
+  launchCameraAsync: mocks.launchCamera,
+  launchImageLibraryAsync: mocks.launchImageLibrary,
+}));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: mocks.user, isLoading: mocks.authLoading }),
@@ -34,7 +44,7 @@ vi.mock('./expo-personal-route-gallery-store', () => ({
 }));
 vi.mock('react-native', () => ({
   ActivityIndicator: 'ActivityIndicator',
-  Alert: { alert: vi.fn() },
+  Alert: { alert: mocks.alert },
   Image: 'Image',
   KeyboardAvoidingView: 'KeyboardAvoidingView',
   Modal: 'Modal',
@@ -94,7 +104,16 @@ beforeEach(() => {
   mocks.user = { id: 'test-account' };
   mocks.authLoading = false;
   mocks.push.mockReset();
+  mocks.getCameraPermissions.mockReset();
+  mocks.getCameraPermissions.mockResolvedValue({ status: 'granted', expires: 'never', granted: true, canAskAgain: true });
+  mocks.requestCameraPermissions.mockReset();
+  mocks.requestCameraPermissions.mockResolvedValue({ status: 'granted', expires: 'never', granted: true, canAskAgain: true });
+  mocks.launchCamera.mockReset();
+  mocks.launchCamera.mockResolvedValue({ canceled: true, assets: null });
+  mocks.launchImageLibrary.mockReset();
+  mocks.alert.mockReset();
   vi.mocked(personalRouteGalleryStore.listForRoute).mockClear();
+  vi.mocked(personalRouteGalleryStore.save).mockClear();
 });
 
 describe('personal route gallery visual contract', () => {
@@ -103,7 +122,7 @@ describe('personal route gallery visual contract', () => {
     const elements = collectElements(tree);
     const emptyState = elements.find((element) => element.props?.testID === 'personal-gallery-empty-state');
     const emptyBody = elements.find((element) =>
-      element.type === 'Text' && visibleText(element).join('') === 'Elige una foto del dispositivo y añade su pie y autor.',
+      element.type === 'Text' && visibleText(element).join('') === 'Haz una foto o elige una existente y añade su pie y autoría.',
     );
 
     expect(emptyState?.props?.style).toMatchObject({
@@ -135,7 +154,7 @@ describe('personal route gallery visual contract', () => {
       ? resolvedStyles.find((entry) => entry !== null && typeof entry === 'object' && 'backgroundColor' in entry)
       : resolvedStyles;
     const addButtonText = elements.find((element) =>
-      element.type === 'Text' && visibleText(element).join('') === 'Añadir foto propia',
+      element.type === 'Text' && visibleText(element).join('') === 'Elegir una foto existente',
     );
 
     expect(addButtonStyle).toMatchObject({
@@ -166,6 +185,25 @@ describe('personal route gallery visual contract', () => {
     (login?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.push).toHaveBeenCalledWith({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } });
     expect(personalRouteGalleryStore.listForRoute).not.toHaveBeenCalled();
+    expect(elements.some((element) => element.props?.accessibilityLabel === 'Hacer una foto para tu galería personal')).toBe(false);
+    expect(mocks.getCameraPermissions).not.toHaveBeenCalled();
+    expect(mocks.requestCameraPermissions).not.toHaveBeenCalled();
+  });
+
+  it('requests camera permission only after an authenticated user taps the capture button', async () => {
+    mocks.getCameraPermissions.mockResolvedValueOnce({ status: 'undetermined', expires: 'never', granted: false, canAskAgain: true });
+    const tree = PersonalRouteGallery({ routeSlug: 'sendero-fluvial-cueva-del-agua' });
+    const cameraButton = collectElements(tree).find((element) =>
+      element.props?.accessibilityLabel === 'Hacer una foto para tu galería personal',
+    );
+
+    expect(cameraButton).toBeDefined();
+    expect(mocks.getCameraPermissions).not.toHaveBeenCalled();
+    (cameraButton?.props?.onPress as (() => void) | undefined)?.();
+    await vi.waitFor(() => expect(mocks.launchCamera).toHaveBeenCalledOnce());
+
+    expect(mocks.requestCameraPermissions).toHaveBeenCalledOnce();
+    expect(personalRouteGalleryStore.save).not.toHaveBeenCalled();
   });
 
   it('does not render photos retained in memory for another authenticated account', () => {

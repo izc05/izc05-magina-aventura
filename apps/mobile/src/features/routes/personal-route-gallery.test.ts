@@ -96,7 +96,7 @@ const validInput = {
   sourceUri: 'file:///picker-cache/selected-photo.webp',
   mimeType: 'image/webp',
   caption: '  Agua junto al puente  ',
-  credit: '  IsiVoltPro  ',
+  credit: '  Autoría de prueba  ',
 };
 
 async function saveOne(local: ReturnType<typeof makePort>, id = 'photo-1', ownerId = 'account-a') {
@@ -125,7 +125,7 @@ describe('personal route gallery persistence', () => {
       routeSlug,
       uri: 'file:///app-private/photo-photo-1.webp',
       caption: 'Agua junto al puente',
-      credit: 'IsiVoltPro',
+      credit: 'Autoría de prueba',
       createdAt: savedAt.toISOString(),
     });
 
@@ -155,6 +155,15 @@ describe('personal route gallery persistence', () => {
     await expect(store.save({ ...validInput, sourceUri: 'https://example.invalid/photo.jpg' }))
       .rejects.toThrow('archivo local');
     expect(local.copies).toEqual([]);
+  });
+
+  it('rejects a missing owner id before copying a file or writing metadata', async () => {
+    const local = makePort();
+    const store = createPersonalRouteGalleryStore(local.port, { createId: () => 'photo-no-owner' });
+
+    await expect(store.save({ ...validInput, ownerId: '' })).rejects.toThrow('Inicia sesión');
+    expect(local.copies).toEqual([]);
+    expect(local.rows).toEqual([]);
   });
 
   it('removes the copied private image if SQLite metadata insertion fails', async () => {
@@ -262,7 +271,7 @@ describe('personal route photo viewer', () => {
       routeSlug,
       uri: 'file:///app-private/photo-a.jpg',
       caption: 'Atardecer en el sendero',
-      credit: 'IsiVoltPro',
+      credit: 'Autoría de prueba',
       createdAt: savedAt.toISOString(),
     },
     {
@@ -270,7 +279,7 @@ describe('personal route photo viewer', () => {
       routeSlug,
       uri: 'file:///app-private/photo-b.jpg',
       caption: 'Puente de piedra',
-      credit: 'A. Autora',
+      credit: 'Autoría secundaria de prueba',
       createdAt: savedAt.toISOString(),
     },
   ];
@@ -286,7 +295,7 @@ describe('personal route photo viewer', () => {
     expect(selected).not.toBeNull();
     expect(getPersonalRoutePhotoViewerDetails(selected!)).toEqual({
       caption: 'Atardecer en el sendero',
-      creditLabel: 'Crédito · IsiVoltPro',
+      creditLabel: 'Crédito · Autoría de prueba',
       localLabel: 'PERSONAL · LOCAL',
       privacyNote: 'Guardada solo en este dispositivo; no se publica ni se sincroniza.',
     });

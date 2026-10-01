@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run && node ./scripts/verify-personal-gallery-android-contract.mjs"
   },
   "dependencies": {
     "@magina-aventura/contracts": "workspace:*",

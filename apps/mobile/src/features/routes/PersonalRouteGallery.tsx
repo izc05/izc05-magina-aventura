@@ -24,6 +24,10 @@ import {
   selectPersonalRoutePhoto,
   type PersonalRoutePhoto,
 } from './personal-route-gallery';
+import {
+  capturePersonalRouteImage,
+  isValidPersonalRouteImageAsset,
+} from './personal-route-camera-flow';
 import { personalRoutePhotoPickerOptions } from './personal-route-photo-picker-options';
 import { personalRouteGalleryStore } from './expo-personal-route-gallery-store';
 import { colors, radius, spacing } from '../../theme/tokens';
@@ -59,19 +63,24 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     });
   }, [user?.id]);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
-  const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [selectedDraft, setSelectedDraft] = useState<{
+    ownerId: string;
+    asset: ImagePicker.ImagePickerAsset;
+  } | null>(null);
+  const selectedAsset = selectedDraft && selectedDraft.ownerId === user?.id ? selectedDraft.asset : null;
   const [caption, setCaption] = useState('');
   const [credit, setCredit] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [isChoosing, setIsChoosing] = useState(false);
+  const [activePicker, setActivePicker] = useState<'camera' | 'library' | null>(null);
+  const isChoosing = activePicker !== null;
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setSelectedPhotoId(null);
-    setSelectedAsset(null);
+    setSelectedDraft(null);
     setCaption('');
     setCredit('');
   }, [routeSlug, user?.id]);
@@ -109,26 +118,65 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
 
   const closeDraft = () => {
     if (isSaving) return;
-    setSelectedAsset(null);
+    setSelectedDraft(null);
     setCaption('');
     setCredit('');
   };
 
   const choosePhoto = async () => {
-    if (isChoosing || isSaving || isDeleting || isLoading || loadFailed) return;
-    setIsChoosing(true);
+    const ownerId = user?.id;
+    if (!ownerId || isChoosing || isSaving || isDeleting || isLoading || loadFailed) return;
+    setActivePicker('library');
     try {
       const result = await ImagePicker.launchImageLibraryAsync(personalRoutePhotoPickerOptions);
       if (result.canceled) return;
       const asset = result.assets[0];
-      if (!asset) return;
+      if (!isValidPersonalRouteImageAsset(asset)) {
+        Alert.alert('Archivo no válido', 'El selector no devolvió una imagen local válida. No se ha guardado nada; elige otra foto.');
+        return;
+      }
       setCaption('');
       setCredit('');
-      setSelectedAsset(asset);
+      setSelectedDraft({ ownerId, asset });
     } catch {
       Alert.alert('No se pudo abrir el selector', 'No se ha guardado ninguna imagen. Inténtalo de nuevo.');
     } finally {
-      setIsChoosing(false);
+      setActivePicker(null);
+    }
+  };
+
+  const capturePhoto = async () => {
+    const ownerId = user?.id;
+    if (!ownerId || isChoosing || isSaving || isDeleting || isLoading || loadFailed) return;
+    setActivePicker('camera');
+    try {
+      const result = await capturePersonalRouteImage(ImagePicker);
+      if (result.type === 'permission-denied') {
+        Alert.alert(
+          'Permiso de cámara rechazado',
+          result.canAskAgain
+            ? 'Hace falta permitir la cámara para hacer una foto. Puedes conceder el permiso o elegir una foto existente; nada se ha guardado.'
+            : 'El permiso de cámara está desactivado. Puedes habilitarlo en Ajustes o elegir una foto existente; nada se ha guardado.',
+        );
+        return;
+      }
+      if (result.type === 'permission-limited') {
+        Alert.alert('Acceso a cámara limitado', 'Este acceso no permite hacer una foto. Puedes revisar los permisos o elegir una foto existente; nada se ha guardado.');
+        return;
+      }
+      if (result.type === 'cancelled') return;
+      if (result.type === 'invalid-file') {
+        Alert.alert('Archivo no válido', 'La cámara no devolvió una imagen local válida. No se ha guardado nada.');
+        return;
+      }
+
+      setCaption('');
+      setCredit('');
+      setSelectedDraft({ ownerId, asset: result.asset });
+    } catch {
+      Alert.alert('No se pudo abrir la cámara', 'No se ha guardado ninguna imagen. Inténtalo de nuevo o elige una foto existente.');
+    } finally {
+      setActivePicker(null);
     }
   };
 
@@ -152,7 +200,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
       setPhotos((current) => [saved, ...current].sort((left, right) =>
         right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id),
       ));
-      setSelectedAsset(null);
+      setSelectedDraft(null);
       setCaption('');
       setCredit('');
     } catch {
@@ -271,7 +319,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
             <Text accessible={false} style={styles.galleryIcon}>▧</Text>
           </View>
           <Text style={styles.emptyTitle}>Tu galería personal está vacía</Text>
-          <Text style={styles.emptyBody}>Elige una foto del dispositivo y añade su pie y autor.</Text>
+          <Text style={styles.emptyBody}>Haz una foto o elige una existente y añade su pie y autoría.</Text>
         </View>
       ) : (
         <View style={styles.photoList}>
@@ -301,6 +349,18 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
 
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel="Hacer una foto para tu galería personal"
+        accessibilityHint="La cámara pedirá permiso solo al abrirse. La foto se guarda únicamente en la galería privada de este dispositivo."
+        accessibilityState={{ disabled: isBusy || isLoading || loadFailed }}
+        disabled={isBusy || isLoading || loadFailed}
+        style={({ pressed }) => [styles.cameraButton, pressed && styles.addButtonPressed, (isBusy || isLoading || loadFailed) && styles.buttonDisabled]}
+        onPress={() => void capturePhoto()}
+      >
+        {activePicker === 'camera' ? <ActivityIndicator color={colors.olive900} /> : <Text style={styles.cameraButtonText}>Hacer una foto</Text>}
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
         accessibilityLabel="Elegir una foto propia del dispositivo"
         accessibilityHint="Abre el selector de fotos del sistema; no publica ni sincroniza la imagen."
         accessibilityState={{ disabled: isBusy || isLoading || loadFailed }}
@@ -308,7 +368,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
         style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed, (isBusy || isLoading || loadFailed) && styles.buttonDisabled]}
         onPress={() => void choosePhoto()}
       >
-        {isChoosing ? <ActivityIndicator color={colors.white} /> : <Text style={styles.addButtonText}>Añadir foto propia</Text>}
+        {activePicker === 'library' ? <ActivityIndicator color={colors.white} /> : <Text style={styles.addButtonText}>Elegir una foto existente</Text>}
       </Pressable>
 
       <Modal
@@ -466,6 +526,8 @@ const styles = StyleSheet.create({
   photoCaption: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[12] },
   photoCredit: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
   localTag: { alignSelf: 'flex-start', color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
+  cameraButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.white, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
+  cameraButtonText: { color: colors.olive900, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   addButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.olive700, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
   addButtonPressed: { opacity: 0.82 },
   buttonDisabled: { opacity: 0.48 },

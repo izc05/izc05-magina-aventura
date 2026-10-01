@@ -24,6 +24,9 @@ vi.mock('react-native', () => ({
 }));
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 vi.mock('../../src/map/RouteMap', () => ({ RouteMap: 'RouteMap' }));
+vi.mock('../../src/features/routes/PersonalRouteGallery', () => ({
+  PersonalRouteGallery: 'PersonalRouteGallery',
+}));
 
 import MunicipalRouteInformationScreen from './[slug]';
 import { municipalRouteInformation } from '../../src/features/routes/municipal-route-information';
@@ -82,23 +85,26 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     expect(map?.props).not.toHaveProperty('deviceLocation');
   });
 
-  it('labels the empty photo slot and context map for assistive technology, with no image asset or false route action', () => {
+  it('labels the device-only personal gallery and context map without adding online photos or false route actions', () => {
     const tree = MunicipalRouteInformationScreen();
     const elements = collectElements(tree);
-    const gallery = elements.find((element) =>
-      element.props?.accessibilityLabel === municipalRouteInformation.gallery.accessibilityLabel,
-    );
+    const gallery = elements.find((element) => element.type === 'PersonalRouteGallery');
     const contextMap = elements.find((element) =>
       element.props?.accessibilityLabel === municipalRouteInformation.contextMap.accessibilityLabel,
     );
     const allText = visibleText(tree).join(' ');
 
-    expect(gallery?.props?.accessible).toBe(true);
+    expect(gallery?.props).toEqual({ routeSlug: municipalRouteInformation.slug });
+    expect(allText).toContain('Galería personal');
+    expect(allText).toContain('Solo en este dispositivo');
+    expect(allText).toContain('No se publican ni se sincronizan');
+    expect(allText).toContain('no mostramos fotos comunitarias ni contenido online');
+    expect(allText).toContain('no pide acceso general a toda tu fototeca');
     expect(contextMap?.props?.accessible).toBe(true);
     expect(contextMap?.props?.accessibilityRole).toBe('image');
     expect(elements.some((element) => element.type === 'Image')).toBe(false);
     expect(allText.toLowerCase()).toContain('licencia compatible');
-    expect(allText.toLowerCase()).toContain('no representa el sendero');
+    expect(allText).toContain(municipalRouteInformation.gallery.body);
     expect(allText).not.toContain('Iniciar ruta');
     expect(allText).not.toContain('Comenzar navegación');
     expect(allText).not.toContain('Descargar ruta');

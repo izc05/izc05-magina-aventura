@@ -7,6 +7,7 @@ import {
   getMunicipalRouteInformationBySlug,
   municipalRouteInformationViewModel,
 } from '../../src/features/routes/municipal-route-information';
+import { PersonalRouteGallery } from '../../src/features/routes/PersonalRouteGallery';
 import { RouteMap } from '../../src/map/RouteMap';
 import { createBaseMapReferenceProps } from '../../src/map/map-reference';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
@@ -129,15 +130,19 @@ export default function MunicipalRouteInformationScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{information.gallery.title}</Text>
-          <View
-            accessible
-            accessibilityLabel={information.gallery.accessibilityLabel}
-            style={styles.gallerySlot}
-          >
-            <View style={styles.galleryIconWrap}>
-              <Text accessible={false} style={styles.galleryIcon}>▧</Text>
-            </View>
+          <Text style={styles.sectionTitle}>Galería personal</Text>
+          <View style={styles.galleryPrivacyNotice}>
+            <Text style={styles.galleryPrivacyTitle}>Solo en este dispositivo</Text>
+            <Text style={styles.galleryPrivacyBody}>
+              Tus fotos se guardan en el almacenamiento privado de esta app. No se publican ni se sincronizan.
+              Aquí solo aparecen imágenes que tú eliges; no mostramos fotos comunitarias ni contenido online.
+            </Text>
+            <Text style={styles.galleryPickerNote}>
+              Se abre el selector de fotos del sistema. La app no pide acceso general a toda tu fototeca ni descarga imágenes online.
+            </Text>
+          </View>
+          <PersonalRouteGallery routeSlug={route.slug} />
+          <View style={styles.galleryProvenance}>
             <Text style={styles.galleryStatus}>{information.gallery.statusLabel}</Text>
             <Text style={styles.galleryBody}>{information.gallery.body}</Text>
           </View>
@@ -248,9 +253,11 @@ const styles = StyleSheet.create({
   communityNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   inlineSourceLink: { alignSelf: 'flex-start', marginTop: spacing[12], paddingVertical: spacing[4] },
   inlineSourceText: { color: colors.olive900, fontSize: 12, fontWeight: '900', textDecorationLine: 'underline' },
-  gallerySlot: { minHeight: 208, marginHorizontal: spacing[20], marginTop: spacing[12], borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.olive700, backgroundColor: colors.limestone, padding: spacing[20], alignItems: 'center', justifyContent: 'center' },
-  galleryIconWrap: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  galleryIcon: { color: colors.olive700, fontSize: 21, fontWeight: '900' },
+  galleryPrivacyNotice: { marginHorizontal: spacing[20], marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.limestone, padding: spacing[16] },
+  galleryPrivacyTitle: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
+  galleryPrivacyBody: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  galleryPickerNote: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
+  galleryProvenance: { marginHorizontal: spacing[20], marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
   galleryStatus: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textAlign: 'center', marginTop: spacing[12] },
   galleryBody: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: spacing[8] },
   mapHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginRight: spacing[20] },

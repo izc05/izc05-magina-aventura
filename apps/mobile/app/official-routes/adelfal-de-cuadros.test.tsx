@@ -68,6 +68,10 @@ describe('Adelfal de Cuadros official pilot', () => {
     expect(normalizedText(facts)).toContain('Dificultad Baja');
     expect(normalizedText(facts)).toContain('Tipo de camino Senda');
     expect(normalizedText(facts)).toContain('Sombra Abundante');
+    const botanicalNotice = elements.find((element) => element.props?.testID === 'adelfal-botanical-notice');
+    expect(normalizedText(botanicalNotice)).toContain('La adelfa es venenosa');
+    expect(normalizedText(botanicalNotice)).toContain('con precaución');
+    expect(normalizedText(botanicalNotice)).toContain('Consultados el 01/10/2026');
     expect(normalizedText(datedStatus)).toContain(route.publishedStatus);
     expect(normalizedText(datedStatus)).toContain('24/02/2026');
     expect(normalizedText(datedStatus)).toContain('no una verificación actual de campo');
@@ -89,6 +93,23 @@ describe('Adelfal de Cuadros official pilot', () => {
     expect(text).not.toContain('Cueva del Agua');
     expect(route.slug).toBe('adelfal-de-cuadros');
     expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
+  });
+
+  it('shows visible links to both official brochures beside the botanical precaution', () => {
+    const tree = AdelfalDeCuadrosOfficialRouteScreen();
+    const elements = collectElements(tree);
+    const englishBrochure = elements.find((element) => element.props?.testID === 'adelfal-brochure-source-en');
+    const spanishBrochure = elements.find((element) => element.props?.testID === 'adelfal-brochure-source-es');
+
+    expect(normalizedText(englishBrochure)).toContain('Adelfal de Cuadros Trail');
+    expect(normalizedText(spanishBrochure)).toContain('Sendero Adelfal de Cuadros');
+    expect(englishBrochure?.props?.accessibilityRole).toBe('link');
+    expect(spanishBrochure?.props?.accessibilityRole).toBe('link');
+
+    (englishBrochure?.props?.onPress as (() => void) | undefined)?.();
+    (spanishBrochure?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.openURL).toHaveBeenCalledWith(route.botanicalNotice.sources[0].url);
+    expect(mocks.openURL).toHaveBeenCalledWith(route.botanicalNotice.sources[1].url);
   });
 
   it('keeps source, photo attribution and license links plus catalog return accessible', () => {

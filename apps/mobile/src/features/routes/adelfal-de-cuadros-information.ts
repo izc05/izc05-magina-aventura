@@ -21,6 +21,23 @@ export const adelfalDeCuadrosInformation = {
     label: 'Ficha oficial · Ventana del Visitante · Junta de Andalucía',
     url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/adelfal-de-cuadros/255035',
   },
+  botanicalNotice: {
+    text: 'La adelfa es venenosa; manipula sus hojas y ramas con precaución.',
+    sourceAttribution:
+      'Fuente: Junta de Andalucía. Créditos editoriales de los folletos: Consejería de Agricultura, Ganadería, Pesca y Desarrollo Sostenible / Agencia de Medio Ambiente y Agua de Andalucía. Consultados el 01/10/2026.',
+    sources: [
+      {
+        testId: 'adelfal-brochure-source-en',
+        label: 'Adelfal de Cuadros Trail · Folleto oficial (inglés)',
+        url: 'https://www.juntadeandalucia.es/medioambiente/portal/documents/20151/848b05ee-c7c5-2728-73c5-9a4d3d31bbae',
+      },
+      {
+        testId: 'adelfal-brochure-source-es',
+        label: 'Sendero Adelfal de Cuadros · Folleto oficial (español)',
+        url: 'https://www.juntadeandalucia.es/medioambiente/portal/documents/20151/bf5955d6-b14e-ff64-67e3-48498dd026ee',
+      },
+    ],
+  },
   contextualPhoto: {
     altText: 'Sendero bajo ramas de adelfas junto al río Cuadros, en una fotografía histórica tomada en 2006.',
     caption: 'Imagen original sin recortes ni modificaciones: foto contextual del adelfal del río Cuadros (2006); no acredita el recorrido ni su estado actual.',

@@ -26,6 +26,14 @@ export default function AdelfalDeCuadrosOfficialRouteScreen() {
     }
   }
 
+  async function openBrochure(url: string) {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Fuente no disponible', 'No se pudo abrir el folleto oficial de la Junta.');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
@@ -121,6 +129,25 @@ export default function AdelfalDeCuadrosOfficialRouteScreen() {
           </View>
         </View>
 
+        <View testID="adelfal-botanical-notice" style={styles.botanicalCard}>
+          <Text style={styles.sectionKicker}>PRECAUCIÓN CON LA ADELFA</Text>
+          <Text style={styles.botanicalText}>{route.botanicalNotice.text}</Text>
+          <Text style={styles.brochureAttribution}>{route.botanicalNotice.sourceAttribution}</Text>
+          <View style={styles.brochureLinks}>
+            {route.botanicalNotice.sources.map((source) => (
+              <Pressable
+                key={source.testId}
+                testID={source.testId}
+                accessibilityRole="link"
+                accessibilityLabel={`Abrir ${source.label}`}
+                onPress={() => void openBrochure(source.url)}
+              >
+                <Text style={styles.brochureLinkText}>{source.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <View testID="adelfal-dated-status" style={styles.statusCard}>
           <Text style={styles.sectionKicker}>AVISO PUBLICADO POR LA JUNTA · {route.noticeDate}</Text>
           <Text accessibilityRole="header" style={styles.statusTitle}>{route.publishedStatus}</Text>
@@ -211,6 +238,18 @@ const styles = StyleSheet.create({
   lastFactRow: { borderBottomWidth: 0 },
   factLabel: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   factValue: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900', textAlign: 'right' },
+  botanicalCard: {
+    marginTop: spacing[16],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.earth,
+    backgroundColor: colors.white,
+    padding: spacing[20],
+  },
+  botanicalText: { color: colors.ink, fontSize: 14, lineHeight: 21, fontWeight: '800', marginTop: spacing[8] },
+  brochureAttribution: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: spacing[8] },
+  brochureLinks: { gap: spacing[8], marginTop: spacing[12] },
+  brochureLinkText: { color: colors.olive700, fontSize: 12, lineHeight: 18, fontWeight: '900', textDecorationLine: 'underline' },
   statusCard: {
     marginTop: spacing[16],
     borderRadius: radius.lg,

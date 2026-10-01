@@ -20,9 +20,9 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     let mounted = true;
-    void sqliteActivityStore.loadPassportGpsMetrics()
-      .then((metrics) => {
-        if (mounted) setPassportGpsState({ status: 'ready', metrics });
+    void sqliteActivityStore.loadPassportGpsData()
+      .then((data) => {
+        if (mounted) setPassportGpsState({ status: 'ready', data });
       })
       .catch(() => {
         if (mounted) setPassportGpsState({ status: 'error' });

@@ -15,9 +15,11 @@ import * as SQLite from 'expo-sqlite';
 
 import { runActivityMigrations } from './migrations';
 import type {
+  PassportGpsData,
   ActivityStore,
   ExplorationPersistence,
   PassportGpsMetrics,
+  PassportGpsSession,
   RecoveredActivity,
 } from './activity-store';
 
@@ -51,6 +53,8 @@ type PassportGpsSessionRow = {
   state: ActivityState;
   finished_at: string | null;
   recording_source: string | null;
+  last_processed_sequence: number;
+  snapshot_last_processed_sequence: number;
   snapshot_payload_json: string;
   sample_count: number;
 };
@@ -501,12 +505,13 @@ export class SQLiteActivityStore implements ActivityStore {
     return explorationFromRows(stateRow, observationRows);
   }
 
-  async loadPassportGpsMetrics(): Promise<PassportGpsMetrics> {
+  async loadPassportGpsData(): Promise<PassportGpsData> {
     await this.initialize();
     const db = await this.database();
     const rows = await db.getAllAsync<PassportGpsSessionRow>(
       `SELECT session.activity_id, session.state, session.finished_at,
-              session.recording_source,
+              session.recording_source, session.last_processed_sequence,
+              latest_snapshot.last_processed_sequence AS snapshot_last_processed_sequence,
               latest_snapshot.payload_json AS snapshot_payload_json,
               (SELECT COUNT(*) FROM activity_samples AS sample
                WHERE sample.activity_id = session.activity_id) AS sample_count
@@ -520,16 +525,13 @@ export class SQLiteActivityStore implements ActivityStore {
         )
        WHERE session.state = ?
          AND session.finished_at IS NOT NULL
-         AND session.recording_source = ?`,
+         AND session.recording_source = ?
+       ORDER BY session.finished_at DESC`,
       'FINISHED',
       'device-gps',
     );
 
-    const metrics: PassportGpsMetrics = {
-      sessionCount: 0,
-      distanceMeters: 0,
-      elapsedSeconds: 0,
-    };
+    const sessions: PassportGpsSession[] = [];
 
     for (const row of rows) {
       if (
@@ -537,8 +539,13 @@ export class SQLiteActivityStore implements ActivityStore {
         row.recording_source !== 'device-gps' ||
         !row.finished_at ||
         !Number.isFinite(Date.parse(row.finished_at)) ||
-        !Number.isFinite(row.sample_count) ||
+        !Number.isInteger(row.sample_count) ||
         row.sample_count < 1
+      ) continue;
+      if (
+        !Number.isInteger(row.last_processed_sequence) ||
+        !Number.isInteger(row.snapshot_last_processed_sequence) ||
+        row.snapshot_last_processed_sequence !== row.last_processed_sequence
       ) continue;
 
       let snapshot: unknown;
@@ -555,6 +562,7 @@ export class SQLiteActivityStore implements ActivityStore {
       if (
         payload.activityId !== row.activity_id ||
         payload.state !== 'FINISHED' ||
+        payload.lastProcessedSequence !== row.last_processed_sequence ||
         typeof distanceMeters !== 'number' ||
         !Number.isFinite(distanceMeters) ||
         distanceMeters < 0 ||
@@ -563,12 +571,34 @@ export class SQLiteActivityStore implements ActivityStore {
         elapsedSeconds < 0
       ) continue;
 
-      metrics.sessionCount += 1;
-      metrics.distanceMeters += distanceMeters;
-      metrics.elapsedSeconds += elapsedSeconds;
+      sessions.push({
+        activityId: row.activity_id,
+        finishedAt: row.finished_at,
+        distanceMeters,
+        elapsedSeconds,
+        sampleCount: row.sample_count,
+      });
     }
 
-    return metrics;
+    sessions.sort((left, right) =>
+      Date.parse(right.finishedAt) - Date.parse(left.finishedAt) ||
+      left.activityId.localeCompare(right.activityId),
+    );
+
+    const metrics: PassportGpsMetrics = sessions.reduce(
+      (total, session) => ({
+        sessionCount: total.sessionCount + 1,
+        distanceMeters: total.distanceMeters + session.distanceMeters,
+        elapsedSeconds: total.elapsedSeconds + session.elapsedSeconds,
+      }),
+      { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+    );
+
+    return { sessions, metrics };
+  }
+
+  async loadPassportGpsMetrics(): Promise<PassportGpsMetrics> {
+    return (await this.loadPassportGpsData()).metrics;
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

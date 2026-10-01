@@ -20,6 +20,19 @@ export interface PassportGpsMetrics {
   elapsedSeconds: number;
 }
 
+export interface PassportGpsSession {
+  activityId: string;
+  finishedAt: string;
+  distanceMeters: number;
+  elapsedSeconds: number;
+  sampleCount: number;
+}
+
+export interface PassportGpsData {
+  sessions: PassportGpsSession[];
+  metrics: PassportGpsMetrics;
+}
+
 export interface RecoveredActivity {
   session: ActivitySession;
   snapshot: ActivitySnapshot;

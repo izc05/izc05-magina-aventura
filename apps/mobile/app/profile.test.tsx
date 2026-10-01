@@ -28,43 +28,66 @@ function collectRenderedText(node: unknown, text: string[] = []): string[] {
 }
 
 describe('Passport GPS metrics panel', () => {
-  it('shows an explicit empty state when SQLite has no finished route GPS sessions', () => {
+  it('shows an explicit empty state when SQLite has no finished GPS captures', () => {
     const visibleText = collectRenderedText(PassportGpsMetricsPanel({
       state: {
         status: 'ready',
-        metrics: { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+        data: {
+          sessions: [],
+          metrics: { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+        },
       },
     }));
 
-    expect(visibleText).toContain('Aún no hay sesiones GPS registradas');
-    expect(visibleText).toContain(
-      'Aquí aparecerán únicamente las métricas guardadas de sesiones GPS finalizadas.',
-    );
-    expect(visibleText.join(' ')).not.toMatch(/rutas completadas|checkpoints|descubrimientos|XP|insignias|recompensas/i);
+    expect(visibleText).toContain('Aún no hay capturas GPS guardadas');
+    expect(visibleText.join(' ')).toContain('GPS real del dispositivo y datos guardados');
+    expect(visibleText.join(' ')).not.toMatch(/rutas completadas|checkpoints|XP|recompensas/i);
   });
 
-  it('shows only stored GPS session count, distance and elapsed time', () => {
+  it('shows dated technical captures using only saved distance, active time and sample count', () => {
     const visibleText = collectRenderedText(PassportGpsMetricsPanel({
       state: {
         status: 'ready',
-        metrics: { sessionCount: 2, distanceMeters: 2_530, elapsedSeconds: 5_400 },
+        data: {
+          metrics: { sessionCount: 2, distanceMeters: 418, elapsedSeconds: 310 },
+          sessions: [
+            {
+              activityId: 'gps-newer-internal-id',
+              finishedAt: '2026-09-29T08:10:00.000Z',
+              distanceMeters: 400,
+              elapsedSeconds: 300,
+              sampleCount: 3,
+            },
+            {
+              activityId: 'gps-older-internal-id',
+              finishedAt: '2026-09-28T08:10:00.000Z',
+              distanceMeters: 18,
+              elapsedSeconds: 10,
+              sampleCount: 2,
+            },
+          ],
+        },
       },
     }));
 
-    expect(visibleText).toEqual([
-      '2',
-      'Sesiones GPS registradas',
-      '2.53 km',
-      'Distancia GPS acumulada',
-      '1 h 30 min',
-      'Tiempo GPS acumulado',
-      'Son métricas guardadas de GPS; no acreditan rutas completadas ni checkpoints, descubrimientos, XP, insignias o recompensas.',
-    ]);
+    expect(visibleText).toContain('Capturas GPS');
+    expect(visibleText).toContain('Capturas GPS registradas');
+    expect(visibleText).toContain('0.42 km');
+    expect(visibleText).toContain('Tiempo activo acumulado');
+    const renderedText = visibleText.join(' ').replace(/\s+/g, ' ');
+    expect(renderedText).toContain('5 min activos');
+    expect(renderedText).toContain('3 muestras GPS guardadas');
+    expect(renderedText).toContain('2 muestras GPS guardadas');
+    const newerDate = `${new Date('2026-09-29T08:10:00.000Z').toLocaleDateString('es-ES')} · ${new Date('2026-09-29T08:10:00.000Z').toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    const olderDate = `${new Date('2026-09-28T08:10:00.000Z').toLocaleDateString('es-ES')} · ${new Date('2026-09-28T08:10:00.000Z').toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    expect(visibleText.indexOf(newerDate)).toBeGreaterThanOrEqual(0);
+    expect(visibleText.indexOf(newerDate)).toBeLessThan(visibleText.indexOf(olderDate));
+    expect(renderedText).not.toMatch(/gps-newer-internal-id|gps-older-internal-id|route|geometry|checkpoint|XP|reward|trazado|ruta completada/i);
   });
 
   it('does not claim an empty result while loading or when persisted data is unavailable', () => {
     expect(collectRenderedText(PassportGpsMetricsPanel({ state: { status: 'loading' } })))
-      .toContain('Cargando métricas GPS guardadas…');
+      .toContain('Cargando capturas GPS guardadas…');
     expect(collectRenderedText(PassportGpsMetricsPanel({ state: { status: 'error' } })))
       .toContain('No se pudieron leer las sesiones GPS guardadas en este dispositivo.');
   });

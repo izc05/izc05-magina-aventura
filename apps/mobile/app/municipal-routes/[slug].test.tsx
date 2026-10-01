@@ -78,62 +78,73 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('Bedmar municipal route QA detail UI and accessibility', () => {
-  it('keeps source panels and personal-gallery guidance on the existing warm/olive visual tokens', () => {
+describe('Bedmar municipal route detail visual, accessibility and provenance', () => {
+  it('establishes a distinct editorial hero and labels the abstract image placeholder honestly', () => {
     const tree = MunicipalRouteInformationScreen();
-    const officialCard = findByTestId(tree, 'official-source-card');
-    const communityCard = findByTestId(tree, 'community-source-card');
-    const privacyNotice = findByTestId(tree, 'gallery-privacy-notice');
-    const communityNote = collectElements(tree).find((element) =>
-      element.type === 'Text'
-        && visibleText(element).join('') === municipalRouteInformation.communityReference.note,
+    const hero = findByTestId(tree, 'municipal-route-hero');
+    const elements = collectElements(tree);
+    const title = elements.find((element) =>
+      element.type === 'Text' && visibleText(element).join('') === municipalRouteInformation.title,
     );
-    const privacyBody = collectElements(tree).find((element) =>
-      element.type === 'Text'
-        && visibleText(element).join('').startsWith('Tus fotos se guardan en el almacenamiento privado'),
-    );
+    const pendingPhoto = findByTestId(tree, 'hero-photo-pending');
+    const text = visibleText(tree).join(' ');
 
-    expect(officialCard?.props?.style).toMatchObject({
-      borderRadius: radius.md,
-      borderLeftColor: colors.olive700,
-      backgroundColor: colors.white,
-      padding: spacing[16],
+    expect(hero?.props?.style).toMatchObject({
+      backgroundColor: colors.olive900,
+      paddingHorizontal: spacing[20],
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
     });
-    expect(communityCard?.props?.style).toMatchObject({
-      borderRadius: radius.md,
-      borderLeftColor: colors.aoveGold,
-      backgroundColor: colors.warmBackground,
-    });
-    expect(communityNote?.props?.style).toMatchObject({ color: colors.ink, fontSize: 13, lineHeight: 19 });
-    expect(privacyNotice?.props?.style).toMatchObject({
-      borderRadius: radius.md,
-      borderColor: colors.olive700,
-      backgroundColor: colors.white,
-    });
-    expect(privacyBody?.props?.style).toMatchObject({ fontSize: 13, lineHeight: 19, color: colors.ink });
-    expect(contrastRatio(colors.earth, colors.warmBackground)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(colors.olive700, colors.white)).toBeGreaterThanOrEqual(4.5);
+    expect(title?.props?.accessibilityRole).toBe('header');
+    expect(title?.props?.style).toMatchObject({ color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: '900' });
+    expect(text).toContain('Cuadros · Bedmar y Garcíez, Jaén');
+    expect(pendingPhoto?.props?.accessible).toBe(true);
+    expect(pendingPhoto?.props?.accessibilityRole).toBe('image');
+    expect(pendingPhoto?.props?.accessibilityLabel).toContain('no es fotografía ni mapa');
+    expect(pendingPhoto?.props?.accessibilityLabel).toContain('pendiente de permiso o licencia compatible');
+    expect(text).toContain('Motivo abstracto · no es una foto');
+    expect(contrastRatio(colors.white, colors.olive900)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colors.ink, colors.warmBackground)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('shows the official endpoints and two-way note without presenting the context map as route geometry', () => {
+  it('puts only the municipal endpoints and two-way statement near the top without fabricated route metrics', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const text = visibleText(tree).join(' ');
+    const facts = findByTestId(tree, 'route-facts-card');
+    const factsStyle = facts?.props?.style;
+
+    expect(text).toContain('Extremos indicados');
+    expect(text).toContain('Puente Blanco de Las Tinajas');
+    expect(text).toContain('Entrada de la Cueva del Agua');
+    expect(text).toContain('AMBOS SENTIDOS');
+    expect(text).toContain('El Ayuntamiento indica que puede recorrerse en ambos sentidos.');
+    expect(factsStyle).toMatchObject({
+      backgroundColor: colors.white,
+      borderRadius: radius.lg,
+      marginHorizontal: spacing[16],
+    });
+    expect(text).not.toMatch(/\b\d+(?:[,.]\d+)?\s?(?:km|mi|m|ft|min|h)\b/i);
+    expect(text).not.toContain('Desnivel');
+    expect(text).not.toContain('Puntuación');
+    expect(text).not.toContain('Checkpoint 1');
+    expect(text).not.toContain('Iniciar ruta');
+  });
+
+  it('shows the context map before source cards, with no route geometry or device location and a non-navigation warning', () => {
     const tree = MunicipalRouteInformationScreen();
     const text = visibleText(tree).join(' ');
     const elements = collectElements(tree);
     const map = elements.find((element) => element.type === 'RouteMap');
+    const mapFrame = findByTestId(tree, 'context-map-accessible-frame');
+    const mapIndex = text.indexOf('Contexto de Bedmar');
+    const sourcesIndex = text.indexOf('Fuentes separadas');
 
-    expect(text).toContain('FICHA PILOTO · QA');
-    expect(text).toContain('Sendero Fluvial de la Cueva del Agua');
-    expect(text).toContain('Puente Blanco de Las Tinajas');
-    expect(text).toContain('Entrada de la Cueva del Agua');
-    expect(text).toContain('puede recorrerse en ambos sentidos');
-    expect(text).toContain('Trazado en preparación');
-    expect(text).toContain('DATOS OFICIALES');
-    expect(text).toContain('NO OFICIAL');
-    expect(text).toContain('no reproduce métricas, texto, fotos ni geometría de Wikiloc.');
-    expect(text).not.toContain('One Way');
-    expect(text).not.toContain('0,34 mi');
-    expect(text).not.toContain('39 ft');
+    expect(text).toContain('SOLO CONTEXTO');
+    expect(text).toContain('El mapa es solo contexto urbano aproximado');
+    expect(text).toContain('No lo uses para llegar ni para orientarte por la ruta.');
+    expect(mapFrame?.props?.accessible).toBe(true);
+    expect(mapFrame?.props?.accessibilityRole).toBe('image');
+    expect(mapFrame?.props?.accessibilityLabel).toBe(municipalRouteInformation.contextMap.accessibilityLabel);
     expect(map?.props).toMatchObject({
       payload: null,
       mapStyle: OPENFREEMAP_LIBERTY_STYLE_URL,
@@ -143,107 +154,98 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
       height: 228,
     });
     expect(map?.props).not.toHaveProperty('deviceLocation');
+    expect(mapIndex).toBeGreaterThan(-1);
+    expect(sourcesIndex).toBeGreaterThan(mapIndex);
   });
 
-  it('separates official source facts from the non-official Wikiloc link before the personal gallery', () => {
+  it('visually separates official municipal provenance from community reference and keeps original links accessible', () => {
     const tree = MunicipalRouteInformationScreen();
     const text = visibleText(tree).join(' ');
-    const municipalHeading = text.indexOf('DATOS OFICIALES');
-    const communityHeading = text.indexOf('Referencia comunitaria · Wikiloc');
-    const galleryHeading = text.indexOf('Galería personal');
-
-    expect(text).toContain('ESTADO · FUENTE MUNICIPAL');
-    expect(text).toContain('NOMBRE PUBLICADO');
-    expect(text).toContain('EXTREMOS INDICADOS');
-    expect(text).toContain('EXTREMO MUNICIPAL A');
-    expect(text).toContain('EXTREMO MUNICIPAL B');
-    expect(text).toContain('AMBOS SENTIDOS');
-    expect(text).toContain('Abrir aviso municipal original');
-    expect(text).toContain('REFERENCIA COMUNITARIA');
-    expect(text).toContain('Abrir ficha de Wikiloc · referencia no oficial');
-    expect(text).not.toContain('Distancia comunitaria');
-    expect(text).not.toContain('Desnivel positivo comunitario');
-    expect(text).not.toContain('One Way');
-    expect(municipalHeading).toBeGreaterThan(-1);
-    expect(communityHeading).toBeGreaterThan(municipalHeading);
-    expect(galleryHeading).toBeGreaterThan(communityHeading);
-    expect(text).not.toContain('Duración');
-  });
-
-  it('labels the device-only personal gallery and context map without adding online photos or false route actions', () => {
-    const tree = MunicipalRouteInformationScreen();
     const elements = collectElements(tree);
-    const gallery = elements.find((element) => element.type === 'PersonalRouteGallery');
-    const contextMap = elements.find((element) =>
-      element.props?.accessibilityLabel === municipalRouteInformation.contextMap.accessibilityLabel,
-    );
-    const allText = visibleText(tree).join(' ');
-
-    expect(gallery?.props).toEqual({ routeSlug: municipalRouteInformation.slug });
-    expect(allText).toContain('Galería personal');
-    expect(allText).toContain('Solo en este dispositivo');
-    expect(allText).toContain('No se publican ni se sincronizan');
-    expect(allText).toContain('no mostramos fotos comunitarias ni contenido online');
-    expect(allText).toContain('no pide acceso general a toda tu fototeca');
-    expect(contextMap?.props?.accessible).toBe(true);
-    expect(contextMap?.props?.accessibilityRole).toBe('image');
-    expect(elements.some((element) => element.type === 'Image')).toBe(false);
-    expect(allText.toLowerCase()).toContain('licencia compatible');
-    expect(allText).toContain(municipalRouteInformation.gallery.body);
-    expect(allText).not.toContain('Iniciar ruta');
-    expect(allText).not.toContain('Comenzar navegación');
-    expect(allText).not.toContain('Descargar ruta');
-    expect(allText).not.toContain('Desbloqueaste');
-  });
-
-  it('provides accessible, functional links for official/community information and source citations', () => {
-    const tree = MunicipalRouteInformationScreen();
-    const elements = collectElements(tree);
+    const officialCard = findByTestId(tree, 'official-source-card');
+    const communityCard = findByTestId(tree, 'community-source-card');
     const officialLabel = `Abrir aviso municipal original: ${municipalRouteInformation.sourceLinks[0].label}`;
     const officialLink = elements.find((element) =>
       element.type === 'Pressable' && element.props?.accessibilityLabel === officialLabel,
     );
-    const wikilocLink = elements.find((element) =>
+    const communityLink = elements.find((element) =>
       element.type === 'Pressable'
         && element.props?.accessibilityLabel === municipalRouteInformation.communityReference.sourceLabel,
     );
+    const officialIndex = text.indexOf('FUENTE MUNICIPAL');
+    const communityIndex = text.indexOf('Referencia comunitaria · Wikiloc');
+    const galleryIndex = text.indexOf('Galería personal');
 
+    expect(text).toContain('Los datos del Ayuntamiento y la referencia comunitaria se identifican por separado');
+    expect(text).toContain('OFICIAL');
+    expect(text).toContain('COMUNITARIA');
+    expect(text).toContain('PUBLICACIÓN CONSULTADA');
+    expect(text).toContain('no reproduce métricas, texto, fotos ni geometría de Wikiloc.');
+    expect(officialCard?.props?.style).toMatchObject({
+      backgroundColor: colors.white,
+      borderLeftColor: colors.olive700,
+      borderRadius: radius.lg,
+    });
+    expect(communityCard?.props?.style).toMatchObject({
+      backgroundColor: colors.limestone,
+      borderLeftColor: colors.earth,
+      borderRadius: radius.lg,
+    });
     expect(officialLink?.props?.accessibilityRole).toBe('link');
     expect(officialLink?.props?.accessibilityHint).toContain('publicación original del Ayuntamiento');
+    expect(communityLink?.props?.accessibilityRole).toBe('link');
+    expect(communityLink?.props?.accessibilityHint).toContain('no oficial');
     expect(typeof officialLink?.props?.onPress).toBe('function');
-    expect(wikilocLink?.props?.accessibilityRole).toBe('link');
-    expect(wikilocLink?.props?.accessibilityLabel).toContain('no oficial');
-    expect(wikilocLink?.props?.accessibilityHint).toContain('no oficial');
-    expect(typeof wikilocLink?.props?.onPress).toBe('function');
+    expect(typeof communityLink?.props?.onPress).toBe('function');
+    expect(officialIndex).toBeGreaterThan(-1);
+    expect(communityIndex).toBeGreaterThan(officialIndex);
+    expect(galleryIndex).toBeGreaterThan(communityIndex);
 
     (officialLink?.props?.onPress as (() => void) | undefined)?.();
-    (wikilocLink?.props?.onPress as (() => void) | undefined)?.();
+    (communityLink?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.openURL).toHaveBeenCalledWith(municipalRouteInformation.sourceLinks[0].url);
     expect(mocks.openURL).toHaveBeenCalledWith(municipalRouteInformation.communityReference.sourceUrl);
   });
 
-  it('provides an accessible back action from the municipal detail to Home routes', () => {
+  it('keeps the personal gallery device-only, with no online or invented route photos', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const elements = collectElements(tree);
+    const gallery = elements.find((element) => element.type === 'PersonalRouteGallery');
+    const privacyNotice = findByTestId(tree, 'gallery-privacy-notice');
+    const text = visibleText(tree).join(' ');
+
+    expect(gallery?.props).toEqual({ routeSlug: municipalRouteInformation.slug });
+    expect(privacyNotice?.props?.style).toMatchObject({
+      backgroundColor: colors.white,
+      borderColor: colors.olive700,
+      borderRadius: radius.md,
+    });
+    expect(text).toContain('Aquí solo aparecen imágenes que tú eliges.');
+    expect(text).toContain('no se publican, no se sincronizan');
+    expect(text).toContain('no mostramos fotos comunitarias ni contenido online');
+    expect(text).toContain('IMAGEN CON LICENCIA COMPATIBLE PENDIENTE');
+    expect(text).toContain(municipalRouteInformation.gallery.body);
+    expect(elements.some((element) => element.type === 'Image')).toBe(false);
+    expect(text).not.toContain('Iniciar navegación');
+    expect(text).not.toContain('Descargar ruta');
+  });
+
+  it('preserves the existing back-to-home action and unknown-slug recovery', () => {
     const tree = MunicipalRouteInformationScreen();
     const backButton = collectElements(tree).find(
       (element) => element.type === 'Pressable' && element.props?.accessibilityLabel === 'Volver',
     );
-
     expect(backButton?.props?.accessibilityRole).toBe('button');
     expect(backButton?.props?.accessibilityHint).toContain('lista de rutas');
+    expect(backButton?.props?.style).toMatchObject({ width: 48, height: 48 });
     expect(typeof backButton?.props?.onPress).toBe('function');
-
     (backButton?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.back).toHaveBeenCalledOnce();
-  });
 
-  it('renders an accessible recovery action for an unknown route slug', () => {
     mocks.slug = 'unknown-route';
-    const tree = MunicipalRouteInformationScreen();
-    const text = visibleText(tree).join(' ');
-    const elements = collectElements(tree);
-    const recovery = elements.find((element) => element.props?.accessibilityLabel === 'Volver a rutas');
-
-    expect(text).toContain('Información no disponible');
+    const missing = MunicipalRouteInformationScreen();
+    const recovery = collectElements(missing).find((element) => element.props?.accessibilityLabel === 'Volver a rutas');
+    expect(visibleText(missing).join(' ')).toContain('Información no disponible');
     expect(recovery?.props?.accessibilityRole).toBe('button');
     expect(typeof recovery?.props?.onPress).toBe('function');
   });

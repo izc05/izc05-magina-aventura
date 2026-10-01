@@ -1,6 +1,15 @@
 export const PERSONAL_PHOTO_CAPTION_MAX_LENGTH = 160;
 export const PERSONAL_PHOTO_CREDIT_MAX_LENGTH = 100;
 
+export const PERSONAL_PHOTO_DELETE_CONFIRMATION = {
+  title: '¿Eliminar esta foto personal?',
+  message: 'Se eliminará solo la copia local de esta foto. No se modificará la ficha de ruta ni ninguna otra foto.',
+  cancelLabel: 'Conservar foto',
+  confirmLabel: 'Eliminar foto',
+} as const;
+
+export type DeletePersonalRoutePhotoResult = 'deleted' | 'pending';
+
 export interface PersonalRoutePhoto {
   id: string;
   routeSlug: string;
@@ -47,11 +56,16 @@ export interface SavePersonalRoutePhotoInput {
 /**
  * All persistence stays behind a local-only port: selected images are copied
  * into app-private storage and metadata is stored in the on-device SQLite DB.
+ * Deletion first tombstones the SQLite row, then removes the file, then purges
+ * metadata. Tombstones are never listed and can be retried safely after a crash.
  */
 export interface PersonalRouteGalleryLocalPort {
   list(routeSlug: string): Promise<PersonalRoutePhoto[]>;
   copyImageToPrivateStorage(sourceUri: string, fileName: string): Promise<string>;
   insert(photo: PersonalRoutePhoto): Promise<void>;
+  markDeletePending(photoId: string): Promise<PersonalRoutePhoto | null>;
+  listPendingDeletes(): Promise<PersonalRoutePhoto[]>;
+  finalizePendingDelete(photoId: string): Promise<void>;
   removePrivateImage(uri: string): Promise<void>;
 }
 
@@ -63,6 +77,9 @@ export interface PersonalRouteGalleryStoreOptions {
 export interface PersonalRouteGalleryStore {
   listForRoute(routeSlug: string): Promise<PersonalRoutePhoto[]>;
   save(input: SavePersonalRoutePhotoInput): Promise<PersonalRoutePhoto>;
+  markDeletePending(photoId: string): Promise<PersonalRoutePhoto | null>;
+  finishDelete(photoId: string): Promise<DeletePersonalRoutePhotoResult>;
+  recoverPendingDeletes(): Promise<void>;
 }
 
 function createPhotoId(): string {
@@ -112,6 +129,12 @@ function validatePhotoInput(input: SavePersonalRoutePhotoInput): {
   return { routeSlug, caption, credit };
 }
 
+function validatePhotoId(photoId: string): void {
+  if (!/^[A-Za-z0-9_-]+$/.test(photoId)) {
+    throw new Error('No se reconoce el identificador local de la foto.');
+  }
+}
+
 export function createPersonalRouteGalleryStore(
   port: PersonalRouteGalleryLocalPort,
   options: PersonalRouteGalleryStoreOptions = {},
@@ -122,6 +145,7 @@ export function createPersonalRouteGalleryStore(
   return {
     async listForRoute(routeSlug) {
       if (!routeSlug.trim()) return [];
+      await this.recoverPendingDeletes();
       const photos = await port.list(routeSlug.trim());
       return [...photos].sort((left, right) =>
         right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id),
@@ -158,6 +182,33 @@ export function createPersonalRouteGalleryStore(
       }
 
       return photo;
+    },
+
+    async markDeletePending(photoId) {
+      validatePhotoId(photoId);
+      return port.markDeletePending(photoId);
+    },
+
+    async finishDelete(photoId) {
+      validatePhotoId(photoId);
+      try {
+        const pendingPhoto = (await port.listPendingDeletes()).find((photo) => photo.id === photoId);
+        if (!pendingPhoto) return 'deleted';
+        await port.removePrivateImage(pendingPhoto.uri);
+        await port.finalizePendingDelete(photoId);
+        return 'deleted';
+      } catch {
+        // The SQLite tombstone remains hidden; startup/list recovery retries safely.
+        return 'pending';
+      }
+    },
+
+    async recoverPendingDeletes() {
+      const pendingPhotos = await port.listPendingDeletes();
+      for (const photo of pendingPhotos) {
+        await port.removePrivateImage(photo.uri);
+        await port.finalizePendingDelete(photo.id);
+      }
     },
   };
 }

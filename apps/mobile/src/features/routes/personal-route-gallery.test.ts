@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createPersonalRouteGalleryStore,
   getPersonalRoutePhotoViewerDetails,
+  PERSONAL_PHOTO_DELETE_CONFIRMATION,
   selectPersonalRoutePhoto,
   type PersonalRouteGalleryLocalPort,
   type PersonalRoutePhoto,
@@ -14,25 +15,75 @@ const savedAt = new Date('2026-10-01T10:00:00.000Z');
 
 function makePort() {
   const rows: PersonalRoutePhoto[] = [];
+  const pending = new Map<string, PersonalRoutePhoto>();
+  const files = new Set<string>();
   const copies: Array<{ sourceUri: string; fileName: string }> = [];
   const removed: string[] = [];
+  const events: string[] = [];
+  let failMarkCount = 0;
+  let failRemoveCount = 0;
+  let failFinalizeCount = 0;
+
   const port: PersonalRouteGalleryLocalPort = {
     async list(slug) {
-      return rows.filter((photo) => photo.routeSlug === slug);
+      return rows.filter((photo) => photo.routeSlug === slug && !pending.has(photo.id));
     },
     async copyImageToPrivateStorage(sourceUri, fileName) {
       copies.push({ sourceUri, fileName });
-      return `file:///app-private/${fileName}`;
+      const uri = `file:///app-private/${fileName}`;
+      files.add(uri);
+      return uri;
     },
     async insert(photo) {
       rows.push(photo);
     },
+    async markDeletePending(photoId) {
+      events.push('mark-pending');
+      if (failMarkCount > 0) {
+        failMarkCount -= 1;
+        throw new Error('SQLite mark unavailable');
+      }
+      const photo = rows.find((item) => item.id === photoId);
+      if (!photo) return null;
+      pending.set(photoId, photo);
+      return photo;
+    },
+    async listPendingDeletes() {
+      return [...pending.values()];
+    },
+    async finalizePendingDelete(photoId) {
+      events.push('finalize-metadata');
+      if (failFinalizeCount > 0) {
+        failFinalizeCount -= 1;
+        throw new Error('SQLite finalize unavailable');
+      }
+      if (!pending.has(photoId)) return;
+      const index = rows.findIndex((photo) => photo.id === photoId);
+      if (index >= 0) rows.splice(index, 1);
+      pending.delete(photoId);
+    },
     async removePrivateImage(uri) {
-      removed.push(uri);
+      events.push('remove-file');
+      if (failRemoveCount > 0) {
+        failRemoveCount -= 1;
+        throw new Error('Private filesystem unavailable');
+      }
+      if (files.delete(uri)) removed.push(uri);
     },
   };
 
-  return { port, rows, copies, removed };
+  return {
+    port,
+    rows,
+    pending,
+    files,
+    copies,
+    removed,
+    events,
+    failNextMark() { failMarkCount += 1; },
+    failNextRemove() { failRemoveCount += 1; },
+    failNextFinalize() { failFinalizeCount += 1; },
+  };
 }
 
 const validInput = {
@@ -42,6 +93,13 @@ const validInput = {
   caption: '  Agua junto al puente  ',
   credit: '  IsiVoltPro  ',
 };
+
+async function saveOne(local: ReturnType<typeof makePort>, id = 'photo-1') {
+  return createPersonalRouteGalleryStore(local.port, {
+    createId: () => id,
+    now: () => savedAt,
+  }).save(validInput);
+}
 
 describe('personal route gallery persistence', () => {
   it('copies only a locally selected image, saves its caption and credit, and lists it after reopening', async () => {
@@ -94,7 +152,75 @@ describe('personal route gallery persistence', () => {
     expect(local.removed).toEqual(['file:///app-private/photo-photo-3.webp']);
   });
 
-  it('uses the non-legacy system picker and does not request an online original', () => {
+  it('marks the row hidden before deleting the file, then purges metadata idempotently', async () => {
+    const local = makePort();
+    const saved = await saveOne(local);
+    const store = createPersonalRouteGalleryStore(local.port);
+
+    await expect(store.markDeletePending(saved.id)).resolves.toEqual(saved);
+    expect(await local.port.list(routeSlug)).toEqual([]);
+    expect(local.files.has(saved.uri)).toBe(true);
+
+    await expect(store.finishDelete(saved.id)).resolves.toBe('deleted');
+    expect(local.events).toEqual(['mark-pending', 'remove-file', 'finalize-metadata']);
+    expect(local.files.has(saved.uri)).toBe(false);
+    expect(local.rows).toEqual([]);
+    await expect(store.finishDelete(saved.id)).resolves.toBe('deleted');
+    expect(local.removed).toEqual([saved.uri]);
+  });
+
+  it('keeps a failed file deletion tombstoned and completes it on a later gallery-open retry', async () => {
+    const local = makePort();
+    const saved = await saveOne(local);
+    const store = createPersonalRouteGalleryStore(local.port);
+    await store.markDeletePending(saved.id);
+    local.failNextRemove();
+
+    await expect(store.finishDelete(saved.id)).resolves.toBe('pending');
+    expect(local.pending.has(saved.id)).toBe(true);
+    expect(local.files.has(saved.uri)).toBe(true);
+    expect(await local.port.list(routeSlug)).toEqual([]);
+
+    await expect(store.listForRoute(routeSlug)).resolves.toEqual([]);
+    expect(local.rows).toEqual([]);
+    expect(local.files.has(saved.uri)).toBe(false);
+    await expect(store.listForRoute(routeSlug)).resolves.toEqual([]);
+    expect(local.removed).toEqual([saved.uri]);
+  });
+
+  it('recovers a crash after file removal but before SQLite finalization', async () => {
+    const local = makePort();
+    const saved = await saveOne(local);
+    const store = createPersonalRouteGalleryStore(local.port);
+    await store.markDeletePending(saved.id);
+    local.failNextFinalize();
+
+    await expect(store.finishDelete(saved.id)).resolves.toBe('pending');
+    expect(local.files.has(saved.uri)).toBe(false);
+    expect(local.pending.has(saved.id)).toBe(true);
+    expect(await local.port.list(routeSlug)).toEqual([]);
+
+    const reopenedStore = createPersonalRouteGalleryStore(local.port);
+    await expect(reopenedStore.listForRoute(routeSlug)).resolves.toEqual([]);
+    expect(local.rows).toEqual([]);
+    expect(local.pending.size).toBe(0);
+    expect(local.removed).toEqual([saved.uri]);
+  });
+
+  it('does not hide or remove the photo if SQLite could not persist the tombstone', async () => {
+    const local = makePort();
+    const saved = await saveOne(local);
+    const store = createPersonalRouteGalleryStore(local.port);
+    local.failNextMark();
+
+    await expect(store.markDeletePending(saved.id)).rejects.toThrow('SQLite mark unavailable');
+    await expect(store.listForRoute(routeSlug)).resolves.toEqual([saved]);
+    expect(local.files.has(saved.uri)).toBe(true);
+    expect(local.pending.size).toBe(0);
+    expect(local.removed).toEqual([]);
+  });
+
+  it('uses a system-only picker and an explicit local deletion confirmation', () => {
     expect(personalRoutePhotoPickerOptions).toMatchObject({
       mediaTypes: ['images'],
       allowsMultipleSelection: false,
@@ -102,6 +228,12 @@ describe('personal route gallery persistence', () => {
       shouldDownloadFromNetwork: false,
       exif: false,
       base64: false,
+    });
+    expect(PERSONAL_PHOTO_DELETE_CONFIRMATION).toEqual({
+      title: '¿Eliminar esta foto personal?',
+      message: 'Se eliminará solo la copia local de esta foto. No se modificará la ficha de ruta ni ninguna otra foto.',
+      cancelLabel: 'Conservar foto',
+      confirmLabel: 'Eliminar foto',
     });
   });
 });

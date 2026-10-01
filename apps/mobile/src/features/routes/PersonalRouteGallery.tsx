@@ -18,6 +18,7 @@ import {
 import {
   PERSONAL_PHOTO_CAPTION_MAX_LENGTH,
   PERSONAL_PHOTO_CREDIT_MAX_LENGTH,
+  PERSONAL_PHOTO_DELETE_CONFIRMATION,
   getPersonalRoutePhotoViewerDetails,
   selectPersonalRoutePhoto,
   type PersonalRoutePhoto,
@@ -42,6 +43,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [isChoosing, setIsChoosing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -74,7 +76,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   };
 
   const choosePhoto = async () => {
-    if (isChoosing || isSaving || isLoading || loadFailed) return;
+    if (isChoosing || isSaving || isDeleting || isLoading || loadFailed) return;
     setIsChoosing(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync(personalRoutePhotoPickerOptions);
@@ -123,7 +125,59 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     }
   };
 
-  const isBusy = isChoosing || isSaving;
+  const deletePhoto = async (photoId: string) => {
+    if (isDeleting || isSaving || isChoosing) return;
+    setIsDeleting(true);
+    try {
+      const pendingPhoto = await personalRouteGalleryStore.markDeletePending(photoId);
+      setPhotos((current) => current.filter((photo) => photo.id !== photoId));
+      setSelectedPhotoId(null);
+
+      if (pendingPhoto) {
+        const result = await personalRouteGalleryStore.finishDelete(photoId);
+        if (result === 'pending') {
+          Alert.alert(
+            'Foto retirada de la galería',
+            'La foto ya no se muestra. Su limpieza local queda pendiente y se volverá a intentar al abrir la galería.',
+          );
+        }
+      }
+    } catch {
+      // The DB write could have committed even if its promise failed: hide stale
+      // memory first, then let listForRoute recover and reconcile durable state.
+      setPhotos([]);
+      setSelectedPhotoId(null);
+      setIsLoading(true);
+      setLoadFailed(false);
+      setLoadAttempt((attempt) => attempt + 1);
+      Alert.alert(
+        'No se pudo confirmar la eliminación',
+        'La galería se volverá a leer antes de mostrar sus fotos. Inténtalo de nuevo si la foto sigue apareciendo.',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const confirmDeletePhoto = () => {
+    if (!selectedPhoto || isDeleting) return;
+    const photoId = selectedPhoto.id;
+    Alert.alert(
+      PERSONAL_PHOTO_DELETE_CONFIRMATION.title,
+      PERSONAL_PHOTO_DELETE_CONFIRMATION.message,
+      [
+        { text: PERSONAL_PHOTO_DELETE_CONFIRMATION.cancelLabel, style: 'cancel' },
+        {
+          text: PERSONAL_PHOTO_DELETE_CONFIRMATION.confirmLabel,
+          style: 'destructive',
+          onPress: () => { void deletePhoto(photoId); },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  const isBusy = isChoosing || isSaving || isDeleting;
   const canSave = caption.trim().length > 0 && credit.trim().length > 0 && !isSaving;
   const selectedPhoto = selectPersonalRoutePhoto(photos, selectedPhotoId);
   const viewerDetails = selectedPhoto ? getPersonalRoutePhotoViewerDetails(selectedPhoto) : null;
@@ -226,6 +280,19 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
                   <Text style={styles.viewerCredit}>{viewerDetails.creditLabel}</Text>
                   <Text style={styles.viewerLocalTag}>{viewerDetails.localLabel}</Text>
                   <Text style={styles.viewerPrivacy}>{viewerDetails.privacyNote}</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Eliminar la copia local de esta foto"
+                    accessibilityHint="Pide confirmación antes de borrar esta foto del almacenamiento privado del dispositivo."
+                    accessibilityState={{ disabled: isDeleting }}
+                    disabled={isDeleting}
+                    style={({ pressed }) => [styles.viewerDeleteButton, pressed && styles.addButtonPressed, isDeleting && styles.buttonDisabled]}
+                    onPress={confirmDeletePhoto}
+                  >
+                    <Text style={styles.viewerDeleteText}>
+                      {isDeleting ? 'Eliminando…' : 'Eliminar foto local'}
+                    </Text>
+                  </Pressable>
                 </View>
               </>
             ) : null}
@@ -346,6 +413,8 @@ const styles = StyleSheet.create({
   viewerCredit: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   viewerLocalTag: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
   viewerPrivacy: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: spacing[4] },
+  viewerDeleteButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.earth, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
+  viewerDeleteText: { color: colors.earth, fontSize: 12, fontWeight: '900' },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18, 28, 19, 0.55)' },
   modalKeyboard: { maxHeight: '94%' },
   modalCard: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, backgroundColor: colors.warmBackground, padding: spacing[20], paddingBottom: spacing[32] },

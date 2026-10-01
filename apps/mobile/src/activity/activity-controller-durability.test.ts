@@ -1,7 +1,10 @@
 import type { AdventureDefinition, RouteDetail } from '@magina-aventura/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { BackgroundLocationInbox } from './background-location-inbox';
+import type {
+  BackgroundLocationInbox,
+  BackgroundLocationPoint,
+} from './background-location-inbox';
 import {
   createMemoryBackgroundLocationInboxDatabase,
   MemoryBackgroundLocationInbox,
@@ -92,6 +95,74 @@ function point(timestampMs: number, latitude: number) {
 }
 
 describe('ActivityController durability boundaries', () => {
+  it('rejects a second start while an active or paused session is recoverable', async () => {
+    const store = new MemoryActivityStore();
+    const controller = createActivityController({
+      store,
+      inbox: new MemoryBackgroundLocationInbox(),
+      locationProvider: provider(),
+      createActivityId: () => 'activity-single-session',
+      now: () => '2026-09-28T07:55:00.000Z',
+    });
+
+    await controller.start(definition, route);
+
+    await expect(controller.start(definition, route)).rejects.toThrow(
+      'An active or paused adventure already exists',
+    );
+  });
+
+  it('drains an in-flight GPS point before finishing and queues the point', async () => {
+    const store = new MemoryActivityStore();
+    const durableInbox = new MemoryBackgroundLocationInbox();
+    let receivePoint: ((point: BackgroundLocationPoint) => Promise<void>) | null = null;
+    let releaseAppend!: () => void;
+    let appendStarted!: () => void;
+    const appendReady = new Promise<void>((resolve) => {
+      appendStarted = resolve;
+    });
+    const appendRelease = new Promise<void>((resolve) => {
+      releaseAppend = resolve;
+    });
+    const inbox: BackgroundLocationInbox = {
+      initialize: () => durableInbox.initialize(),
+      append: async (activityId, points) => {
+        appendStarted();
+        await appendRelease;
+        await durableInbox.append(activityId, points);
+      },
+      loadPending: (activityId, afterInboxId) =>
+        durableInbox.loadPending(activityId, afterInboxId),
+      acknowledgeThrough: (activityId, inboxId) =>
+        durableInbox.acknowledgeThrough(activityId, inboxId),
+    };
+    const locationProvider = provider();
+    locationProvider.start.mockImplementation(async (_activityId, callback) => {
+      receivePoint = callback ?? null;
+    });
+    const controller = createActivityController({
+      store,
+      inbox,
+      locationProvider,
+      createActivityId: () => 'activity-finish-race',
+      now: () => '2026-09-28T08:05:00.000Z',
+    });
+
+    await controller.start(definition, route);
+    expect(receivePoint).not.toBeNull();
+
+    const locationPromise = receivePoint!(point(Date.parse('2026-09-28T08:05:05.000Z'), 37.82));
+    await appendReady;
+    const finishPromise = controller.finish();
+    releaseAppend();
+
+    await Promise.all([locationPromise, finishPromise]);
+
+    expect((await store.loadTrack('activity-finish-race')).map((item) => item.sequence)).toEqual([1]);
+    expect((await store.loadPendingSyncBatches('activity-finish-race'))).toHaveLength(1);
+    expect(await durableInbox.loadPending('activity-finish-race')).toHaveLength(0);
+  });
+
   it('does not replay committed inbox rows when cleanup ACK fails', async () => {
     const storeDb = createMemoryActivityStoreDatabase();
     const inboxDb = createMemoryBackgroundLocationInboxDatabase();

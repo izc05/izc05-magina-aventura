@@ -62,6 +62,7 @@ describe('public route catalog', () => {
     expect(municipalCards).toHaveLength(1);
     expect(adelfalCards).toHaveLength(1);
     expect(text).toContain('Rutas de Sierra Mágina');
+    expect(text).not.toMatch(/\bQA\b/);
     expect(municipalText).toContain(municipalRouteInformation.title);
     expect(municipalText).toContain(municipalRouteInformation.municipality);
     expect(municipalText).toContain(municipalRouteInformation.statusLabel);

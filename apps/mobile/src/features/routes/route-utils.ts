@@ -4,6 +4,8 @@ import type { AdventureRouteCard } from './route-types';
 export function getDevelopmentRouteBySlug(
   slug: string | string[] | undefined,
 ): AdventureRouteCard | undefined {
+  if (typeof __DEV__ !== 'undefined' && !__DEV__) return undefined;
+
   const normalizedSlug = Array.isArray(slug) ? slug[0] : slug;
   return developmentRoutes.find((route) => route.slug === normalizedSlug);
 }

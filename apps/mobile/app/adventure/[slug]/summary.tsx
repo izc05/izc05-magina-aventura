@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ export default function ActivitySummaryScreen() {
   const route = getDevelopmentRouteBySlug(slug);
 
   if (!route) {
-    return null;
+    return <Redirect href="/" />;
   }
 
   const presentation = routePresentationViewModel(
@@ -24,7 +24,8 @@ export default function ActivitySummaryScreen() {
     route.developmentFixture ? 'development-simulation' : 'unverified',
   );
   const technicalGpsQa = presentation.mode === 'technical-gps-qa';
-  const finished = user ? activityRuntime.current(user.id) : null;
+  const currentActivity = user ? activityRuntime.current(user.id) : null;
+  const finished = currentActivity?.session.state === 'FINISHED' ? currentActivity : null;
   const snapshot = finished?.snapshot;
   const distanceKm = snapshot ? snapshot.validDistanceMeters / 1000 : null;
   const elapsedSeconds = snapshot?.totalElapsedSeconds ?? null;
@@ -74,13 +75,17 @@ export default function ActivitySummaryScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.eyebrow}>
-            {technicalGpsQa ? 'SESIÓN TÉCNICA GPS FINALIZADA' : 'AVENTURA FINALIZADA'}
+            {finished
+              ? technicalGpsQa ? 'SESIÓN TÉCNICA GPS FINALIZADA' : 'AVENTURA FINALIZADA'
+              : 'NO HAY ACTIVIDAD FINALIZADA'}
           </Text>
           <Text style={styles.title}>{presentation.title}</Text>
           <Text style={styles.subtitle}>
-            {technicalGpsQa
-              ? 'Métricas reales de GPS · sin ruta ni checkpoints verificados'
-              : `Recorrido guardado · ${presentation.municipalityName ?? 'contenido en preparación'}`}
+            {!finished
+              ? 'No hay una captura GPS finalizada para mostrar.'
+              : technicalGpsQa
+                ? 'Métricas reales de GPS · sin ruta ni checkpoints verificados'
+                : `Recorrido guardado · ${presentation.municipalityName ?? 'contenido en preparación'}`}
           </Text>
         </View>
 
@@ -106,9 +111,11 @@ export default function ActivitySummaryScreen() {
             {technicalGpsQa ? 'Captura técnica del dispositivo' : 'Resumen de la actividad'}
           </Text>
           <Text style={styles.subtitle}>
-            {technicalGpsQa
-              ? 'La distancia, el tiempo y las muestras proceden del motor GPS. No representan una ruta verificada ni generan recompensas.'
-              : 'Los datos de actividad se muestran sin atribuir recompensas no verificadas.'}
+            {!finished
+              ? 'Solo se muestran métricas después de finalizar una captura GPS.'
+              : technicalGpsQa
+                ? 'La distancia, el tiempo y las muestras proceden del motor GPS. No representan una ruta verificada ni generan recompensas.'
+                : 'Los datos de actividad se muestran sin atribuir recompensas no verificadas.'}
           </Text>
         </View>
       </ScrollView>

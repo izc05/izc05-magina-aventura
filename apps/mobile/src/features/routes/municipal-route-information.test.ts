@@ -12,7 +12,7 @@ describe('municipal route information-only record', () => {
 
     expect(viewModel).toMatchObject({
       kind: 'municipal-information-only',
-      qaLabel: 'FICHA PILOTO · QA',
+      qaLabel: 'FICHA PILOTO MUNICIPAL',
       title: 'Sendero Fluvial de la Cueva del Agua',
       municipality: 'Cuadros · Bedmar y Garcíez, Jaén',
       statusLabel: 'Información publicada por el Ayuntamiento',

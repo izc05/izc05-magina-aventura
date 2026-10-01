@@ -23,9 +23,6 @@ import { routePresentationViewModel } from '../../src/features/routes/route-pres
 import { RouteMap } from '../../src/map/RouteMap';
 import { materializeMapStyle } from '../../src/map/map-style';
 import {
-  createBaseMapReferenceProps,
-  MAP_BASE_OFFLINE_NOTICE,
-  MAP_BASE_REFERENCE_WARNING,
   OPENFREEMAP_LIBERTY_STYLE_URL,
 } from '../../src/map/map-reference';
 import { expoRoutePackagePort } from '../../src/offline/expo-route-package-port';
@@ -207,7 +204,7 @@ export default function RouteDetailScreen() {
           </Pressable>
           {route.developmentFixture ? (
             <View style={styles.devBadge}>
-              <Text style={styles.devBadgeText}>DATOS DE DESARROLLO</Text>
+              <Text style={styles.devBadgeText}>DEMO · SOLO PREVIEW</Text>
             </View>
           ) : null}
           <View style={styles.heroCopy}>
@@ -250,14 +247,12 @@ export default function RouteDetailScreen() {
             developmentMode={route.developmentFixture}
           />
         ) : (
-          <>
-            <RouteMap {...createBaseMapReferenceProps()} />
-            <View style={styles.mapReferenceNotice}>
-              <Text style={styles.mapReferenceWarning}>{MAP_BASE_REFERENCE_WARNING}</Text>
-              <Text style={styles.mapReferenceOffline}>{MAP_BASE_OFFLINE_NOTICE}</Text>
-              <Text style={styles.mapReferenceArea}>Bedmar y Garcíez · zona municipal aproximada</Text>
-            </View>
-          </>
+          <View testID="unverified-route-map-notice" style={styles.mapReferenceNotice}>
+            <Text style={styles.mapReferenceWarning}>Mapa no disponible para esta demo</Text>
+            <Text style={styles.mapReferenceOffline}>
+              No se muestra ubicación, trazado ni puntos hasta disponer de contenido geográfico verificado.
+            </Text>
+          </View>
         )}
 
         <Text style={styles.sectionTitle}>{presentation?.description ? 'Tu aventura' : 'Contenido de ruta'}</Text>

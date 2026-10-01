@@ -2,7 +2,7 @@ export const municipalRouteInformation = {
   slug: 'sendero-fluvial-cueva-del-agua',
   title: 'Sendero Fluvial de la Cueva del Agua',
   municipality: 'Cuadros · Bedmar y Garcíez, Jaén',
-  qaLabel: 'FICHA PILOTO · QA',
+  qaLabel: 'FICHA PILOTO MUNICIPAL',
   statusLabel: 'Información publicada por el Ayuntamiento',
   statusDetail:
     'El Ayuntamiento presentó el sendero como inaugurado en primavera e invitó a recorrerlo; la publicación no confirma las condiciones actuales del acceso.',

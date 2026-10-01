@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -144,7 +144,7 @@ export default function ActiveAdventureScreen() {
   }, [activityState?.session.activityId, user?.id]);
 
   if (!route) {
-    return null;
+    return <Redirect href="/" />;
   }
 
   const nextPoi = isTechnicalGpsQa ? undefined : mapPayload?.pois?.[0];

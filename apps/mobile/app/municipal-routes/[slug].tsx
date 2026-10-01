@@ -87,14 +87,14 @@ export default function MunicipalRouteInformationScreen() {
           <Text style={styles.statusFootnote}>{information.officialDataNotice}</Text>
         </View>
 
-        <View style={styles.sourcesCard}>
+        <View testID="municipal-sources-card" style={styles.sourcesCard}>
           <Text style={styles.sectionKicker}>FUENTES Y PROCEDENCIA</Text>
           <Text style={styles.sourcesTitle}>Origen de la información</Text>
           <Text style={styles.sourcesIntro}>
             Los datos municipales y las referencias de terceros se presentan por separado.
           </Text>
 
-          <View style={styles.officialSourceCard}>
+          <View testID="official-source-card" style={styles.officialSourceCard}>
             <View style={styles.sourcePanelHeader}>
               <View style={styles.sourcePanelHeaderCopy}>
                 <Text style={styles.sourcePanelKicker}>DATOS OFICIALES</Text>
@@ -148,7 +148,7 @@ export default function MunicipalRouteInformationScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.communityCard}>
+          <View testID="community-source-card" style={styles.communityCard}>
             <View style={styles.communityHeader}>
               <View style={styles.communityHeadingCopy}>
                 <Text style={styles.communityKicker}>REFERENCIA COMUNITARIA</Text>
@@ -169,7 +169,7 @@ export default function MunicipalRouteInformationScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
+        <View testID="personal-gallery-section" style={styles.section}>
           <View style={styles.sectionHeading}>
             <View style={styles.sectionHeadingCopy}>
               <Text style={styles.sectionKicker}>TUS IMÁGENES</Text>
@@ -177,7 +177,7 @@ export default function MunicipalRouteInformationScreen() {
             </View>
             <Text style={styles.localBadge}>SOLO LOCAL</Text>
           </View>
-          <View style={styles.galleryPrivacyNotice}>
+          <View testID="gallery-privacy-notice" style={styles.galleryPrivacyNotice}>
             <Text style={styles.galleryPrivacyTitle}>Solo en este dispositivo</Text>
             <Text style={styles.galleryPrivacyBody}>
               Tus fotos se guardan en el almacenamiento privado de esta app. No se publican ni se sincronizan.
@@ -298,20 +298,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     ...shadow.card,
   },
-  provenanceKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  statusTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900', marginTop: spacing[8] },
-  body: { color: colors.ink, fontSize: 14, lineHeight: 21, marginTop: spacing[8] },
+  provenanceKicker: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  statusTitle: { color: colors.ink, fontSize: 17, lineHeight: 22, fontWeight: '900', marginTop: spacing[8] },
+  body: { color: colors.ink, fontSize: 15, lineHeight: 21, marginTop: spacing[8] },
   statusFootnote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
   section: { marginTop: spacing[32] },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginHorizontal: spacing[20] },
   sectionHeadingCopy: { flex: 1 },
-  sectionKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  sectionKicker: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, lineHeight: 26, fontWeight: '900', marginTop: spacing[4] },
-  sourceBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.5, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
+  sourceBadge: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.5, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
   officialSourceCard: { marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: colors.olive700 },
   sourcePanelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginBottom: spacing[16] },
   sourcePanelHeaderCopy: { flex: 1 },
-  sourcePanelKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  sourcePanelKicker: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   sourcePanelTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: spacing[4] },
   sourceSectionSpacing: { marginTop: spacing[16] },
   endpointRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[12] },
@@ -320,49 +320,49 @@ const styles = StyleSheet.create({
   endpointDot: { width: 10, height: 10, borderRadius: radius.pill, backgroundColor: colors.olive700 },
   endpointDotEnd: { backgroundColor: colors.aoveGold },
   endpointCopy: { flex: 1 },
-  endpointLabel: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  endpointLabel: { color: colors.muted, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   endpointName: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '900', marginTop: spacing[4] },
   directionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[8], marginVertical: spacing[12] },
   directionRule: { flex: 1, height: 1, backgroundColor: colors.border },
   directionPill: { flexDirection: 'row', alignItems: 'center', gap: spacing[4], borderRadius: radius.pill, backgroundColor: colors.olive900, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
   directionArrow: { color: colors.aoveGold, fontSize: 15, lineHeight: 16, fontWeight: '900' },
-  directionPillText: { color: colors.white, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
+  directionPillText: { color: colors.white, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
   directionNote: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
-  communityCard: { marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.limestone, borderWidth: 1, borderLeftWidth: 4, borderColor: colors.border, borderLeftColor: colors.aoveGold },
+  communityCard: { marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.warmBackground, borderWidth: 1, borderLeftWidth: 4, borderColor: colors.border, borderLeftColor: colors.aoveGold },
   communityHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8] },
   communityHeadingCopy: { flex: 1, minWidth: 180 },
-  communityKicker: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  communityKicker: { color: colors.earth, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   communityTitle: { color: colors.olive900, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[4] },
-  communityBadge: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.earth, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
-  communityNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  communityBadge: { color: colors.white, fontSize: 10, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.earth, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
+  communityNote: { color: colors.ink, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
   inlineSourceLink: { alignSelf: 'flex-start', marginTop: spacing[12], paddingVertical: spacing[4] },
-  inlineSourceText: { color: colors.olive900, fontSize: 12, fontWeight: '900', textDecorationLine: 'underline' },
-  localBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
+  inlineSourceText: { color: colors.olive900, fontSize: 13, fontWeight: '900', textDecorationLine: 'underline' },
+  localBadge: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
   galleryPrivacyNotice: { marginHorizontal: spacing[16], marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.white, padding: spacing[16] },
   galleryPrivacyTitle: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
-  galleryPrivacyBody: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
-  galleryPickerNote: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
+  galleryPrivacyBody: { color: colors.ink, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
+  galleryPickerNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   galleryProvenance: { marginHorizontal: spacing[20], marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
-  galleryStatus: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textAlign: 'center', marginTop: spacing[12] },
-  galleryBody: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: spacing[8] },
+  galleryStatus: { color: colors.olive900, fontSize: 12, lineHeight: 17, fontWeight: '900', letterSpacing: 0.6, textAlign: 'center', marginTop: spacing[12] },
+  galleryBody: { color: colors.ink, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: spacing[8] },
   mapHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginHorizontal: spacing[20] },
   mapHeadingCopy: { flex: 1 },
-  mapAreaLabel: { color: colors.muted, fontSize: 11, fontWeight: '800', marginTop: spacing[4] },
-  mapBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.6, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
-  mapNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginHorizontal: spacing[20], marginTop: spacing[8] },
+  mapAreaLabel: { color: colors.olive700, fontSize: 11, fontWeight: '800', marginTop: spacing[4] },
+  mapBadge: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.6, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
+  mapNote: { color: colors.ink, fontSize: 13, lineHeight: 19, marginHorizontal: spacing[20], marginTop: spacing[8] },
   mapA11yFrame: { marginTop: spacing[4] },
-  nonNavigationNotice: { color: colors.olive900, fontSize: 11, lineHeight: 17, fontWeight: '800', marginHorizontal: spacing[20] },
+  nonNavigationNotice: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginHorizontal: spacing[20] },
   sourcesCard: { marginHorizontal: spacing[16], marginTop: spacing[32], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   otherSourcesCard: { marginHorizontal: spacing[16], marginTop: spacing[32], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   sourcesTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: spacing[4] },
-  sourcesIntro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  sourcesIntro: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
   sourceLink: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing[8], paddingTop: spacing[8] },
-  sourceLinkText: { flex: 1, color: colors.olive900, fontSize: 12, lineHeight: 17, fontWeight: '800', textDecorationLine: 'underline' },
+  sourceLinkText: { flex: 1, color: colors.olive900, fontSize: 13, lineHeight: 18, fontWeight: '800', textDecorationLine: 'underline' },
   sourceArrow: { color: colors.olive700, fontSize: 17, fontWeight: '900' },
   footerNotice: { marginHorizontal: spacing[16], marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.olive900 },
   footerTitle: { color: colors.aoveGold, fontSize: 13, fontWeight: '900' },
-  footerBody: { color: colors.white, fontSize: 11, lineHeight: 17, marginTop: spacing[8] },
-  mutedBody: { color: colors.muted, fontSize: 14, textAlign: 'center', marginTop: spacing[8] },
+  footerBody: { color: colors.white, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  mutedBody: { color: colors.ink, fontSize: 14, textAlign: 'center', marginTop: spacing[8] },
   notFound: { flex: 1, padding: spacing[24], justifyContent: 'center', alignItems: 'center' },
   title: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },
   secondaryButton: { marginTop: spacing[20], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900, paddingHorizontal: spacing[20], paddingVertical: spacing[12] },

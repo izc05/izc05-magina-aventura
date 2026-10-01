@@ -31,6 +31,7 @@ vi.mock('../../src/features/routes/PersonalRouteGallery', () => ({
 import MunicipalRouteInformationScreen from './[slug]';
 import { municipalRouteInformation } from '../../src/features/routes/municipal-route-information';
 import { OPENFREEMAP_LIBERTY_STYLE_URL } from '../../src/map/map-reference';
+import { colors, radius, spacing } from '../../src/theme/tokens';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -54,12 +55,67 @@ function visibleText(node: unknown): string[] {
   return [];
 }
 
+function findByTestId(node: unknown, testId: string): ElementLike | undefined {
+  return collectElements(node).find((element) => element.props?.testID === testId);
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const luminance = (hex: string) => {
+    const channel = (index: number) => {
+      const value = Number.parseInt(hex.slice(index, index + 2), 16) / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  };
+  const sorted = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  const lighter = sorted[0] ?? 0;
+  const darker = sorted[1] ?? 0;
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 afterEach(() => {
   mocks.slug = 'sendero-fluvial-cueva-del-agua';
   vi.clearAllMocks();
 });
 
 describe('Bedmar municipal route QA detail UI and accessibility', () => {
+  it('keeps source panels and personal-gallery guidance on the existing warm/olive visual tokens', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const officialCard = findByTestId(tree, 'official-source-card');
+    const communityCard = findByTestId(tree, 'community-source-card');
+    const privacyNotice = findByTestId(tree, 'gallery-privacy-notice');
+    const communityNote = collectElements(tree).find((element) =>
+      element.type === 'Text'
+        && visibleText(element).join('') === municipalRouteInformation.communityReference.note,
+    );
+    const privacyBody = collectElements(tree).find((element) =>
+      element.type === 'Text'
+        && visibleText(element).join('').startsWith('Tus fotos se guardan en el almacenamiento privado'),
+    );
+
+    expect(officialCard?.props?.style).toMatchObject({
+      borderRadius: radius.md,
+      borderLeftColor: colors.olive700,
+      backgroundColor: colors.white,
+      padding: spacing[16],
+    });
+    expect(communityCard?.props?.style).toMatchObject({
+      borderRadius: radius.md,
+      borderLeftColor: colors.aoveGold,
+      backgroundColor: colors.warmBackground,
+    });
+    expect(communityNote?.props?.style).toMatchObject({ color: colors.ink, fontSize: 13, lineHeight: 19 });
+    expect(privacyNotice?.props?.style).toMatchObject({
+      borderRadius: radius.md,
+      borderColor: colors.olive700,
+      backgroundColor: colors.white,
+    });
+    expect(privacyBody?.props?.style).toMatchObject({ fontSize: 13, lineHeight: 19, color: colors.ink });
+    expect(contrastRatio(colors.earth, colors.warmBackground)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(colors.olive700, colors.white)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(colors.ink, colors.warmBackground)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it('shows the official endpoints and two-way note without presenting the context map as route geometry', () => {
     const tree = MunicipalRouteInformationScreen();
     const text = visibleText(tree).join(' ');

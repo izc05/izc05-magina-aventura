@@ -202,7 +202,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
           </Pressable>
         </View>
       ) : photos.length === 0 ? (
-        <View style={styles.emptyPanel}>
+        <View testID="personal-gallery-empty-state" style={styles.emptyPanel}>
           <View style={styles.galleryIconWrap}>
             <Text accessible={false} style={styles.galleryIcon}>▧</Text>
           </View>
@@ -381,26 +381,26 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
 
 const styles = StyleSheet.create({
   container: { marginHorizontal: spacing[20], marginTop: spacing[12] },
-  statusPanel: { minHeight: 112, alignItems: 'center', justifyContent: 'center', gap: spacing[8], marginTop: spacing[12], borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16] },
+  statusPanel: { minHeight: 112, alignItems: 'center', justifyContent: 'center', gap: spacing[8], marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[16] },
   statusText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
   retryButton: { marginTop: spacing[4], paddingHorizontal: spacing[16], paddingVertical: spacing[8], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900 },
   retryButtonText: { color: colors.olive900, fontSize: 12, fontWeight: '800' },
-  emptyPanel: { minHeight: 184, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.olive700, backgroundColor: colors.white, padding: spacing[20] },
+  emptyPanel: { minHeight: 184, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.olive700, backgroundColor: colors.white, padding: spacing[20] },
   galleryIconWrap: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.limestone, alignItems: 'center', justifyContent: 'center' },
   galleryIcon: { color: colors.olive700, fontSize: 21, fontWeight: '900' },
-  emptyTitle: { color: colors.olive900, fontSize: 13, fontWeight: '900', textAlign: 'center', marginTop: spacing[12] },
-  emptyBody: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: spacing[8] },
+  emptyTitle: { color: colors.olive900, fontSize: 14, fontWeight: '900', textAlign: 'center', marginTop: spacing[12] },
+  emptyBody: { color: colors.ink, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: spacing[8] },
   photoList: { gap: spacing[12], marginTop: spacing[12] },
-  photoCard: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, padding: spacing[12] },
+  photoCard: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, padding: spacing[12] },
   photoImageButton: { width: '100%', height: 196, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.limestone },
   photoImage: { width: '100%', height: '100%', backgroundColor: colors.limestone },
   photoCaption: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[12] },
-  photoCredit: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[4] },
-  localTag: { alignSelf: 'flex-start', color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
-  addButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
+  photoCredit: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
+  localTag: { alignSelf: 'flex-start', color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
+  addButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.olive700, paddingHorizontal: spacing[16], paddingVertical: spacing[12] },
   addButtonPressed: { opacity: 0.82 },
   buttonDisabled: { opacity: 0.48 },
-  addButtonText: { color: colors.white, fontSize: 13, fontWeight: '900', textAlign: 'center' },
+  addButtonText: { color: colors.white, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(12, 17, 13, 0.96)' },
   viewerSafeArea: { flex: 1, paddingHorizontal: spacing[16], paddingBottom: spacing[12] },
   viewerHeader: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -408,18 +408,18 @@ const styles = StyleSheet.create({
   viewerCloseButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.55)' },
   viewerCloseText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   viewerImage: { width: '100%', flex: 1, minHeight: 180, backgroundColor: 'transparent' },
-  viewerMetadata: { borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], marginTop: spacing[12] },
+  viewerMetadata: { borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[16], marginTop: spacing[12] },
   viewerCaption: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900' },
   viewerCredit: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
-  viewerLocalTag: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
-  viewerPrivacy: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: spacing[4] },
+  viewerLocalTag: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
+  viewerPrivacy: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
   viewerDeleteButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.earth, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
   viewerDeleteText: { color: colors.earth, fontSize: 12, fontWeight: '900' },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18, 28, 19, 0.55)' },
   modalKeyboard: { maxHeight: '94%' },
   modalCard: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, backgroundColor: colors.warmBackground, padding: spacing[20], paddingBottom: spacing[32] },
   modalTitle: { color: colors.ink, fontSize: 18, lineHeight: 24, fontWeight: '900' },
-  modalNote: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: spacing[8] },
+  modalNote: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   previewImage: { width: '100%', height: 180, borderRadius: radius.md, backgroundColor: colors.limestone, marginTop: spacing[16] },
   inputLabel: { color: colors.olive900, fontSize: 12, fontWeight: '900', marginTop: spacing[16] },
   textInput: { minHeight: 48, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, color: colors.ink, fontSize: 14, paddingHorizontal: spacing[12], paddingVertical: spacing[12], marginTop: spacing[8] },
@@ -427,5 +427,5 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: spacing[8], marginTop: spacing[20] },
   cancelButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing[16], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900 },
   cancelButtonText: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
-  saveButton: { minHeight: 44, minWidth: 128, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16], paddingVertical: spacing[8] },
+  saveButton: { minHeight: 44, minWidth: 128, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: colors.olive700, paddingHorizontal: spacing[16], paddingVertical: spacing[8] },
 });

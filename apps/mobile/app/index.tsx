@@ -10,10 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { developmentRoutes } from '../src/features/routes/fixtures';
 import { colors, radius, spacing, typography } from '../src/theme/tokens';
 import { HeroTerritory } from '../src/components/ui/HeroTerritory';
-import { RouteCard } from '../src/components/ui/RouteCard';
 import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
 import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
 
@@ -27,10 +25,6 @@ const navItems = [
 ] as const;
 
 export default function RoutesHomeScreen() {
-  const route = developmentRoutes[0];
-
-  if (!route) return null;
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="dark" />
@@ -49,10 +43,10 @@ export default function RoutesHomeScreen() {
           </View>
         </View>
 
-        <HeroTerritory 
-          kicker="TU PRÓXIMA AVENTURA" 
-          title={`Camina. Descubre.\nConquista Mágina.`}
-          body="Rutas reales, retos y descubrimientos que solo se desbloquean caminando."
+        <HeroTerritory
+          kicker="RUTAS DE SIERRA MÁGINA"
+          title={`Explora Mágina\ncon información clara.`}
+          body="Consulta la información pública disponible y distingue lo verificado de lo que sigue pendiente."
         />
 
         <View style={styles.searchBox}>
@@ -115,26 +109,19 @@ export default function RoutesHomeScreen() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Rutas destacadas</Text>
-            <Text style={styles.sectionSubtitle}>Empieza por Bedmar y Garcíez</Text>
+            <Text style={styles.sectionTitle}>Ruta piloto</Text>
+            <Text style={styles.sectionSubtitle}>Municipio piloto · Bedmar y Garcíez</Text>
           </View>
           <Pressable
-            disabled
             accessibilityRole="button"
-            accessibilityLabel="Ver todas las rutas. Próximamente."
-            accessibilityHint="El catálogo completo de rutas todavía no está disponible."
-            accessibilityState={{ disabled: true }}
+            accessibilityLabel="Abrir catálogo público de rutas"
+            accessibilityHint="Consulta las fichas públicas sin iniciar sesión."
             style={styles.sectionAction}
+            onPress={() => router.push('/routes')}
           >
-            <Text style={styles.sectionActionText}>Ver todas</Text>
-            <Text style={styles.sectionActionStatus}>Próximamente</Text>
+            <Text style={styles.sectionActionText}>Ver catálogo</Text>
           </Pressable>
         </View>
-
-        <RouteCard 
-          route={route} 
-          onPress={() => router.push({ pathname: '/routes/[slug]', params: { slug: route.slug } })} 
-        />
 
         <MunicipalRouteInformationCard
           onPress={() =>
@@ -173,7 +160,13 @@ export default function RoutesHomeScreen() {
               accessibilityLabel={isDisabled ? `${label}, próximamente.` : label}
               accessibilityHint={isDisabled ? 'Esta sección todavía no está disponible.' : undefined}
               accessibilityState={{ disabled: isDisabled, selected: isSelected }}
-              onPress={label === 'Pasaporte' ? () => router.push('/profile') : undefined}
+              onPress={
+                label === 'Rutas'
+                  ? () => router.push('/routes')
+                  : label === 'Pasaporte'
+                    ? () => router.push('/profile')
+                    : undefined
+              }
             >
               <Text style={[styles.navIcon, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{icon}</Text>
               <Text style={[styles.navLabel, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{label}</Text>
@@ -266,9 +259,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   sectionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  sectionAction: { alignItems: 'flex-end', opacity: 0.72 },
+  sectionAction: { alignItems: 'flex-end', minHeight: 48, justifyContent: 'center' },
   sectionActionText: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
-  sectionActionStatus: { color: colors.muted, fontSize: 9, fontWeight: '700', marginTop: 2 },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,

@@ -61,8 +61,8 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('Home inactive controls', () => {
-  it('exposes search, difficulty filters and “Ver todas” as unavailable, labelled controls', () => {
+describe('Home controls', () => {
+  it('keeps search and difficulty filters unavailable with accessible status', () => {
     const tree = renderHome(false);
     const elements = collectElements(tree);
     const search = elements.find((element) => element.type === 'TextInput');
@@ -83,13 +83,25 @@ describe('Home inactive controls', () => {
     }
     expect(visibleText(tree)).toContain('Filtros de dificultad: próximamente.');
 
-    const seeAll = elements.find(
-      (element) => element.props?.accessibilityLabel === 'Ver todas las rutas. Próximamente.',
+  });
+
+  it('opens the public catalog and does not show development fixture route metrics', () => {
+    const tree = renderHome(false);
+    const elements = collectElements(tree);
+    const catalog = elements.find(
+      (element) => element.props?.accessibilityLabel === 'Abrir catálogo público de rutas',
     );
-    expect(seeAll?.props?.disabled).toBe(true);
-    expect(seeAll?.props?.accessibilityRole).toBe('button');
-    expect(seeAll?.props?.accessibilityState).toEqual({ disabled: true });
-    expect(visibleText(seeAll)).toContain('Próximamente');
+    const text = visibleText(tree).join(' ');
+
+    expect(catalog?.props?.accessibilityRole).toBe('button');
+    expect(catalog?.props?.accessibilityHint).toContain('sin iniciar sesión');
+    expect(catalog?.props?.disabled).not.toBe(true);
+    expect(text).not.toContain('Sendero de Cuadros y Adarves');
+    expect(text).not.toContain('Ascensión al Pico Mágina');
+    expect(text).not.toContain('Ruta Cueva del Agua y Coleto');
+
+    (catalog?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/routes');
   });
 
   it('marks Retos, Colecciones and Ranking as disabled tabs with visible and accessible status', () => {
@@ -135,7 +147,7 @@ describe('Home to Bedmar municipal information navigation', () => {
       (element) => element.type === MunicipalRouteInformationCard,
     );
 
-    expect(visibleText(tree)).toContain('Empieza por Bedmar y Garcíez');
+    expect(visibleText(tree)).toContain('Municipio piloto · Bedmar y Garcíez');
     expect(typeof homeCard?.props?.onPress).toBe('function');
 
     const cardTree = MunicipalRouteInformationCard({
@@ -146,9 +158,9 @@ describe('Home to Bedmar municipal information navigation', () => {
 
     expect(cardButton?.props?.accessibilityRole).toBe('button');
     expect(cardButton?.props?.accessibilityLabel).toBe(
-      `Abrir ficha QA de ${municipalRouteInformation.title}`,
+      `Abrir ficha informativa de ${municipalRouteInformation.title}`,
     );
-    expect(cardButton?.props?.accessibilityHint).toContain('ficha informativa');
+    expect(cardButton?.props?.accessibilityHint).toContain('ficha pública');
     expect(cardText).toContain('Abrir ficha completa');
     expect(cardText).toContain('sin navegación GPS');
 

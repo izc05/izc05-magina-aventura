@@ -15,13 +15,13 @@ export function MunicipalRouteInformationCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Abrir ficha QA de ${information.title}`}
-      accessibilityHint="Abre la ficha informativa con fuentes municipales y comunitarias."
+      accessibilityLabel={`Abrir ficha informativa de ${information.title}`}
+      accessibilityHint="Abre la ficha pública con fuentes municipales y comunitarias."
       style={styles.card}
       onPress={onPress}
     >
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>{information.qaLabel}</Text>
+        <Text style={styles.eyebrow}>PILOTO MUNICIPAL</Text>
         <Text style={styles.badge}>{information.traceStatus.toUpperCase()}</Text>
       </View>
       <Text style={styles.title}>{information.title}</Text>

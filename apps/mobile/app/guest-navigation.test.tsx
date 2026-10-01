@@ -42,6 +42,7 @@ vi.mock('../src/features/routes/GpxLocalPreviewSection', () => ({ GpxLocalPrevie
 
 import LoginScreen from './login';
 import RoutesHomeScreen from './index';
+import PublicRouteCatalogScreen from './routes/index';
 import MunicipalRouteInformationScreen from './municipal-routes/[slug]';
 import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
 import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
@@ -91,9 +92,25 @@ describe('guest read-only navigation', () => {
 
     vi.stubGlobal('__DEV__', false);
     const homeTree = RoutesHomeScreen();
-    expect(visibleText(homeTree).join(' ')).toContain('Empieza por Bedmar y Garcíez');
+    expect(visibleText(homeTree).join(' ')).toContain('Municipio piloto · Bedmar y Garcíez');
     const bedmarCard = collectElements(homeTree).find((element) => element.type === MunicipalRouteInformationCard);
     (bedmarCard?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith({
+      pathname: '/municipal-routes/[slug]',
+      params: { slug: municipalRouteInformation.slug },
+    });
+
+    const catalogLink = collectElements(homeTree).find(
+      (element) => element.props?.accessibilityLabel === 'Abrir catálogo público de rutas',
+    );
+    (catalogLink?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/routes');
+
+    const catalogTree = PublicRouteCatalogScreen();
+    const publicRouteCard = collectElements(catalogTree).find(
+      (element) => element.props?.testID === 'public-route-card',
+    );
+    (publicRouteCard?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.push).toHaveBeenCalledWith({
       pathname: '/municipal-routes/[slug]',
       params: { slug: municipalRouteInformation.slug },

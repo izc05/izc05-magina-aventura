@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { adelfalCuadrosPhotoSource } from '../../src/features/routes/adelfal-cuadros-photo';
 import { adelfalDeCuadrosInformation as route } from '../../src/features/routes/adelfal-de-cuadros-information';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
 
@@ -14,6 +15,14 @@ export default function AdelfalDeCuadrosOfficialRouteScreen() {
       await Linking.openURL(route.officialSource.url);
     } catch {
       Alert.alert('Fuente no disponible', 'No se pudo abrir la ficha oficial de la Junta.');
+    }
+  }
+
+  async function openPhotoLink(url: string) {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Fuente no disponible', 'No se pudo abrir la atribución de la fotografía.');
     }
   }
 
@@ -39,6 +48,48 @@ export default function AdelfalDeCuadrosOfficialRouteScreen() {
             <Text style={styles.eyebrow}>{route.pilotLabel}</Text>
             <Text accessibilityRole="header" style={styles.title}>{route.title}</Text>
             <Text style={styles.location}>{route.municipality}</Text>
+          </View>
+        </View>
+
+        <View testID="adelfal-contextual-photo-card" style={styles.contextualPhotoCard}>
+          <Image
+            testID="adelfal-contextual-photo"
+            source={adelfalCuadrosPhotoSource}
+            accessibilityRole="image"
+            accessibilityLabel={route.contextualPhoto.altText}
+            style={styles.contextualPhoto}
+            resizeMode="contain"
+          />
+          <Text style={styles.photoCaption}>{route.contextualPhoto.caption}</Text>
+          <Text style={styles.photoAttribution}>Autoría: {route.contextualPhoto.author}</Text>
+          <Text style={styles.photoAttribution}>Fuente: Wikimedia Commons · {route.contextualPhoto.fileName}</Text>
+          <View style={styles.photoLinks}>
+            <Pressable
+              testID="adelfal-photo-source-link"
+              accessibilityRole="link"
+              accessibilityLabel="Abrir la ficha original de ADELFALRIOCUADROS.JPG en Wikimedia Commons"
+              onPress={() => void openPhotoLink(route.contextualPhoto.sourceUrl)}
+            >
+              <Text style={styles.photoLinkText}>Ficha original</Text>
+            </Pressable>
+            <Text style={styles.photoAttribution}>·</Text>
+            <Pressable
+              testID="adelfal-photo-cc-license-link"
+              accessibilityRole="link"
+              accessibilityLabel="Abrir la licencia Creative Commons Atribución-CompartirIgual 3.0"
+              onPress={() => void openPhotoLink(route.contextualPhoto.ccBySaUrl)}
+            >
+              <Text style={styles.photoLinkText}>CC BY-SA 3.0</Text>
+            </Pressable>
+            <Text style={styles.photoAttribution}>·</Text>
+            <Pressable
+              testID="adelfal-photo-gfdl-license-link"
+              accessibilityRole="link"
+              accessibilityLabel="Abrir la licencia GNU Free Documentation License 1.2 o posterior"
+              onPress={() => void openPhotoLink(route.contextualPhoto.gfdlUrl)}
+            >
+              <Text style={styles.photoLinkText}>GFDL 1.2+</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -104,6 +155,24 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.warmBackground },
   scrollView: { flex: 1 },
   content: { paddingHorizontal: spacing[20], paddingTop: spacing[12], paddingBottom: spacing[32] },
+  contextualPhotoCard: {
+    marginTop: spacing[20],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    padding: spacing[16],
+  },
+  contextualPhoto: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: radius.md,
+    backgroundColor: colors.limestone,
+  },
+  photoCaption: { color: colors.ink, fontSize: 12, lineHeight: 18, fontWeight: '700', marginTop: spacing[12] },
+  photoAttribution: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
+  photoLinks: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing[8], marginTop: spacing[8] },
+  photoLinkText: { color: colors.olive700, fontSize: 12, lineHeight: 18, fontWeight: '900', textDecorationLine: 'underline' },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing[12] },
   backButton: {
     width: 48,

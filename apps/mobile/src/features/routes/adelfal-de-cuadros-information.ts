@@ -21,4 +21,13 @@ export const adelfalDeCuadrosInformation = {
     label: 'Ficha oficial · Ventana del Visitante · Junta de Andalucía',
     url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/adelfal-de-cuadros/255035',
   },
+  contextualPhoto: {
+    altText: 'Sendero bajo ramas de adelfas junto al río Cuadros, en una fotografía histórica tomada en 2006.',
+    caption: 'Imagen original sin recortes ni modificaciones: foto contextual del adelfal del río Cuadros (2006); no acredita el recorrido ni su estado actual.',
+    author: 'José Sánchez Rodríguez y Rafael Palomo López',
+    fileName: 'ADELFALRIOCUADROS.JPG',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:ADELFALRIOCUADROS.JPG',
+    ccBySaUrl: 'https://creativecommons.org/licenses/by-sa/3.0/deed.es',
+    gfdlUrl: 'https://commons.wikimedia.org/wiki/Commons:GNU_Free_Documentation_License,_version_1.2',
+  },
 } as const;

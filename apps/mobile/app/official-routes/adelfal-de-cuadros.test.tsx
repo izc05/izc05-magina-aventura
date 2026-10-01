@@ -6,6 +6,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ replace: mocks.replace }) })
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('react-native', () => ({
   Alert: { alert: mocks.alert },
+  Image: 'Image',
   Linking: { openURL: mocks.openURL },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
@@ -14,6 +15,7 @@ vi.mock('react-native', () => ({
   View: 'View',
 }));
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
+vi.mock('../../src/features/routes/adelfal-cuadros-photo', () => ({ adelfalCuadrosPhotoSource: 1 }));
 
 import AdelfalDeCuadrosOfficialRouteScreen from './adelfal-de-cuadros';
 import { adelfalDeCuadrosInformation as route } from '../../src/features/routes/adelfal-de-cuadros-information';
@@ -54,6 +56,8 @@ describe('Adelfal de Cuadros official pilot', () => {
     const facts = elements.find((element) => element.props?.testID === 'adelfal-official-facts');
     const datedStatus = elements.find((element) => element.props?.testID === 'adelfal-dated-status');
     const sourceCard = elements.find((element) => element.props?.testID === 'adelfal-source-card');
+    const photoCard = elements.find((element) => element.props?.testID === 'adelfal-contextual-photo-card');
+    const photo = elements.find((element) => element.props?.testID === 'adelfal-contextual-photo');
 
     expect(text).toContain('PILOTO OFICIAL · JUNTA DE ANDALUCÍA');
     expect(text).toContain('Adelfal de Cuadros');
@@ -70,20 +74,46 @@ describe('Adelfal de Cuadros official pilot', () => {
     expect(normalizedText(datedStatus)).toContain('antes del lanzamiento');
     expect(normalizedText(datedStatus)).toContain('condiciones operativas antes de salir');
     expect(normalizedText(sourceCard)).toContain(route.officialSource.label);
+    expect(photo?.type).toBe('Image');
+    expect(photo?.props?.source).toBe(1);
+    expect(photo?.props?.accessibilityRole).toBe('image');
+    expect(photo?.props?.accessibilityLabel).toBe(route.contextualPhoto.altText);
+    expect(normalizedText(photoCard)).toContain('José Sánchez Rodríguez y Rafael Palomo López');
+    expect(normalizedText(photoCard)).toContain('Wikimedia Commons · ADELFALRIOCUADROS.JPG');
+    expect(normalizedText(photoCard)).toContain('foto contextual del adelfal del río Cuadros (2006)');
+    expect(normalizedText(photoCard)).toContain('no acredita el recorrido ni su estado actual');
+    expect(normalizedText(photoCard)).toContain('sin recortes ni modificaciones');
+    expect(normalizedText(photoCard)).toContain('CC BY-SA 3.0');
+    expect(normalizedText(photoCard)).toContain('GFDL 1.2+');
     expect(text).not.toMatch(/abierto actualmente|cerrado actualmente|cerrado hoy|iniciar navegación|checkpoint|recompensa|XP|ranking|progreso/i);
-    expect(elements.some((element) => element.type === 'RouteMap' || element.type === 'Image')).toBe(false);
+    expect(text).not.toContain('Cueva del Agua');
+    expect(route.slug).toBe('adelfal-de-cuadros');
+    expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
   });
 
-  it('keeps the official source link and public catalog return action accessible', () => {
+  it('keeps source, photo attribution and license links plus catalog return accessible', () => {
     const tree = AdelfalDeCuadrosOfficialRouteScreen();
     const elements = collectElements(tree);
     const sourceLink = elements.find((element) => element.props?.testID === 'adelfal-source-link');
+    const photoSourceLink = elements.find((element) => element.props?.testID === 'adelfal-photo-source-link');
+    const ccLicenseLink = elements.find((element) => element.props?.testID === 'adelfal-photo-cc-license-link');
+    const gfdlLicenseLink = elements.find((element) => element.props?.testID === 'adelfal-photo-gfdl-license-link');
     const backButton = elements.find((element) => element.props?.accessibilityLabel === 'Volver al catálogo público de rutas');
 
     expect(sourceLink?.props?.accessibilityRole).toBe('link');
     expect(typeof sourceLink?.props?.onPress).toBe('function');
     (sourceLink?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.openURL).toHaveBeenCalledWith(route.officialSource.url);
+
+    expect(photoSourceLink?.props?.accessibilityRole).toBe('link');
+    expect(ccLicenseLink?.props?.accessibilityRole).toBe('link');
+    expect(gfdlLicenseLink?.props?.accessibilityRole).toBe('link');
+    (photoSourceLink?.props?.onPress as (() => void) | undefined)?.();
+    (ccLicenseLink?.props?.onPress as (() => void) | undefined)?.();
+    (gfdlLicenseLink?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.openURL).toHaveBeenCalledWith(route.contextualPhoto.sourceUrl);
+    expect(mocks.openURL).toHaveBeenCalledWith(route.contextualPhoto.ccBySaUrl);
+    expect(mocks.openURL).toHaveBeenCalledWith(route.contextualPhoto.gfdlUrl);
 
     expect(backButton?.props?.accessibilityRole).toBe('button');
     (backButton?.props?.onPress as (() => void) | undefined)?.();

@@ -3,7 +3,7 @@ import type { RouteMapProps } from './map-types';
 export const OPENFREEMAP_LIBERTY_STYLE_URL =
   'https://tiles.openfreemap.org/styles/liberty';
 
-/** Bedmar main-nucleus coordinates (IECA/SIMA 2022), for approximate context only. */
+/** Approximate Bedmar town-center coordinates from a secondary profile; context only, never trail geometry. */
 export const BEDMAR_APPROXIMATE_CENTER: [number, number] = [-3.412, 37.823];
 export const BEDMAR_APPROXIMATE_ZOOM = 12;
 

@@ -2,40 +2,98 @@ export const municipalRouteInformation = {
   slug: 'sendero-fluvial-cueva-del-agua',
   title: 'Sendero Fluvial de la Cueva del Agua',
   municipality: 'Cuadros · Bedmar y Garcíez, Jaén',
-  statusLabel: 'Estado reportado por el Ayuntamiento',
+  qaLabel: 'FICHA PILOTO · QA',
+  statusLabel: 'Información publicada por el Ayuntamiento',
   statusDetail:
-    'El Ayuntamiento lo comunica como habilitado para el público e indica que fue inaugurado en primavera de 2026.',
+    'El Ayuntamiento presentó el sendero como inaugurado en primavera e invitó a recorrerlo; la publicación no confirma las condiciones actuales del acceso.',
   endpoints: [
     'Puente Blanco de Las Tinajas',
     'Entrada de la Cueva del Agua',
   ] as const,
   directionNote:
     'El Ayuntamiento indica que puede recorrerse en ambos sentidos.',
+  officialDataNotice:
+    'La publicación municipal consultada no aporta distancia oficial ni un archivo GPX.',
+  traceStatus: 'Trazado en preparación',
   gpsNotice:
-    'Trazado/mapa/checkpoints pendientes; sin navegación GPS.',
+    'No hay geometría verificada para seguimiento GPS; esta ficha no ofrece navegación.',
   nonNavigationNotice:
-    'Ficha informativa basada en comunicaciones municipales; no es una guía para llegar ni para seguir el sendero.',
-  sourceLabel: 'Aviso del Ayuntamiento · 9 de septiembre de 2026',
-  sourceUrl: 'https://www.facebook.com/reel/28588117584209389/',
+    'El mapa es solo contexto urbano aproximado: no representa el sendero ni marca su salida o llegada. No lo uses para llegar ni para orientarte por la ruta.',
+  contextMap: {
+    title: 'Contexto de Bedmar',
+    areaLabel: 'Centro urbano aproximado',
+    note:
+      'Mapa base centrado cerca del núcleo principal de Bedmar. No señala el Puente Blanco, la cueva ni el trazado.',
+    accessibilityLabel:
+      'Mapa base de Bedmar, centrado aproximadamente en el núcleo urbano. No muestra la ruta, la salida ni la llegada.',
+  },
+  gallery: {
+    title: 'Galería de la ruta',
+    statusLabel: 'IMAGEN CON LICENCIA COMPATIBLE PENDIENTE',
+    accessibilityLabel:
+      'Galería vacía. No se muestra una fotografía porque falta una imagen con permiso o licencia compatible verificada.',
+    body:
+      'No se incorpora la foto localizada de esta cueva: su licencia Flickr CC BY-NC-ND 2.0 excluye usos comerciales y obras derivadas. Falta una foto original con autorización compatible o una licencia que permita el uso previsto.',
+  },
+  communityReference: {
+    label: 'Referencia comunitaria · Wikiloc',
+    distance: '0,34 mi · ≈0,55 km',
+    elevationGain: '39 ft · ≈12 m de desnivel positivo',
+    recordedRouteType: 'Registro marcado «One Way»',
+    note:
+      'Son datos de un registro de usuario, no métricas oficiales ni una geometría validada. «One Way» describe ese registro; el Ayuntamiento indica que el sendero admite ambos sentidos.',
+    sourceLabel: 'Abrir registro comunitario en Wikiloc',
+    sourceUrl:
+      'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
+  },
+  sourceLinks: [
+    {
+      id: 'municipal',
+      label: 'Publicación del Ayuntamiento · 9 sep 2026',
+      url: 'https://www.facebook.com/reel/28588117584209389/',
+    },
+    {
+      id: 'map-center',
+      label: 'Centro urbano aproximado · fuente secundaria',
+      url: 'https://vivemasandalucia.es/municipios/bedmar-y-garciez/',
+    },
+    {
+      id: 'photo-license',
+      label: 'Foto localizada en Flickr · licencia no incorporada',
+      url: 'https://www.flickr.com/photos/jamebla/51635640356/',
+    },
+    {
+      id: 'base-map',
+      label: 'Cartografía base · OpenFreeMap / OpenStreetMap',
+      url: 'https://openfreemap.org/',
+    },
+  ] as const,
 } as const;
 
 export type MunicipalRouteInformation = typeof municipalRouteInformation;
 
 export interface MunicipalRouteInformationViewModel {
   kind: 'municipal-information-only';
+  qaLabel: string;
   title: string;
   municipality: string;
   statusLabel: string;
   statusDetail: string;
   endpoints: readonly [string, string];
   directionNote: string;
+  officialDataNotice: string;
+  traceStatus: string;
   gpsNotice: string;
   nonNavigationNotice: string;
-  sourceLabel: string;
-  sourceUrl: string;
+  contextMap: MunicipalRouteInformation['contextMap'];
+  gallery: MunicipalRouteInformation['gallery'];
+  communityReference: MunicipalRouteInformation['communityReference'];
+  sourceLinks: MunicipalRouteInformation['sourceLinks'];
   canStartPhysicalRoute: false;
   canCaptureTechnicalGps: false;
   showRouteMap: false;
+  showContextMap: true;
+  showGallerySlot: true;
   showDistance: false;
   showElevation: false;
   showDuration: false;
@@ -53,26 +111,33 @@ export function getMunicipalRouteInformationBySlug(
 }
 
 /**
- * This projection is intentionally separate from RouteDetail and the operational
- * route preparation flow. Keep this allowlist free of geometry, route metrics,
- * rewards, checkpoints, and GPS start actions until those facts are verified.
+ * This projection deliberately separates official notice text from community
+ * references. It must remain free of route geometry, checkpoints, rewards,
+ * navigation, and official route metrics until those data are verified.
  */
 export function municipalRouteInformationViewModel(): MunicipalRouteInformationViewModel {
   return {
     kind: 'municipal-information-only',
+    qaLabel: municipalRouteInformation.qaLabel,
     title: municipalRouteInformation.title,
     municipality: municipalRouteInformation.municipality,
     statusLabel: municipalRouteInformation.statusLabel,
     statusDetail: municipalRouteInformation.statusDetail,
     endpoints: municipalRouteInformation.endpoints,
     directionNote: municipalRouteInformation.directionNote,
+    officialDataNotice: municipalRouteInformation.officialDataNotice,
+    traceStatus: municipalRouteInformation.traceStatus,
     gpsNotice: municipalRouteInformation.gpsNotice,
     nonNavigationNotice: municipalRouteInformation.nonNavigationNotice,
-    sourceLabel: municipalRouteInformation.sourceLabel,
-    sourceUrl: municipalRouteInformation.sourceUrl,
+    contextMap: municipalRouteInformation.contextMap,
+    gallery: municipalRouteInformation.gallery,
+    communityReference: municipalRouteInformation.communityReference,
+    sourceLinks: municipalRouteInformation.sourceLinks,
     canStartPhysicalRoute: false,
     canCaptureTechnicalGps: false,
     showRouteMap: false,
+    showContextMap: true,
+    showGallerySlot: true,
     showDistance: false,
     showElevation: false,
     showDuration: false,

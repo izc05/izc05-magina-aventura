@@ -25,14 +25,16 @@ describe('base map reference configuration', () => {
       .toBe('Mapa base de referencia; ruta y checkpoints no verificados; no usar para navegación');
   });
 
-  it('falls back to the approximate Bedmar town context when no route data exists', () => {
+  it('centers context-only pages near Bedmar town, never at a trail endpoint', () => {
+    expect(BEDMAR_APPROXIMATE_CENTER).toEqual([-3.412, 37.823]);
+    expect(BEDMAR_APPROXIMATE_ZOOM).toBe(12);
     expect(getInitialMapViewState(null, false)).toEqual({
       center: BEDMAR_APPROXIMATE_CENTER,
       zoom: BEDMAR_APPROXIMATE_ZOOM,
     });
   });
 
-  it('keeps the approximate town camera in base-only mode even if route data is accidentally supplied', () => {
+  it('keeps only the approximate Bedmar town camera in base-only mode even if route data is accidentally supplied', () => {
     expect(getInitialMapViewState(mockRoutePayload, true)).toEqual({
       center: BEDMAR_APPROXIMATE_CENTER,
       zoom: BEDMAR_APPROXIMATE_ZOOM,

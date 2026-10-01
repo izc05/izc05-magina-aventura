@@ -85,6 +85,26 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     expect(map?.props).not.toHaveProperty('deviceLocation');
   });
 
+  it('presents municipal extremes before clearly non-official community records and the personal gallery', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const text = visibleText(tree).join(' ');
+    const municipalHeading = text.indexOf('Extremos municipales');
+    const communityHeading = text.indexOf('Referencia comunitaria · Wikiloc');
+    const galleryHeading = text.indexOf('Galería personal');
+
+    expect(text).toContain('ESTADO · FUENTE MUNICIPAL');
+    expect(text).toContain('EXTREMO MUNICIPAL A');
+    expect(text).toContain('EXTREMO MUNICIPAL B');
+    expect(text).toContain('AMBOS SENTIDOS');
+    expect(text).toContain('Registro de usuario · no es una medición municipal');
+    expect(text).toContain('Distancia comunitaria · no oficial');
+    expect(text).toContain('Desnivel positivo comunitario · no oficial');
+    expect(municipalHeading).toBeGreaterThan(-1);
+    expect(communityHeading).toBeGreaterThan(municipalHeading);
+    expect(galleryHeading).toBeGreaterThan(communityHeading);
+    expect(text).not.toContain('Duración');
+  });
+
   it('labels the device-only personal gallery and context map without adding online photos or false route actions', () => {
     const tree = MunicipalRouteInformationScreen();
     const elements = collectElements(tree);

@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import {
   getMunicipalRouteInformationBySlug,
   municipalRouteInformationViewModel,
@@ -50,50 +49,80 @@ export default function MunicipalRouteInformationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <StatusBar style="dark" />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.hero}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            accessibilityHint="Regresa a la lista de rutas."
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backText}>←</Text>
-          </Pressable>
-          <View style={styles.heroMeta}>
-            <Text style={styles.eyebrow}>{information.qaLabel}</Text>
-            <View style={styles.preparingBadge}>
-              <Text style={styles.preparingBadgeText}>{information.traceStatus.toUpperCase()}</Text>
-            </View>
+          <View style={styles.heroTopRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              accessibilityHint="Regresa a la lista de rutas."
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backText}>←</Text>
+            </Pressable>
+            <Text style={styles.heroKicker}>{information.qaLabel}</Text>
           </View>
-          <Text style={styles.heroTitle}>{information.title}</Text>
-          <Text style={styles.heroLocation}>{information.municipality}</Text>
-          <Text style={styles.heroCaption}>Ficha informativa · sin navegación GPS</Text>
+          <View style={styles.heroIdentity}>
+            <View style={styles.statusPill}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusPillText}>{information.traceStatus.toUpperCase()}</Text>
+            </View>
+            <Text style={styles.heroTitle}>{information.title}</Text>
+            <Text style={styles.heroLocation}>{information.municipality}</Text>
+            <View style={styles.heroRule} />
+            <Text style={styles.heroCaption}>Información de ruta · sin navegación GPS</Text>
+          </View>
         </View>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.cardEyebrow}>{information.statusLabel.toUpperCase()}</Text>
+        <View style={styles.municipalStatusCard}>
+          <Text style={styles.provenanceKicker}>ESTADO · FUENTE MUNICIPAL</Text>
+          <Text style={styles.statusTitle}>{information.statusLabel}</Text>
           <Text style={styles.body}>{information.statusDetail}</Text>
           <Text style={styles.statusFootnote}>{information.officialDataNotice}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recorrido anunciado</Text>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionHeadingCopy}>
+              <Text style={styles.sectionKicker}>PUBLICACIÓN MUNICIPAL</Text>
+              <Text style={styles.sectionTitle}>Extremos municipales</Text>
+            </View>
+            <Text style={styles.sourceBadge}>AYUNTAMIENTO</Text>
+          </View>
           <View style={styles.endpointsCard}>
             <View style={styles.endpointRow}>
-              <View style={styles.endpointDot} />
+              <View style={styles.endpointMarker}>
+                <View style={styles.endpointDot} />
+              </View>
               <View style={styles.endpointCopy}>
-                <Text style={styles.endpointLabel}>Un extremo</Text>
+                <Text style={styles.endpointLabel}>EXTREMO MUNICIPAL A</Text>
                 <Text style={styles.endpointName}>{information.endpoints[0]}</Text>
               </View>
             </View>
-            <Text accessibilityLabel="El Ayuntamiento indica ambos sentidos" style={styles.directionArrow}>↕</Text>
+            <View style={styles.directionRow}>
+              <View style={styles.directionRule} />
+              <View
+                accessible
+                accessibilityLabel="El Ayuntamiento indica ambos sentidos"
+                style={styles.directionPill}
+              >
+                <Text accessible={false} style={styles.directionArrow}>↕</Text>
+                <Text style={styles.directionPillText}>AMBOS SENTIDOS</Text>
+              </View>
+              <View style={styles.directionRule} />
+            </View>
             <View style={styles.endpointRow}>
-              <View style={[styles.endpointDot, styles.endpointDotEnd]} />
+              <View style={[styles.endpointMarker, styles.endpointMarkerEnd]}>
+                <View style={[styles.endpointDot, styles.endpointDotEnd]} />
+              </View>
               <View style={styles.endpointCopy}>
-                <Text style={styles.endpointLabel}>Otro extremo</Text>
+                <Text style={styles.endpointLabel}>EXTREMO MUNICIPAL B</Text>
                 <Text style={styles.endpointName}>{information.endpoints[1]}</Text>
               </View>
             </View>
@@ -103,17 +132,21 @@ export default function MunicipalRouteInformationScreen() {
 
         <View style={styles.communityCard}>
           <View style={styles.communityHeader}>
-            <Text style={styles.communityTitle}>{information.communityReference.label}</Text>
+            <View style={styles.communityHeadingCopy}>
+              <Text style={styles.communityKicker}>OTRA PROCEDENCIA</Text>
+              <Text style={styles.communityTitle}>{information.communityReference.label}</Text>
+            </View>
             <Text style={styles.communityBadge}>NO OFICIAL</Text>
           </View>
+          <Text style={styles.communitySourceLine}>Registro de usuario · no es una medición municipal</Text>
           <View style={styles.communityStats}>
             <View style={styles.communityStat}>
               <Text style={styles.communityValue}>{information.communityReference.distance}</Text>
-              <Text style={styles.communityLabel}>Distancia del registro</Text>
+              <Text style={styles.communityLabel}>Distancia comunitaria · no oficial</Text>
             </View>
             <View style={styles.communityStat}>
               <Text style={styles.communityValue}>{information.communityReference.elevationGain}</Text>
-              <Text style={styles.communityLabel}>Desnivel del registro</Text>
+              <Text style={styles.communityLabel}>Desnivel positivo comunitario · no oficial</Text>
             </View>
           </View>
           <Text style={styles.communityTrackType}>{information.communityReference.recordedRouteType}</Text>
@@ -130,7 +163,13 @@ export default function MunicipalRouteInformationScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Galería personal</Text>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionHeadingCopy}>
+              <Text style={styles.sectionKicker}>TUS IMÁGENES</Text>
+              <Text style={styles.sectionTitle}>Galería personal</Text>
+            </View>
+            <Text style={styles.localBadge}>SOLO LOCAL</Text>
+          </View>
           <View style={styles.galleryPrivacyNotice}>
             <Text style={styles.galleryPrivacyTitle}>Solo en este dispositivo</Text>
             <Text style={styles.galleryPrivacyBody}>
@@ -152,6 +191,7 @@ export default function MunicipalRouteInformationScreen() {
           <View style={styles.section}>
             <View style={styles.mapHeading}>
               <View style={styles.mapHeadingCopy}>
+                <Text style={styles.sectionKicker}>CARTOGRAFÍA BASE</Text>
                 <Text style={styles.sectionTitle}>{information.contextMap.title}</Text>
                 <Text style={styles.mapAreaLabel}>{information.contextMap.areaLabel}</Text>
               </View>
@@ -171,7 +211,8 @@ export default function MunicipalRouteInformationScreen() {
         ) : null}
 
         <View style={styles.sourcesCard}>
-          <Text style={styles.sectionTitle}>Fuentes y licencias</Text>
+          <Text style={styles.sectionKicker}>PROCEDENCIA DE LA INFORMACIÓN</Text>
+          <Text style={styles.sourcesTitle}>Fuentes y licencias</Text>
           <Text style={styles.sourcesIntro}>Hechos municipales y referencias externas se mantienen separados.</Text>
           {information.sourceLinks.map((source) => (
             <Pressable
@@ -200,15 +241,17 @@ export default function MunicipalRouteInformationScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.warmBackground },
+  scrollView: { backgroundColor: colors.warmBackground },
   content: { paddingBottom: spacing[32] },
   hero: {
-    minHeight: 290,
+    minHeight: 360,
     backgroundColor: colors.olive900,
     paddingHorizontal: spacing[20],
-    paddingTop: spacing[20],
-    paddingBottom: spacing[24],
-    justifyContent: 'flex-end',
+    paddingTop: spacing[16],
+    paddingBottom: spacing[32],
+    justifyContent: 'space-between',
   },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[12] },
   backButton: {
     width: 44,
     height: 44,
@@ -216,72 +259,101 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[20],
   },
   backText: { color: colors.olive900, fontSize: 24, fontWeight: '900' },
-  heroMeta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing[8] },
-  eyebrow: { color: colors.aoveGold, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  preparingBadge: { borderRadius: radius.pill, borderWidth: 1, borderColor: colors.aoveGold, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
-  preparingBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
-  heroTitle: { color: colors.white, fontSize: typography.display, fontWeight: '900', marginTop: spacing[12], maxWidth: 360 },
-  heroLocation: { color: colors.limestone, fontSize: 13, fontWeight: '700', marginTop: spacing[8] },
-  heroCaption: { color: colors.aoveGold, fontSize: 11, fontWeight: '800', marginTop: spacing[12] },
-  statusCard: {
-    marginHorizontal: spacing[20],
-    marginTop: -spacing[12],
+  heroKicker: { color: colors.aoveGold, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  heroIdentity: { marginTop: spacing[32] },
+  statusPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[8],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.aoveGold,
+    paddingHorizontal: spacing[12],
+    paddingVertical: spacing[8],
+  },
+  statusDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: colors.aoveGold },
+  statusPillText: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.7 },
+  heroTitle: { color: colors.white, fontSize: typography.display, lineHeight: 39, fontWeight: '900', marginTop: spacing[16] },
+  heroLocation: { color: colors.limestone, fontSize: 13, lineHeight: 20, fontWeight: '700', marginTop: spacing[8] },
+  heroRule: { width: 52, height: 2, backgroundColor: colors.aoveGold, marginTop: spacing[20] },
+  heroCaption: { color: colors.aoveGold, fontSize: 11, lineHeight: 17, fontWeight: '800', marginTop: spacing[12] },
+  municipalStatusCard: {
+    marginHorizontal: spacing[16],
+    marginTop: -spacing[16],
     borderRadius: radius.lg,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    borderColor: colors.border,
+    borderLeftColor: colors.olive700,
     padding: spacing[20],
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
     ...shadow.card,
   },
-  cardEyebrow: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
+  provenanceKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  statusTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900', marginTop: spacing[8] },
   body: { color: colors.ink, fontSize: 14, lineHeight: 21, marginTop: spacing[8] },
   statusFootnote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
-  section: { marginTop: spacing[24] },
-  sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '900', marginHorizontal: spacing[20] },
-  endpointsCard: { marginHorizontal: spacing[20], marginTop: spacing[12], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  section: { marginTop: spacing[32] },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginHorizontal: spacing[20] },
+  sectionHeadingCopy: { flex: 1 },
+  sectionKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  sectionTitle: { color: colors.ink, fontSize: typography.section, lineHeight: 26, fontWeight: '900', marginTop: spacing[4] },
+  sourceBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.5, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
+  endpointsCard: { marginHorizontal: spacing[16], marginTop: spacing[12], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   endpointRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[12] },
-  endpointDot: { width: 12, height: 12, borderRadius: radius.pill, backgroundColor: colors.olive700, borderWidth: 3, borderColor: colors.limestone },
+  endpointMarker: { width: 28, height: 28, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.limestone, alignItems: 'center', justifyContent: 'center' },
+  endpointMarkerEnd: { backgroundColor: colors.limestone },
+  endpointDot: { width: 10, height: 10, borderRadius: radius.pill, backgroundColor: colors.olive700 },
   endpointDotEnd: { backgroundColor: colors.aoveGold },
   endpointCopy: { flex: 1 },
-  endpointLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
-  endpointName: { color: colors.ink, fontSize: 15, fontWeight: '900', lineHeight: 21, marginTop: spacing[4] },
-  directionArrow: { color: colors.olive700, fontSize: 22, fontWeight: '900', marginLeft: spacing[4], marginVertical: spacing[4] },
-  directionNote: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginTop: spacing[16] },
-  communityCard: { marginHorizontal: spacing[20], marginTop: spacing[20], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.limestone, borderWidth: 1, borderColor: colors.border },
+  endpointLabel: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  endpointName: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: '900', marginTop: spacing[4] },
+  directionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[8], marginVertical: spacing[12] },
+  directionRule: { flex: 1, height: 1, backgroundColor: colors.border },
+  directionPill: { flexDirection: 'row', alignItems: 'center', gap: spacing[4], borderRadius: radius.pill, backgroundColor: colors.olive900, paddingHorizontal: spacing[12], paddingVertical: spacing[8] },
+  directionArrow: { color: colors.aoveGold, fontSize: 15, lineHeight: 16, fontWeight: '900' },
+  directionPillText: { color: colors.white, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
+  directionNote: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
+  communityCard: { marginHorizontal: spacing[16], marginTop: spacing[24], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.limestone, borderWidth: 1, borderLeftWidth: 4, borderColor: colors.border, borderLeftColor: colors.aoveGold },
   communityHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8] },
-  communityTitle: { color: colors.olive900, fontSize: 13, fontWeight: '900' },
-  communityBadge: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.white, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
-  communityStats: { flexDirection: 'row', gap: spacing[8], marginTop: spacing[16] },
-  communityStat: { flex: 1, minHeight: 68, borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[12], justifyContent: 'center' },
-  communityValue: { color: colors.ink, fontSize: 14, fontWeight: '900' },
+  communityHeadingCopy: { flex: 1, minWidth: 180 },
+  communityKicker: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  communityTitle: { color: colors.olive900, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[4] },
+  communityBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.white, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
+  communitySourceLine: { color: colors.earth, fontSize: 11, lineHeight: 16, fontWeight: '800', marginTop: spacing[8] },
+  communityStats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8], marginTop: spacing[16] },
+  communityStat: { flexGrow: 1, flexBasis: '45%', minHeight: 82, borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[12], justifyContent: 'center' },
+  communityValue: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900' },
   communityLabel: { color: colors.muted, fontSize: 10, lineHeight: 14, marginTop: spacing[4] },
   communityTrackType: { color: colors.olive900, fontSize: 11, fontWeight: '900', marginTop: spacing[12] },
   communityNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   inlineSourceLink: { alignSelf: 'flex-start', marginTop: spacing[12], paddingVertical: spacing[4] },
   inlineSourceText: { color: colors.olive900, fontSize: 12, fontWeight: '900', textDecorationLine: 'underline' },
-  galleryPrivacyNotice: { marginHorizontal: spacing[20], marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.limestone, padding: spacing[16] },
+  localBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
+  galleryPrivacyNotice: { marginHorizontal: spacing[16], marginTop: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive700, backgroundColor: colors.white, padding: spacing[16] },
   galleryPrivacyTitle: { color: colors.olive900, fontSize: 12, fontWeight: '900' },
   galleryPrivacyBody: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   galleryPickerNote: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[8] },
   galleryProvenance: { marginHorizontal: spacing[20], marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
   galleryStatus: { color: colors.olive900, fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textAlign: 'center', marginTop: spacing[12] },
   galleryBody: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: spacing[8] },
-  mapHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginRight: spacing[20] },
+  mapHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginHorizontal: spacing[20] },
   mapHeadingCopy: { flex: 1 },
-  mapAreaLabel: { color: colors.muted, fontSize: 11, fontWeight: '800', marginHorizontal: spacing[20], marginTop: spacing[4] },
-  mapBadge: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.6, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[4] },
+  mapAreaLabel: { color: colors.muted, fontSize: 11, fontWeight: '800', marginTop: spacing[4] },
+  mapBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.6, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
   mapNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginHorizontal: spacing[20], marginTop: spacing[8] },
   mapA11yFrame: { marginTop: spacing[4] },
   nonNavigationNotice: { color: colors.olive900, fontSize: 11, lineHeight: 17, fontWeight: '800', marginHorizontal: spacing[20] },
-  sourcesCard: { marginHorizontal: spacing[20], marginTop: spacing[24], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  sourcesIntro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginHorizontal: spacing[20], marginTop: spacing[8] },
+  sourcesCard: { marginHorizontal: spacing[16], marginTop: spacing[32], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  sourcesTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: spacing[4] },
+  sourcesIntro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   sourceLink: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing[8], paddingTop: spacing[8] },
   sourceLinkText: { flex: 1, color: colors.olive900, fontSize: 12, lineHeight: 17, fontWeight: '800', textDecorationLine: 'underline' },
   sourceArrow: { color: colors.olive700, fontSize: 17, fontWeight: '900' },
-  footerNotice: { marginHorizontal: spacing[20], marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.olive900 },
+  footerNotice: { marginHorizontal: spacing[16], marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.olive900 },
   footerTitle: { color: colors.aoveGold, fontSize: 13, fontWeight: '900' },
   footerBody: { color: colors.white, fontSize: 11, lineHeight: 17, marginTop: spacing[8] },
   mutedBody: { color: colors.muted, fontSize: 14, textAlign: 'center', marginTop: spacing[8] },

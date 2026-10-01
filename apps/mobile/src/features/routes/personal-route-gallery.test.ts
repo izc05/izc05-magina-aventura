@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createPersonalRouteGalleryStore,
+  getPersonalRoutePhotoViewerDetails,
+  selectPersonalRoutePhoto,
   type PersonalRouteGalleryLocalPort,
   type PersonalRoutePhoto,
 } from './personal-route-gallery';
@@ -100,6 +102,44 @@ describe('personal route gallery persistence', () => {
       shouldDownloadFromNetwork: false,
       exif: false,
       base64: false,
+    });
+  });
+});
+
+describe('personal route photo viewer', () => {
+  const photos: PersonalRoutePhoto[] = [
+    {
+      id: 'photo-a',
+      routeSlug,
+      uri: 'file:///app-private/photo-a.jpg',
+      caption: 'Atardecer en el sendero',
+      credit: 'IsiVoltPro',
+      createdAt: savedAt.toISOString(),
+    },
+    {
+      id: 'photo-b',
+      routeSlug,
+      uri: 'file:///app-private/photo-b.jpg',
+      caption: 'Puente de piedra',
+      credit: 'A. Autora',
+      createdAt: savedAt.toISOString(),
+    },
+  ];
+
+  it('selects only the touched photo and resolves closed or stale selection safely', () => {
+    expect(selectPersonalRoutePhoto(photos, 'photo-b')).toBe(photos[1]);
+    expect(selectPersonalRoutePhoto(photos, null)).toBeNull();
+    expect(selectPersonalRoutePhoto(photos, 'missing-photo')).toBeNull();
+  });
+
+  it('always supplies the saved caption, author, and device-only context for the enlarged view', () => {
+    const selected = selectPersonalRoutePhoto(photos, 'photo-a');
+    expect(selected).not.toBeNull();
+    expect(getPersonalRoutePhotoViewerDetails(selected!)).toEqual({
+      caption: 'Atardecer en el sendero',
+      creditLabel: 'Crédito · IsiVoltPro',
+      localLabel: 'PERSONAL · LOCAL',
+      privacyNote: 'Guardada solo en este dispositivo; no se publica ni se sincroniza.',
     });
   });
 });

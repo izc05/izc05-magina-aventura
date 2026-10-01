@@ -18,11 +18,14 @@ import {
 import {
   PERSONAL_PHOTO_CAPTION_MAX_LENGTH,
   PERSONAL_PHOTO_CREDIT_MAX_LENGTH,
+  getPersonalRoutePhotoViewerDetails,
+  selectPersonalRoutePhoto,
   type PersonalRoutePhoto,
 } from './personal-route-gallery';
 import { personalRoutePhotoPickerOptions } from './personal-route-photo-picker-options';
 import { personalRouteGalleryStore } from './expo-personal-route-gallery-store';
 import { colors, radius, spacing } from '../../theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface PersonalRouteGalleryProps {
   routeSlug: string;
@@ -30,6 +33,7 @@ interface PersonalRouteGalleryProps {
 
 export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const [photos, setPhotos] = useState<PersonalRoutePhoto[]>([]);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [caption, setCaption] = useState('');
   const [credit, setCredit] = useState('');
@@ -44,6 +48,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     setIsLoading(true);
     setLoadFailed(false);
     setPhotos([]);
+    setSelectedPhotoId(null);
 
     void personalRouteGalleryStore.listForRoute(routeSlug)
       .then((storedPhotos) => {
@@ -120,6 +125,8 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
 
   const isBusy = isChoosing || isSaving;
   const canSave = caption.trim().length > 0 && credit.trim().length > 0 && !isSaving;
+  const selectedPhoto = selectPersonalRoutePhoto(photos, selectedPhotoId);
+  const viewerDetails = selectedPhoto ? getPersonalRoutePhotoViewerDetails(selectedPhoto) : null;
 
   return (
     <View style={styles.container}>
@@ -152,13 +159,20 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
         <View style={styles.photoList}>
           {photos.map((photo) => (
             <View key={photo.id} style={styles.photoCard}>
-              <Image
-                accessible
-                accessibilityLabel={`Foto personal: ${photo.caption}. Crédito: ${photo.credit}. Guardada solo en este dispositivo.`}
-                source={{ uri: photo.uri }}
-                resizeMode="cover"
-                style={styles.photoImage}
-              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Ampliar foto personal: ${photo.caption}`}
+                accessibilityHint="Muestra la foto ampliada con su pie y autoría."
+                style={styles.photoImageButton}
+                onPress={() => setSelectedPhotoId(photo.id)}
+              >
+                <Image
+                  accessible={false}
+                  source={{ uri: photo.uri }}
+                  resizeMode="cover"
+                  style={styles.photoImage}
+                />
+              </Pressable>
               <Text style={styles.photoCaption}>{photo.caption}</Text>
               <Text style={styles.photoCredit}>Crédito · {photo.credit}</Text>
               <Text style={styles.localTag}>PERSONAL · LOCAL</Text>
@@ -178,6 +192,46 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
       >
         {isChoosing ? <ActivityIndicator color={colors.white} /> : <Text style={styles.addButtonText}>Añadir foto propia</Text>}
       </Pressable>
+
+      <Modal
+        visible={selectedPhoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedPhotoId(null)}
+      >
+        <View style={styles.viewerBackdrop}>
+          <SafeAreaView style={styles.viewerSafeArea}>
+            <View style={styles.viewerHeader}>
+              <Text style={styles.viewerTitle}>Foto personal</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar foto ampliada"
+                style={styles.viewerCloseButton}
+                onPress={() => setSelectedPhotoId(null)}
+              >
+                <Text style={styles.viewerCloseText}>Cerrar</Text>
+              </Pressable>
+            </View>
+            {selectedPhoto && viewerDetails ? (
+              <>
+                <Image
+                  accessible
+                  accessibilityLabel={`Foto personal ampliada: ${viewerDetails.caption}. ${viewerDetails.creditLabel}. ${viewerDetails.privacyNote}`}
+                  source={{ uri: selectedPhoto.uri }}
+                  resizeMode="contain"
+                  style={styles.viewerImage}
+                />
+                <View accessibilityLabel="Pie y autoría de la foto ampliada" style={styles.viewerMetadata}>
+                  <Text style={styles.viewerCaption}>{viewerDetails.caption}</Text>
+                  <Text style={styles.viewerCredit}>{viewerDetails.creditLabel}</Text>
+                  <Text style={styles.viewerLocalTag}>{viewerDetails.localLabel}</Text>
+                  <Text style={styles.viewerPrivacy}>{viewerDetails.privacyNote}</Text>
+                </View>
+              </>
+            ) : null}
+          </SafeAreaView>
+        </View>
+      </Modal>
 
       <Modal
         visible={selectedAsset !== null}
@@ -271,7 +325,8 @@ const styles = StyleSheet.create({
   emptyBody: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: spacing[8] },
   photoList: { gap: spacing[12], marginTop: spacing[12] },
   photoCard: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, padding: spacing[12] },
-  photoImage: { width: '100%', height: 196, borderRadius: radius.md, backgroundColor: colors.limestone },
+  photoImageButton: { width: '100%', height: 196, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.limestone },
+  photoImage: { width: '100%', height: '100%', backgroundColor: colors.limestone },
   photoCaption: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[12] },
   photoCredit: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: spacing[4] },
   localTag: { alignSelf: 'flex-start', color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
@@ -279,6 +334,18 @@ const styles = StyleSheet.create({
   addButtonPressed: { opacity: 0.82 },
   buttonDisabled: { opacity: 0.48 },
   addButtonText: { color: colors.white, fontSize: 13, fontWeight: '900', textAlign: 'center' },
+  viewerBackdrop: { flex: 1, backgroundColor: 'rgba(12, 17, 13, 0.96)' },
+  viewerSafeArea: { flex: 1, paddingHorizontal: spacing[16], paddingBottom: spacing[12] },
+  viewerHeader: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  viewerTitle: { color: colors.white, fontSize: 14, fontWeight: '900' },
+  viewerCloseButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing[12], borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.55)' },
+  viewerCloseText: { color: colors.white, fontSize: 12, fontWeight: '800' },
+  viewerImage: { width: '100%', flex: 1, minHeight: 180, backgroundColor: 'transparent' },
+  viewerMetadata: { borderRadius: radius.lg, backgroundColor: colors.white, padding: spacing[16], marginTop: spacing[12] },
+  viewerCaption: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900' },
+  viewerCredit: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  viewerLocalTag: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: spacing[8] },
+  viewerPrivacy: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: spacing[4] },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18, 28, 19, 0.55)' },
   modalKeyboard: { maxHeight: '94%' },
   modalCard: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, backgroundColor: colors.warmBackground, padding: spacing[20], paddingBottom: spacing[32] },

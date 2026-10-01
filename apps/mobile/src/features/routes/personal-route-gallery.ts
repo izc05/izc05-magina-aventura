@@ -10,6 +10,32 @@ export interface PersonalRoutePhoto {
   createdAt: string;
 }
 
+export interface PersonalRoutePhotoViewerDetails {
+  caption: string;
+  creditLabel: string;
+  localLabel: string;
+  privacyNote: string;
+}
+
+export function selectPersonalRoutePhoto(
+  photos: readonly PersonalRoutePhoto[],
+  selectedPhotoId: string | null,
+): PersonalRoutePhoto | null {
+  if (selectedPhotoId === null) return null;
+  return photos.find((photo) => photo.id === selectedPhotoId) ?? null;
+}
+
+export function getPersonalRoutePhotoViewerDetails(
+  photo: PersonalRoutePhoto,
+): PersonalRoutePhotoViewerDetails {
+  return {
+    caption: photo.caption,
+    creditLabel: `Crédito · ${photo.credit}`,
+    localLabel: 'PERSONAL · LOCAL',
+    privacyNote: 'Guardada solo en este dispositivo; no se publica ni se sincroniza.',
+  };
+}
+
 export interface SavePersonalRoutePhotoInput {
   routeSlug: string;
   sourceUri: string;

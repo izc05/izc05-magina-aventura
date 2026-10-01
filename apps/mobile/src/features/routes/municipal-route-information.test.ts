@@ -39,15 +39,20 @@ describe('municipal route information-only record', () => {
     expect(viewModel.nonNavigationNotice).toContain('no representa el sendero');
     expect(viewModel.contextMap.accessibilityLabel).toContain('No muestra la ruta');
     expect(viewModel.gallery.body).toContain('CC BY-NC-ND 2.0');
-    expect(viewModel.communityReference).toMatchObject({
+    expect(viewModel.officialSource).toEqual({
+      id: 'municipal',
+      label: 'Publicación del Ayuntamiento · 9 sep 2026',
+      url: 'https://www.facebook.com/reel/28588117584209389/',
+    });
+    expect(viewModel.communityReference).toEqual({
       label: 'Referencia comunitaria · Wikiloc',
-      distance: '0,34 mi · ≈0,55 km',
-      elevationGain: '39 ft · ≈12 m de desnivel positivo',
-      recordedRouteType: 'Registro marcado «One Way»',
+      note: 'Referencia externa no oficial. Esta ficha no reproduce métricas, texto, fotos ni geometría de Wikiloc.',
+      sourceLabel: 'Abrir ficha comunitaria no oficial del Sendero Fluvial de la Cueva del Agua en Wikiloc',
       sourceUrl: 'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
     });
-    expect(viewModel.communityReference.note).toContain('no métricas oficiales');
-    expect(viewModel.communityReference.note).toContain('ambos sentidos');
+    expect(viewModel.officialSource).toBe(viewModel.sourceLinks[0]);
+    expect(viewModel.officialSource.url).toMatch(/^https:\/\//);
+    expect(viewModel.communityReference.sourceUrl).toMatch(/^https:\/\//);
   });
 
   it('does not acquire operational route fields, geometry, checkpoints or invented progress/actions', () => {
@@ -81,7 +86,7 @@ describe('municipal route information-only record', () => {
     expect(viewModel.showRewards).toBe(false);
   });
 
-  it('links the official notice, community listing, map context and reviewed photo rights', () => {
+  it('keeps the registered official notice, confirmed community link, map context and photo-rights source', () => {
     const sources = municipalRouteInformationViewModel().sourceLinks;
 
     expect(sources.map((source) => source.id)).toEqual([
@@ -94,7 +99,12 @@ describe('municipal route information-only record', () => {
     expect(sources[1].url).toBe('https://vivemasandalucia.es/municipios/bedmar-y-garciez/');
     expect(sources[2].url).toBe('https://www.flickr.com/photos/jamebla/51635640356/');
     expect(sources[3].url).toBe('https://openfreemap.org/');
-    expect(municipalRouteInformation.communityReference.sourceUrl).toContain('wikiloc.com');
+    expect(municipalRouteInformation.communityReference.sourceUrl).toBe(
+      'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
+    );
+    expect(municipalRouteInformation.communityReference).not.toHaveProperty('distance');
+    expect(municipalRouteInformation.communityReference).not.toHaveProperty('elevationGain');
+    expect(municipalRouteInformation.communityReference).not.toHaveProperty('recordedRouteType');
   });
 
   it('resolves only its explicit information-only slug', () => {

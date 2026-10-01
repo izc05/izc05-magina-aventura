@@ -37,12 +37,10 @@ export const municipalRouteInformation = {
   },
   communityReference: {
     label: 'Referencia comunitaria · Wikiloc',
-    distance: '0,34 mi · ≈0,55 km',
-    elevationGain: '39 ft · ≈12 m de desnivel positivo',
-    recordedRouteType: 'Registro marcado «One Way»',
     note:
-      'Son datos de un registro de usuario, no métricas oficiales ni una geometría validada. «One Way» describe ese registro; el Ayuntamiento indica que el sendero admite ambos sentidos.',
-    sourceLabel: 'Abrir registro comunitario en Wikiloc',
+      'Referencia externa no oficial. Esta ficha no reproduce métricas, texto, fotos ni geometría de Wikiloc.',
+    sourceLabel:
+      'Abrir ficha comunitaria no oficial del Sendero Fluvial de la Cueva del Agua en Wikiloc',
     sourceUrl:
       'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
   },
@@ -87,6 +85,7 @@ export interface MunicipalRouteInformationViewModel {
   nonNavigationNotice: string;
   contextMap: MunicipalRouteInformation['contextMap'];
   gallery: MunicipalRouteInformation['gallery'];
+  officialSource: MunicipalRouteInformation['sourceLinks'][0];
   communityReference: MunicipalRouteInformation['communityReference'];
   sourceLinks: MunicipalRouteInformation['sourceLinks'];
   canStartPhysicalRoute: false;
@@ -131,6 +130,7 @@ export function municipalRouteInformationViewModel(): MunicipalRouteInformationV
     nonNavigationNotice: municipalRouteInformation.nonNavigationNotice,
     contextMap: municipalRouteInformation.contextMap,
     gallery: municipalRouteInformation.gallery,
+    officialSource: municipalRouteInformation.sourceLinks[0],
     communityReference: municipalRouteInformation.communityReference,
     sourceLinks: municipalRouteInformation.sourceLinks,
     canStartPhysicalRoute: false,

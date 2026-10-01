@@ -72,8 +72,12 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     expect(text).toContain('Entrada de la Cueva del Agua');
     expect(text).toContain('puede recorrerse en ambos sentidos');
     expect(text).toContain('Trazado en preparación');
+    expect(text).toContain('DATOS OFICIALES');
     expect(text).toContain('NO OFICIAL');
-    expect(text).toContain('One Way');
+    expect(text).toContain('no reproduce métricas, texto, fotos ni geometría de Wikiloc.');
+    expect(text).not.toContain('One Way');
+    expect(text).not.toContain('0,34 mi');
+    expect(text).not.toContain('39 ft');
     expect(map?.props).toMatchObject({
       payload: null,
       mapStyle: OPENFREEMAP_LIBERTY_STYLE_URL,
@@ -85,20 +89,25 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     expect(map?.props).not.toHaveProperty('deviceLocation');
   });
 
-  it('presents municipal extremes before clearly non-official community records and the personal gallery', () => {
+  it('separates official source facts from the non-official Wikiloc link before the personal gallery', () => {
     const tree = MunicipalRouteInformationScreen();
     const text = visibleText(tree).join(' ');
-    const municipalHeading = text.indexOf('Extremos municipales');
+    const municipalHeading = text.indexOf('DATOS OFICIALES');
     const communityHeading = text.indexOf('Referencia comunitaria · Wikiloc');
     const galleryHeading = text.indexOf('Galería personal');
 
     expect(text).toContain('ESTADO · FUENTE MUNICIPAL');
+    expect(text).toContain('NOMBRE PUBLICADO');
+    expect(text).toContain('EXTREMOS INDICADOS');
     expect(text).toContain('EXTREMO MUNICIPAL A');
     expect(text).toContain('EXTREMO MUNICIPAL B');
     expect(text).toContain('AMBOS SENTIDOS');
-    expect(text).toContain('Registro de usuario · no es una medición municipal');
-    expect(text).toContain('Distancia comunitaria · no oficial');
-    expect(text).toContain('Desnivel positivo comunitario · no oficial');
+    expect(text).toContain('Abrir aviso municipal original');
+    expect(text).toContain('REFERENCIA COMUNITARIA');
+    expect(text).toContain('Abrir ficha de Wikiloc · referencia no oficial');
+    expect(text).not.toContain('Distancia comunitaria');
+    expect(text).not.toContain('Desnivel positivo comunitario');
+    expect(text).not.toContain('One Way');
     expect(municipalHeading).toBeGreaterThan(-1);
     expect(communityHeading).toBeGreaterThan(municipalHeading);
     expect(galleryHeading).toBeGreaterThan(communityHeading);
@@ -134,7 +143,7 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
   it('provides accessible, functional links for official/community information and source citations', () => {
     const tree = MunicipalRouteInformationScreen();
     const elements = collectElements(tree);
-    const officialLabel = `Abrir fuente: ${municipalRouteInformation.sourceLinks[0].label}`;
+    const officialLabel = `Abrir aviso municipal original: ${municipalRouteInformation.sourceLinks[0].label}`;
     const officialLink = elements.find((element) =>
       element.type === 'Pressable' && element.props?.accessibilityLabel === officialLabel,
     );
@@ -144,12 +153,17 @@ describe('Bedmar municipal route QA detail UI and accessibility', () => {
     );
 
     expect(officialLink?.props?.accessibilityRole).toBe('link');
+    expect(officialLink?.props?.accessibilityHint).toContain('publicación original del Ayuntamiento');
     expect(typeof officialLink?.props?.onPress).toBe('function');
     expect(wikilocLink?.props?.accessibilityRole).toBe('link');
+    expect(wikilocLink?.props?.accessibilityLabel).toContain('no oficial');
+    expect(wikilocLink?.props?.accessibilityHint).toContain('no oficial');
     expect(typeof wikilocLink?.props?.onPress).toBe('function');
 
     (officialLink?.props?.onPress as (() => void) | undefined)?.();
+    (wikilocLink?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.openURL).toHaveBeenCalledWith(municipalRouteInformation.sourceLinks[0].url);
+    expect(mocks.openURL).toHaveBeenCalledWith(municipalRouteInformation.communityReference.sourceUrl);
   });
 
   it('renders an accessible recovery action for an unknown route slug', () => {

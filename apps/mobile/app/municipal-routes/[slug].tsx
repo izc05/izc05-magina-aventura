@@ -87,15 +87,24 @@ export default function MunicipalRouteInformationScreen() {
           <Text style={styles.statusFootnote}>{information.officialDataNotice}</Text>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <View style={styles.sectionHeadingCopy}>
-              <Text style={styles.sectionKicker}>PUBLICACIÓN MUNICIPAL</Text>
-              <Text style={styles.sectionTitle}>Extremos municipales</Text>
+        <View style={styles.sourcesCard}>
+          <Text style={styles.sectionKicker}>FUENTES Y PROCEDENCIA</Text>
+          <Text style={styles.sourcesTitle}>Origen de la información</Text>
+          <Text style={styles.sourcesIntro}>
+            Los datos municipales y las referencias de terceros se presentan por separado.
+          </Text>
+
+          <View style={styles.officialSourceCard}>
+            <View style={styles.sourcePanelHeader}>
+              <View style={styles.sourcePanelHeaderCopy}>
+                <Text style={styles.sourcePanelKicker}>DATOS OFICIALES</Text>
+                <Text style={styles.sourcePanelTitle}>Ayuntamiento</Text>
+              </View>
+              <Text style={styles.sourceBadge}>OFICIAL</Text>
             </View>
-            <Text style={styles.sourceBadge}>AYUNTAMIENTO</Text>
-          </View>
-          <View style={styles.endpointsCard}>
+            <Text style={styles.endpointLabel}>NOMBRE PUBLICADO</Text>
+            <Text style={styles.endpointName}>{information.title}</Text>
+            <Text style={[styles.endpointLabel, styles.sourceSectionSpacing]}>EXTREMOS INDICADOS</Text>
             <View style={styles.endpointRow}>
               <View style={styles.endpointMarker}>
                 <View style={styles.endpointDot} />
@@ -127,39 +136,37 @@ export default function MunicipalRouteInformationScreen() {
               </View>
             </View>
             <Text style={styles.directionNote}>{information.directionNote}</Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Abrir aviso municipal original: ${information.officialSource.label}`}
+              accessibilityHint="Abre la publicación original del Ayuntamiento en el navegador del dispositivo."
+              style={styles.sourceLink}
+              onPress={() => void openSource(information.officialSource.url)}
+            >
+              <Text style={styles.sourceLinkText}>Abrir aviso municipal original ↗</Text>
+              <Text accessible={false} style={styles.sourceArrow}>↗</Text>
+            </Pressable>
           </View>
-        </View>
 
-        <View style={styles.communityCard}>
-          <View style={styles.communityHeader}>
-            <View style={styles.communityHeadingCopy}>
-              <Text style={styles.communityKicker}>OTRA PROCEDENCIA</Text>
-              <Text style={styles.communityTitle}>{information.communityReference.label}</Text>
+          <View style={styles.communityCard}>
+            <View style={styles.communityHeader}>
+              <View style={styles.communityHeadingCopy}>
+                <Text style={styles.communityKicker}>REFERENCIA COMUNITARIA</Text>
+                <Text style={styles.communityTitle}>{information.communityReference.label}</Text>
+              </View>
+              <Text style={styles.communityBadge}>NO OFICIAL</Text>
             </View>
-            <Text style={styles.communityBadge}>NO OFICIAL</Text>
+            <Text style={styles.communityNote}>{information.communityReference.note}</Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={information.communityReference.sourceLabel}
+              accessibilityHint="Abre Wikiloc como referencia comunitaria no oficial en el navegador del dispositivo."
+              style={styles.inlineSourceLink}
+              onPress={() => void openSource(information.communityReference.sourceUrl)}
+            >
+              <Text style={styles.inlineSourceText}>Abrir ficha de Wikiloc · referencia no oficial ↗</Text>
+            </Pressable>
           </View>
-          <Text style={styles.communitySourceLine}>Registro de usuario · no es una medición municipal</Text>
-          <View style={styles.communityStats}>
-            <View style={styles.communityStat}>
-              <Text style={styles.communityValue}>{information.communityReference.distance}</Text>
-              <Text style={styles.communityLabel}>Distancia comunitaria · no oficial</Text>
-            </View>
-            <View style={styles.communityStat}>
-              <Text style={styles.communityValue}>{information.communityReference.elevationGain}</Text>
-              <Text style={styles.communityLabel}>Desnivel positivo comunitario · no oficial</Text>
-            </View>
-          </View>
-          <Text style={styles.communityTrackType}>{information.communityReference.recordedRouteType}</Text>
-          <Text style={styles.communityNote}>{information.communityReference.note}</Text>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={information.communityReference.sourceLabel}
-            accessibilityHint="Abre una fuente externa con datos comunitarios no verificados."
-            style={styles.inlineSourceLink}
-            onPress={() => void openSource(information.communityReference.sourceUrl)}
-          >
-            <Text style={styles.inlineSourceText}>Ver fuente comunitaria en Wikiloc ↗</Text>
-          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -210,11 +217,10 @@ export default function MunicipalRouteInformationScreen() {
           </View>
         ) : null}
 
-        <View style={styles.sourcesCard}>
-          <Text style={styles.sectionKicker}>PROCEDENCIA DE LA INFORMACIÓN</Text>
-          <Text style={styles.sourcesTitle}>Fuentes y licencias</Text>
-          <Text style={styles.sourcesIntro}>Hechos municipales y referencias externas se mantienen separados.</Text>
-          {information.sourceLinks.map((source) => (
+        <View style={styles.otherSourcesCard}>
+          <Text style={styles.sectionKicker}>OTRAS REFERENCIAS</Text>
+          <Text style={styles.sourcesTitle}>Cartografía y licencias</Text>
+          {information.sourceLinks.filter((source) => source.id !== 'municipal').map((source) => (
             <Pressable
               key={source.id}
               accessibilityRole="link"
@@ -302,7 +308,12 @@ const styles = StyleSheet.create({
   sectionKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   sectionTitle: { color: colors.ink, fontSize: typography.section, lineHeight: 26, fontWeight: '900', marginTop: spacing[4] },
   sourceBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.5, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
-  endpointsCard: { marginHorizontal: spacing[16], marginTop: spacing[12], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  officialSourceCard: { marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: colors.olive700 },
+  sourcePanelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], marginBottom: spacing[16] },
+  sourcePanelHeaderCopy: { flex: 1 },
+  sourcePanelKicker: { color: colors.olive700, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  sourcePanelTitle: { color: colors.ink, fontSize: 15, fontWeight: '900', marginTop: spacing[4] },
+  sourceSectionSpacing: { marginTop: spacing[16] },
   endpointRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[12] },
   endpointMarker: { width: 28, height: 28, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.limestone, alignItems: 'center', justifyContent: 'center' },
   endpointMarkerEnd: { backgroundColor: colors.limestone },
@@ -317,18 +328,12 @@ const styles = StyleSheet.create({
   directionArrow: { color: colors.aoveGold, fontSize: 15, lineHeight: 16, fontWeight: '900' },
   directionPillText: { color: colors.white, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
   directionNote: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginTop: spacing[16], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
-  communityCard: { marginHorizontal: spacing[16], marginTop: spacing[24], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.limestone, borderWidth: 1, borderLeftWidth: 4, borderColor: colors.border, borderLeftColor: colors.aoveGold },
+  communityCard: { marginTop: spacing[16], borderRadius: radius.md, padding: spacing[16], backgroundColor: colors.limestone, borderWidth: 1, borderLeftWidth: 4, borderColor: colors.border, borderLeftColor: colors.aoveGold },
   communityHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8] },
   communityHeadingCopy: { flex: 1, minWidth: 180 },
   communityKicker: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   communityTitle: { color: colors.olive900, fontSize: 14, lineHeight: 20, fontWeight: '900', marginTop: spacing[4] },
-  communityBadge: { color: colors.olive900, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.white, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
-  communitySourceLine: { color: colors.earth, fontSize: 11, lineHeight: 16, fontWeight: '800', marginTop: spacing[8] },
-  communityStats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8], marginTop: spacing[16] },
-  communityStat: { flexGrow: 1, flexBasis: '45%', minHeight: 82, borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[12], justifyContent: 'center' },
-  communityValue: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '900' },
-  communityLabel: { color: colors.muted, fontSize: 10, lineHeight: 14, marginTop: spacing[4] },
-  communityTrackType: { color: colors.olive900, fontSize: 11, fontWeight: '900', marginTop: spacing[12] },
+  communityBadge: { color: colors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8, borderRadius: radius.pill, backgroundColor: colors.earth, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
   communityNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   inlineSourceLink: { alignSelf: 'flex-start', marginTop: spacing[12], paddingVertical: spacing[4] },
   inlineSourceText: { color: colors.olive900, fontSize: 12, fontWeight: '900', textDecorationLine: 'underline' },
@@ -348,6 +353,7 @@ const styles = StyleSheet.create({
   mapA11yFrame: { marginTop: spacing[4] },
   nonNavigationNotice: { color: colors.olive900, fontSize: 11, lineHeight: 17, fontWeight: '800', marginHorizontal: spacing[20] },
   sourcesCard: { marginHorizontal: spacing[16], marginTop: spacing[32], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  otherSourcesCard: { marginHorizontal: spacing[16], marginTop: spacing[32], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   sourcesTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: spacing[4] },
   sourcesIntro: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
   sourceLink: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8], borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing[8], paddingTop: spacing[8] },

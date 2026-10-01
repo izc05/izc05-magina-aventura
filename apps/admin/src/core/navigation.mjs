@@ -1,0 +1,20 @@
+export const ADMIN_NAV_ITEMS = Object.freeze([
+  { id: 'dashboard', label: 'Dashboard', href: '#dashboard', capability: 'dashboard.read' },
+  { id: 'routes', label: 'Rutas', href: '#routes', capability: 'routes.manage' },
+  { id: 'map', label: 'Mapa y checkpoints', href: '#map', capability: 'map.manage' },
+  { id: 'discoveries', label: 'Descubrimientos', href: '#discoveries', capability: 'discoveries.manage' },
+  { id: 'media', label: 'Multimedia', href: '#media', capability: 'media.manage' },
+  { id: 'users', label: 'Usuarios', href: '#users', capability: 'users.read' },
+  { id: 'community', label: 'Comunidad', href: '#community', capability: 'community.manage' },
+  { id: 'moderation', label: 'Moderación', href: '#moderation', capability: 'moderation.manage' },
+  { id: 'gamification', label: 'Niveles, retos e insignias', href: '#gamification', capability: 'gamification.manage' },
+  { id: 'olives', label: 'Aceitunas', href: '#olives', capability: 'olives.manage' },
+  { id: 'rewards', label: 'Premios', href: '#rewards', capability: 'rewards.manage' },
+  { id: 'partners', label: 'Almazaras', href: '#partners', capability: 'partners.manage' },
+  { id: 'redemptions', label: 'Canjes QR', href: '#redemptions', capability: 'redemptions.manage' },
+  { id: 'notifications', label: 'Notificaciones', href: '#notifications', capability: 'notifications.manage' },
+  { id: 'safety', label: 'Seguridad', href: '#safety', capability: 'safety.manage' },
+  { id: 'admins', label: 'Administradores', href: '#admins', capability: 'admins.manage' },
+  { id: 'audit', label: 'Auditoría', href: '#audit', capability: 'audit.read' },
+  { id: 'settings', label: 'Configuración', href: '#settings', capability: 'settings.manage' }
+]);

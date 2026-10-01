@@ -14,7 +14,9 @@ import type {
   ExplorationPersistence,
   PassportGpsData,
   PassportGpsMetrics,
+  PassportGpsSample,
   PassportGpsSession,
+  PassportGpsSessionDetail,
   RecoveredActivity,
 } from './activity-store';
 
@@ -383,5 +385,92 @@ export class MemoryActivityStore implements ActivityStore {
 
   async loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics> {
     return (await this.loadPassportGpsData(ownerId)).metrics;
+  }
+
+  async loadPassportGpsSessionDetail(
+    ownerId: string,
+    activityId: string,
+  ): Promise<PassportGpsSessionDetail | null> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load personal GPS data');
+    const session = this.database.sessions.get(activityId);
+    if (
+      !session ||
+      this.database.sessionOwners.get(activityId) !== ownerId ||
+      session.state !== 'FINISHED' ||
+      session.recordingSource !== 'device-gps' ||
+      !session.finishedAt ||
+      !Number.isFinite(Date.parse(session.finishedAt))
+    ) return null;
+
+    const snapshot = latestSnapshot(this.database, activityId);
+    const samples = [...(this.database.samples.get(activityId)?.values() ?? [])]
+      .sort((left, right) => left.sequence - right.sequence);
+    if (
+      !snapshot ||
+      snapshot.state !== 'FINISHED' ||
+      snapshot.lastProcessedSequence !== session.lastProcessedSequence ||
+      snapshot.createdAt !== session.finishedAt ||
+      samples.length === 0 ||
+      samples.at(-1)?.sequence !== session.lastProcessedSequence
+    ) return null;
+
+    let previousSequence = 0;
+    const detailSamples: PassportGpsSample[] = [];
+    for (const sample of samples) {
+      if (
+        !Number.isInteger(sample.sequence) ||
+        sample.sequence <= previousSequence ||
+        sample.sequence > session.lastProcessedSequence ||
+        !Number.isFinite(Date.parse(sample.timestamp)) ||
+        !Number.isFinite(sample.latitude) ||
+        !Number.isFinite(sample.longitude) ||
+        !Number.isFinite(sample.accuracyMeters) ||
+        sample.accuracyMeters < 0 ||
+        sample.validForMetrics !== (sample.rejectionReason === null)
+      ) return null;
+      const contextSnapshot = [...(this.database.snapshots.get(activityId)?.values() ?? [])]
+        .filter((item) => item.lastProcessedSequence <= sample.sequence && item.createdAt <= sample.timestamp)
+        .sort((left, right) => right.lastProcessedSequence - left.lastProcessedSequence)[0];
+      detailSamples.push({
+        sequence: sample.sequence,
+        timestamp: sample.timestamp,
+        latitude: sample.latitude,
+        longitude: sample.longitude,
+        accuracyMeters: sample.accuracyMeters,
+        validForMetrics: sample.validForMetrics,
+        rejectionReason: sample.rejectionReason,
+        activeIntervalStartedAt: contextSnapshot?.activeIntervalStartedAt ?? null,
+      });
+      previousSequence = sample.sequence;
+    }
+
+    return {
+      activityId,
+      finishedAt: session.finishedAt,
+      distanceMeters: snapshot.validDistanceMeters,
+      elapsedSeconds: snapshot.totalElapsedSeconds,
+      sampleCount: detailSamples.length,
+      samples: detailSamples,
+    };
+  }
+
+  async deletePassportGpsSession(ownerId: string, activityId: string): Promise<boolean> {
+    if (!ownerId.trim() || !activityId.trim() || activityId.length > 200) return false;
+    const detail = await this.loadPassportGpsSessionDetail(ownerId, activityId);
+    if (!detail) return false;
+
+    this.database.sessions.delete(activityId);
+    this.database.sessionOwners.delete(activityId);
+    this.database.samples.delete(activityId);
+    this.database.snapshots.delete(activityId);
+    this.database.explorations.delete(activityId);
+    this.database.lastConsumedInboxIds.delete(activityId);
+    for (const [batchId, batch] of this.database.syncBatches) {
+      if (batch.activityId === activityId) {
+        this.database.syncBatches.delete(batchId);
+        this.database.syncedBatchIds.delete(batchId);
+      }
+    }
+    return true;
   }
 }

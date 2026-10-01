@@ -31,6 +31,7 @@ export function RouteMap({
   onLayerVisibilityChange,
   height = 280,
   deviceLocation,
+  personalSessionTrace,
 }: RouteMapProps) {
   const [activeThemeId, setActiveThemeId] = useState<MapThemeId>(themeId);
   const [visibility, setVisibility] = useState<MapLayerVisibility>({
@@ -43,7 +44,12 @@ export function RouteMap({
   const centeredOnDeviceLocation = useRef(false);
 
   const theme = getMapTheme(activeThemeId);
-  const initialViewState = getInitialMapViewState(payload, baseMapOnly);
+  const initialViewState = baseMapOnly && personalSessionTrace
+    ? {
+        bounds: personalSessionTrace.cameraBounds,
+        padding: { top: 40, right: 40, bottom: 40, left: 40 },
+      }
+    : getInitialMapViewState(payload, baseMapOnly);
   const { routeLine, checkpointShape, poiShape, hikerShape } =
     buildRouteMapOverlayData(payload, baseMapOnly);
   const deviceLocationShape = useMemo(
@@ -92,6 +98,32 @@ export function RouteMap({
         onDidFailLoadingMap={() => setMapLoadState('error')}
       >
         <Camera ref={cameraRef} initialViewState={initialViewState as any} />
+
+        {baseMapOnly && personalSessionTrace ? (
+          <GeoJSONSource
+            id="personal-session-trace"
+            data={{
+              type: 'Feature',
+              properties: { kind: 'personal-session-trace' },
+              geometry: {
+                type: 'MultiLineString',
+                coordinates: personalSessionTrace.segments,
+              },
+            } as any}
+          >
+            <Layer
+              id="personal-session-trace-line"
+              type="line"
+              paint={{
+                'line-color': colors.aoveGold,
+                'line-width': 4,
+                'line-opacity': 0.95,
+                'line-cap': 'round',
+                'line-join': 'round',
+              } as any}
+            />
+          </GeoJSONSource>
+        ) : null}
 
         {/* Route and POI overlays only come from the verified route payload. */}
         {routeLine && visibility.routeTrack ? (

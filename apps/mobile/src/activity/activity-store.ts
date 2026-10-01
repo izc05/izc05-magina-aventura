@@ -28,6 +28,22 @@ export interface PassportGpsSession {
   sampleCount: number;
 }
 
+export interface PassportGpsSample {
+  sequence: number;
+  timestamp: string;
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+  validForMetrics: boolean;
+  rejectionReason: LocationSample['rejectionReason'];
+  /** Recording interval identified by the persisted engine snapshot. */
+  activeIntervalStartedAt: string | null;
+}
+
+export interface PassportGpsSessionDetail extends PassportGpsSession {
+  samples: PassportGpsSample[];
+}
+
 export interface PassportGpsData {
   sessions: PassportGpsSession[];
   metrics: PassportGpsMetrics;
@@ -79,4 +95,9 @@ export interface ActivityStore {
   markSyncBatchSynced(batchId: string): Promise<void>;
   loadPassportGpsData(ownerId: string): Promise<PassportGpsData>;
   loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics>;
+  loadPassportGpsSessionDetail(
+    ownerId: string,
+    activityId: string,
+  ): Promise<PassportGpsSessionDetail | null>;
+  deletePassportGpsSession(ownerId: string, activityId: string): Promise<boolean>;
 }

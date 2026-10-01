@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,35 +8,46 @@ import { useAuth } from '../src/context/AuthContext';
 import { sqliteActivityStore } from '../src/activity/sqlite-activity-store';
 import {
   PassportGpsMetricsPanel,
+  scopePassportGpsLoadState,
   type PassportGpsLoadState,
 } from '../src/features/passport/PassportGpsMetricsPanel';
+
+interface OwnedPassportGpsState {
+  ownerId: string;
+  state: PassportGpsLoadState;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, isLoading, signOut } = useAuth();
-  const [passportGpsState, setPassportGpsState] = useState<PassportGpsLoadState>({
-    status: 'loading',
-  });
+  const [ownedPassportGpsState, setOwnedPassportGpsState] = useState<OwnedPassportGpsState | null>(null);
+  const passportGpsState = scopePassportGpsLoadState(
+    user?.id ?? null,
+    ownedPassportGpsState?.ownerId ?? null,
+    ownedPassportGpsState?.state ?? null,
+  );
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (isLoading || !user) {
-      setPassportGpsState({ status: 'loading' });
+      setOwnedPassportGpsState(null);
       return;
     }
 
+    const ownerId = user.id;
     let mounted = true;
-    void sqliteActivityStore.loadPassportGpsData(user.id)
+    setOwnedPassportGpsState({ ownerId, state: { status: 'loading' } });
+    void sqliteActivityStore.loadPassportGpsData(ownerId)
       .then((data) => {
-        if (mounted) setPassportGpsState({ status: 'ready', data });
+        if (mounted) setOwnedPassportGpsState({ ownerId, state: { status: 'ready', data } });
       })
       .catch(() => {
-        if (mounted) setPassportGpsState({ status: 'error' });
+        if (mounted) setOwnedPassportGpsState({ ownerId, state: { status: 'error' } });
       });
 
     return () => {
       mounted = false;
     };
-  }, [isLoading, user?.id]);
+  }, [isLoading, user?.id]));
 
   if (isLoading) {
     return (
@@ -114,7 +125,13 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <PassportGpsMetricsPanel state={passportGpsState} />
+          <PassportGpsMetricsPanel
+            state={passportGpsState}
+            onSelectSession={(activityId) => router.push({
+              pathname: '/profile/session/[activityId]',
+              params: { activityId },
+            } as any)}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

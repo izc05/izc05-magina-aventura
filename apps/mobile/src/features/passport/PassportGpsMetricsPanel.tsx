@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { PassportGpsData } from '../../activity/activity-store';
 import { colors, spacing } from '../../theme/tokens';
@@ -10,6 +10,18 @@ export type PassportGpsLoadState =
 
 interface PassportGpsMetricsPanelProps {
   state: PassportGpsLoadState;
+  onSelectSession?: (activityId: string) => void;
+}
+
+export function scopePassportGpsLoadState(
+  currentOwnerId: string | null,
+  storedOwnerId: string | null,
+  state: PassportGpsLoadState | null,
+): PassportGpsLoadState {
+  if (!currentOwnerId || currentOwnerId !== storedOwnerId || !state) {
+    return { status: 'loading' };
+  }
+  return state;
 }
 
 function formatDistance(meters: number): string {
@@ -36,6 +48,7 @@ function formatFinishedAt(value: string): string {
 
 export function PassportGpsMetricsPanel({
   state,
+  onSelectSession,
 }: PassportGpsMetricsPanelProps) {
   if (state.status === 'loading') {
     return (
@@ -83,7 +96,14 @@ export function PassportGpsMetricsPanel({
       <View style={styles.sessions}>
         <Text style={styles.title}>Capturas GPS</Text>
         {data.sessions.map((session) => (
-          <View key={session.activityId} style={styles.session}>
+          <Pressable
+            key={session.activityId}
+            accessibilityRole={onSelectSession ? 'button' : undefined}
+            accessibilityLabel={`Abrir detalle de captura GPS · ${formatFinishedAt(session.finishedAt)}`}
+            disabled={!onSelectSession}
+            onPress={() => onSelectSession?.(session.activityId)}
+            style={styles.session}
+          >
             <Text style={styles.sessionDate}>{formatFinishedAt(session.finishedAt)}</Text>
             <Text style={styles.sessionDetail}>
               {formatDistance(session.distanceMeters)} · {formatElapsedTime(session.elapsedSeconds)} activos
@@ -91,7 +111,7 @@ export function PassportGpsMetricsPanel({
             <Text style={styles.sessionDetail}>
               {session.sampleCount} {session.sampleCount === 1 ? 'muestra GPS guardada' : 'muestras GPS guardadas'}
             </Text>
-          </View>
+          </Pressable>
         ))}
       </View>
       <Text style={styles.disclaimer}>

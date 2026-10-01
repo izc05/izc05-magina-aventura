@@ -19,7 +19,9 @@ import type {
   ActivityStore,
   ExplorationPersistence,
   PassportGpsMetrics,
+  PassportGpsSample,
   PassportGpsSession,
+  PassportGpsSessionDetail,
   RecoveredActivity,
 } from './activity-store';
 
@@ -51,6 +53,7 @@ type ExplorationStateRow = { state_json: string; last_evaluated_sequence: number
 type ExplorationObservationRow = { payload_json: string };
 type PassportGpsSessionRow = {
   activity_id: string;
+  owner_id: string | null;
   state: ActivityState;
   finished_at: string | null;
   recording_source: string | null;
@@ -58,6 +61,18 @@ type PassportGpsSessionRow = {
   snapshot_last_processed_sequence: number;
   snapshot_payload_json: string;
   sample_count: number;
+  sample_max_sequence: number | null;
+};
+
+type PassportGpsDetailRow = PassportGpsSessionRow & {
+  sample_sequence: number | null;
+  sample_timestamp: string | null;
+  sample_latitude: number | null;
+  sample_longitude: number | null;
+  sample_accuracy_m: number | null;
+  sample_valid_for_metrics: number | null;
+  sample_rejection_reason: LocationRejectionReason | null;
+  sample_active_interval_started_at: string | null;
 };
 
 type SampleRow = {
@@ -76,6 +91,70 @@ type SampleRow = {
 function recordingSourceFromRow(value: string | null): ActivityRecordingSource {
   if (value === 'device-gps' || value === 'mock') return value;
   return 'unclassified';
+}
+
+function isNonNegativeFinite(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function isLocationRejectionReason(value: unknown): value is LocationRejectionReason | null {
+  return value === null || value === 'invalid_coordinate' || value === 'non_monotonic_time' ||
+    value === 'poor_accuracy' || value === 'impossible_speed';
+}
+
+function passportSnapshotMetrics(
+  payloadJson: string,
+  activityId: string,
+  finishedAt: string,
+  lastProcessedSequence: number,
+): Pick<PassportGpsSession, 'distanceMeters' | 'elapsedSeconds'> | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(payloadJson) as unknown;
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const payload = parsed as Record<string, unknown>;
+  if (
+    payload.activityId !== activityId ||
+    payload.state !== 'FINISHED' ||
+    payload.lastProcessedSequence !== lastProcessedSequence ||
+    !Number.isInteger(payload.algorithmVersion) ||
+    typeof payload.createdAt !== 'string' ||
+    !Number.isFinite(Date.parse(payload.createdAt)) ||
+    Date.parse(payload.createdAt) !== Date.parse(finishedAt) ||
+    !isNonNegativeFinite(payload.validDistanceMeters) ||
+    !isNonNegativeFinite(payload.totalElapsedSeconds)
+  ) return null;
+  return {
+    distanceMeters: payload.validDistanceMeters,
+    elapsedSeconds: payload.totalElapsedSeconds,
+  };
+}
+
+function isValidPassportActivityId(activityId: string): boolean {
+  return typeof activityId === 'string' && activityId.trim().length > 0 && activityId.length <= 200;
+}
+
+function isDeletablePassportGpsSession(row: PassportGpsSessionRow, ownerId: string): boolean {
+  return row.owner_id === ownerId &&
+    row.state === 'FINISHED' &&
+    row.recording_source === 'device-gps' &&
+    Boolean(row.finished_at) &&
+    Number.isFinite(Date.parse(row.finished_at ?? '')) &&
+    Number.isInteger(row.last_processed_sequence) &&
+    row.last_processed_sequence > 0 &&
+    row.snapshot_last_processed_sequence === row.last_processed_sequence &&
+    Number.isInteger(row.sample_count) &&
+    row.sample_count > 0 &&
+    row.sample_max_sequence === row.last_processed_sequence &&
+    passportSnapshotMetrics(
+      row.snapshot_payload_json,
+      row.activity_id,
+      row.finished_at!,
+      row.last_processed_sequence,
+    ) !== null;
 }
 
 function sessionFromRow(row: SessionRow): ActivitySession {
@@ -625,6 +704,227 @@ export class SQLiteActivityStore implements ActivityStore {
 
   async loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics> {
     return (await this.loadPassportGpsData(ownerId)).metrics;
+  }
+
+  async loadPassportGpsSessionDetail(
+    ownerId: string,
+    activityId: string,
+  ): Promise<PassportGpsSessionDetail | null> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load personal GPS data');
+    if (!isValidPassportActivityId(activityId)) return null;
+    await this.initialize();
+    const db = await this.database();
+    const rows = await db.getAllAsync<PassportGpsDetailRow>(
+      `SELECT session.activity_id, session.owner_id, session.state, session.finished_at,
+              session.recording_source, session.last_processed_sequence,
+              latest_snapshot.last_processed_sequence AS snapshot_last_processed_sequence,
+              latest_snapshot.payload_json AS snapshot_payload_json,
+              (SELECT COUNT(*) FROM activity_samples AS saved
+               WHERE saved.activity_id = session.activity_id) AS sample_count,
+              (SELECT MAX(saved.sequence) FROM activity_samples AS saved
+               WHERE saved.activity_id = session.activity_id) AS sample_max_sequence,
+              sample.sequence AS sample_sequence,
+              sample.timestamp AS sample_timestamp,
+              sample.latitude AS sample_latitude,
+              sample.longitude AS sample_longitude,
+              sample.accuracy_m AS sample_accuracy_m,
+              sample.valid_for_metrics AS sample_valid_for_metrics,
+              sample.rejection_reason AS sample_rejection_reason,
+              (SELECT CASE
+                        WHEN json_valid(context_snapshot.payload_json)
+                        THEN json_extract(context_snapshot.payload_json, '$.activeIntervalStartedAt')
+                        ELSE NULL
+                      END
+               FROM activity_snapshots AS context_snapshot
+               WHERE context_snapshot.activity_id = session.activity_id
+                 AND context_snapshot.last_processed_sequence <= sample.sequence
+                 AND context_snapshot.created_at <= sample.timestamp
+               ORDER BY context_snapshot.last_processed_sequence DESC
+               LIMIT 1) AS sample_active_interval_started_at
+       FROM activity_sessions AS session
+       INNER JOIN activity_snapshots AS latest_snapshot
+         ON latest_snapshot.activity_id = session.activity_id
+        AND latest_snapshot.last_processed_sequence = (
+          SELECT MAX(snapshot.last_processed_sequence)
+          FROM activity_snapshots AS snapshot
+          WHERE snapshot.activity_id = session.activity_id
+        )
+       LEFT JOIN activity_samples AS sample
+         ON sample.activity_id = session.activity_id
+       WHERE session.activity_id = ?
+         AND session.owner_id = ?
+         AND session.state = ?
+         AND session.finished_at IS NOT NULL
+         AND session.recording_source = ?
+       ORDER BY sample.sequence ASC`,
+      activityId,
+      ownerId,
+      'FINISHED',
+      'device-gps',
+    );
+    const row = rows[0];
+    if (
+      !row ||
+      row.activity_id !== activityId ||
+      row.owner_id !== ownerId ||
+      !row.finished_at ||
+      !Number.isFinite(Date.parse(row.finished_at)) ||
+      !Number.isInteger(row.last_processed_sequence) ||
+      row.last_processed_sequence < 1 ||
+      row.snapshot_last_processed_sequence !== row.last_processed_sequence ||
+      !Number.isInteger(row.sample_count) ||
+      row.sample_count < 1 ||
+      row.sample_max_sequence !== row.last_processed_sequence
+    ) return null;
+    const metrics = passportSnapshotMetrics(
+      row.snapshot_payload_json,
+      row.activity_id,
+      row.finished_at,
+      row.last_processed_sequence,
+    );
+    if (!metrics) return null;
+
+    const sampleRows = rows.filter((sampleRow) => sampleRow.sample_sequence !== null);
+    if (sampleRows.length !== row.sample_count) return null;
+    const samples: PassportGpsSample[] = [];
+    let previousSequence = 0;
+    for (const sampleRow of sampleRows) {
+      const sequence = sampleRow.sample_sequence;
+      const timestamp = sampleRow.sample_timestamp;
+      const latitude = sampleRow.sample_latitude;
+      const longitude = sampleRow.sample_longitude;
+      const accuracyMeters = sampleRow.sample_accuracy_m;
+      const validFlag = sampleRow.sample_valid_for_metrics;
+      const rejectionReason = sampleRow.sample_rejection_reason;
+      const activeIntervalStartedAt = sampleRow.sample_active_interval_started_at;
+      if (
+        typeof sequence !== 'number' ||
+        !Number.isInteger(sequence) ||
+        sequence <= previousSequence ||
+        sequence > row.last_processed_sequence ||
+        typeof timestamp !== 'string' ||
+        !Number.isFinite(Date.parse(timestamp)) ||
+        typeof latitude !== 'number' ||
+        !Number.isFinite(latitude) ||
+        typeof longitude !== 'number' ||
+        !Number.isFinite(longitude) ||
+        !isNonNegativeFinite(accuracyMeters) ||
+        (validFlag !== 0 && validFlag !== 1) ||
+        !isLocationRejectionReason(rejectionReason) ||
+        (activeIntervalStartedAt !== null &&
+          (typeof activeIntervalStartedAt !== 'string' ||
+            !Number.isFinite(Date.parse(activeIntervalStartedAt))))
+      ) return null;
+      const validForMetrics = validFlag === 1;
+      if (validForMetrics !== (rejectionReason === null)) return null;
+      const hasValidCoordinates = latitude >= -90 && latitude <= 90 &&
+        longitude >= -180 && longitude <= 180;
+      if (!hasValidCoordinates && !(rejectionReason === 'invalid_coordinate' && !validForMetrics)) {
+        return null;
+      }
+      samples.push({
+        sequence,
+        timestamp,
+        latitude,
+        longitude,
+        accuracyMeters,
+        validForMetrics,
+        rejectionReason,
+        activeIntervalStartedAt,
+      });
+      previousSequence = sequence;
+    }
+    if (previousSequence !== row.last_processed_sequence) return null;
+    return {
+      activityId,
+      finishedAt: row.finished_at,
+      ...metrics,
+      sampleCount: samples.length,
+      samples,
+    };
+  }
+
+  async deletePassportGpsSession(ownerId: string, activityId: string): Promise<boolean> {
+    if (!ownerId.trim() || !isValidPassportActivityId(activityId)) return false;
+    await this.initialize();
+    const db = await this.database();
+    let deleted = false;
+    await db.withExclusiveTransactionAsync(async (txn) => {
+      const row = await txn.getFirstAsync<PassportGpsSessionRow>(
+        `SELECT session.activity_id, session.owner_id, session.state, session.finished_at,
+                session.recording_source, session.last_processed_sequence,
+                latest_snapshot.last_processed_sequence AS snapshot_last_processed_sequence,
+                latest_snapshot.payload_json AS snapshot_payload_json,
+                (SELECT COUNT(*) FROM activity_samples AS sample
+                 WHERE sample.activity_id = session.activity_id) AS sample_count,
+                (SELECT MAX(sample.sequence) FROM activity_samples AS sample
+                 WHERE sample.activity_id = session.activity_id) AS sample_max_sequence
+         FROM activity_sessions AS session
+         INNER JOIN activity_snapshots AS latest_snapshot
+           ON latest_snapshot.activity_id = session.activity_id
+          AND latest_snapshot.last_processed_sequence = (
+            SELECT MAX(snapshot.last_processed_sequence)
+            FROM activity_snapshots AS snapshot
+            WHERE snapshot.activity_id = session.activity_id
+          )
+         WHERE session.activity_id = ?
+           AND session.owner_id = ?
+           AND session.state = ?
+           AND session.finished_at IS NOT NULL
+           AND session.recording_source = ?`,
+        activityId,
+        ownerId,
+        'FINISHED',
+        'device-gps',
+      );
+      if (!row || row.activity_id !== activityId || !isDeletablePassportGpsSession(row, ownerId)) return;
+
+      // Remove every persisted payload copy and derived record for this session.
+      await txn.runAsync(
+        'DELETE FROM activity_sync_batches WHERE activity_id = ?',
+        activityId,
+      );
+      await txn.runAsync('DELETE FROM activity_samples WHERE activity_id = ?', activityId);
+      await txn.runAsync('DELETE FROM activity_snapshots WHERE activity_id = ?', activityId);
+      await txn.runAsync(
+        'DELETE FROM activity_exploration_observations WHERE activity_id = ?',
+        activityId,
+      );
+      await txn.runAsync(
+        'DELETE FROM activity_exploration_state WHERE activity_id = ?',
+        activityId,
+      );
+      const inboxTable = await txn.getFirstAsync<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        'activity_background_location_inbox',
+      );
+      if (inboxTable) {
+        await txn.runAsync(
+          'DELETE FROM activity_background_location_inbox WHERE activity_id = ?',
+          activityId,
+        );
+      }
+      const result = await txn.runAsync(
+        `DELETE FROM activity_sessions
+         WHERE activity_id = ?
+           AND owner_id = ?
+           AND state = ?
+           AND recording_source = ?
+           AND finished_at = ?
+           AND last_processed_sequence = ?`,
+        activityId,
+        ownerId,
+        'FINISHED',
+        'device-gps',
+        row.finished_at,
+        row.last_processed_sequence,
+      );
+      if (result.changes !== 1) {
+        throw new Error('Unable to atomically delete personal GPS session');
+      }
+      deleted = true;
+    });
+    return deleted;
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

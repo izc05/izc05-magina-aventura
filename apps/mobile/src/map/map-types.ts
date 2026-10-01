@@ -1,5 +1,6 @@
 import type { GeoJsonPosition, RouteMapPayload } from '@magina-aventura/contracts';
 import type { MapLayerVisibility, MapThemeId, EnhancedRoutePayload } from './map-layers';
+import type { PassportGpsTraceMapData } from '../activity/passport-gps-trace';
 
 export interface RouteMapProps {
   payload: EnhancedRoutePayload | RouteMapPayload | null;
@@ -15,4 +16,6 @@ export interface RouteMapProps {
   height?: number;
   /** Current device sample for technical base-map mode only; never a track. */
   deviceLocation?: GeoJsonPosition | null;
+  /** Local personal session geometry; rendered only in base-map mode. */
+  personalSessionTrace?: PassportGpsTraceMapData | null;
 }

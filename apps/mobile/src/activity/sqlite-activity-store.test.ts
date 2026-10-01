@@ -356,4 +356,135 @@ describe('SQLiteActivityStore durability contract', () => {
       elapsedSeconds: 0,
     });
   });
+
+  it('loads GPS details only for the authenticated owner and validates persisted samples', async () => {
+    const activityId = 'synthetic-private-gps-session';
+    const finishedAt = '2026-09-28T08:10:00.000Z';
+    const payload = {
+      activityId,
+      state: 'FINISHED',
+      lastProcessedSequence: 2,
+      algorithmVersion: 1,
+      createdAt: finishedAt,
+      validDistanceMeters: 240,
+      totalElapsedSeconds: 180,
+    };
+    const detailRow = (sequence: number) => ({
+      activity_id: activityId,
+      owner_id: 'account-a',
+      state: 'FINISHED',
+      finished_at: finishedAt,
+      recording_source: 'device-gps',
+      last_processed_sequence: 2,
+      snapshot_last_processed_sequence: 2,
+      snapshot_payload_json: JSON.stringify(payload),
+      sample_count: 2,
+      sample_max_sequence: 2,
+      sample_sequence: sequence,
+      sample_timestamp: `2026-09-28T08:00:${String(sequence * 5).padStart(2, '0')}.000Z`,
+      sample_latitude: 37.5 + sequence * 0.001,
+      sample_longitude: -3.5 - sequence * 0.001,
+      sample_accuracy_m: 6,
+      sample_valid_for_metrics: 1,
+      sample_rejection_reason: null,
+      sample_active_interval_started_at: '2026-09-28T08:00:00.000Z',
+    });
+    const rows = [detailRow(1), detailRow(2)];
+    mocks.getAllAsync.mockResolvedValue(rows);
+
+    const ownerStore = new SQLiteActivityStore('passport-gps-owner-detail.db');
+    const detail = await ownerStore.loadPassportGpsSessionDetail('account-a', activityId);
+    const ownerCall = mocks.getAllAsync.mock.calls.at(-1) as unknown[];
+    const query = String(ownerCall[0]);
+    expect(query).toContain('session.owner_id = ?');
+    expect(query).toContain('session.activity_id = ?');
+    expect(query).toContain("json_extract(context_snapshot.payload_json, '$.activeIntervalStartedAt')");
+    expect(query).toContain('context_snapshot.created_at <= sample.timestamp');
+    expect(queryCallValues(ownerCall)).toEqual([activityId, 'account-a', 'FINISHED', 'device-gps']);
+    expect(query).not.toMatch(/route_id|route_slug|checkpoint|reward_xp/i);
+    expect(detail).toEqual({
+      activityId,
+      finishedAt,
+      distanceMeters: 240,
+      elapsedSeconds: 180,
+      sampleCount: 2,
+      samples: [
+        { sequence: 1, timestamp: '2026-09-28T08:00:05.000Z', latitude: 37.501, longitude: -3.501, accuracyMeters: 6, validForMetrics: true, rejectionReason: null, activeIntervalStartedAt: '2026-09-28T08:00:00.000Z' },
+        { sequence: 2, timestamp: '2026-09-28T08:00:10.000Z', latitude: 37.502, longitude: -3.502, accuracyMeters: 6, validForMetrics: true, rejectionReason: null, activeIntervalStartedAt: '2026-09-28T08:00:00.000Z' },
+      ],
+    });
+
+    mocks.getAllAsync.mockResolvedValue(rows);
+    const otherOwnerStore = new SQLiteActivityStore('passport-gps-cross-owner-detail.db');
+    await expect(otherOwnerStore.loadPassportGpsSessionDetail('account-b', activityId)).resolves.toBeNull();
+    const otherOwnerCall = mocks.getAllAsync.mock.calls.at(-1) as unknown[];
+    expect(queryCallValues(otherOwnerCall)).toEqual([activityId, 'account-b', 'FINISHED', 'device-gps']);
+  });
+
+  it('refuses cross-account GPS deletion and atomically removes only the verified owner session', async () => {
+    const activityId = 'synthetic-owner-scoped-delete';
+    const finishedAt = '2026-09-28T08:10:00.000Z';
+    const row = {
+      activity_id: activityId,
+      owner_id: 'account-a',
+      state: 'FINISHED',
+      finished_at: finishedAt,
+      recording_source: 'device-gps',
+      last_processed_sequence: 2,
+      snapshot_last_processed_sequence: 2,
+      snapshot_payload_json: JSON.stringify({
+        activityId,
+        state: 'FINISHED',
+        lastProcessedSequence: 2,
+        algorithmVersion: 1,
+        createdAt: finishedAt,
+        validDistanceMeters: 240,
+        totalElapsedSeconds: 180,
+      }),
+      sample_count: 2,
+      sample_max_sequence: 2,
+    };
+    mocks.getFirstAsync.mockImplementation(async (query: unknown) => {
+      const sql = String(query ?? '');
+      if (sql.includes('FROM activity_sessions AS session')) return row;
+      if (sql.includes('sqlite_master')) return { name: 'activity_background_location_inbox' };
+      return null;
+    });
+
+    const store = new SQLiteActivityStore('passport-gps-owner-delete.db');
+    await expect(store.deletePassportGpsSession('account-b', activityId)).resolves.toBe(false);
+    expect(mocks.getFirstAsync.mock.calls.at(-1)?.slice(1)).toEqual([
+      activityId,
+      'account-b',
+      'FINISHED',
+      'device-gps',
+    ]);
+    expect((mocks.runAsync.mock.calls as unknown[][]).filter((call) => String(call[0] ?? '').startsWith('DELETE '))).toEqual([]);
+
+    mocks.runAsync.mockClear();
+    await expect(store.deletePassportGpsSession('account-a', activityId)).resolves.toBe(true);
+    const deleteCalls = (mocks.runAsync.mock.calls as unknown[][])
+      .filter((call) => String(call[0] ?? '').startsWith('DELETE '));
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_samples'))).toBe(true);
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_snapshots'))).toBe(true);
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_sync_batches'))).toBe(true);
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_exploration_observations'))).toBe(true);
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_exploration_state'))).toBe(true);
+    expect(deleteCalls.some((call) => String(call[0]).includes('DELETE FROM activity_background_location_inbox'))).toBe(true);
+    const sessionDelete = deleteCalls.find((call) => String(call[0]).includes('DELETE FROM activity_sessions'));
+    expect(String(sessionDelete?.[0])).toContain('owner_id = ?');
+    expect(sessionDelete?.slice(1)).toEqual([
+      activityId,
+      'account-a',
+      'FINISHED',
+      'device-gps',
+      finishedAt,
+      2,
+    ]);
+    expect(deleteCalls.some((call) => /DELETE FROM (routes|personal_route_photos)/i.test(String(call[0])))).toBe(false);
+  });
 });
+
+function queryCallValues(call: unknown[]): unknown[] {
+  return call.slice(1);
+}

@@ -13,6 +13,7 @@ function session(state: ActivitySession['state'] = 'ACTIVE'): ActivitySession {
     activityId: 'activity-store-test',
     adventureSlug: 'synthetic-adventure',
     adventureVersion: 2,
+    recordingSource: 'device-gps',
     routeId: 'route-test',
     routeSlug: 'synthetic-route',
     geometryVersion: 2,
@@ -150,5 +151,38 @@ describe('ActivityStore recovery contract', () => {
 
     await expect(store.loadActiveSession('account-b')).resolves.toBeNull();
     await expect(store.loadActiveSession('account-a')).resolves.toMatchObject({ ownerId: 'account-a' });
+  });
+
+  it('keeps GPS detail and deletion scoped to its owner and removes only that local session', async () => {
+    const store = new MemoryActivityStore();
+    const finished = session('FINISHED');
+    const finalSnapshot = {
+      ...snapshot(2, 'FINISHED'),
+      createdAt: finished.finishedAt!,
+    };
+    await store.createSession(session('ACTIVE'), snapshot(0), 'account-a');
+    await store.appendBatch('activity-store-test', [sample(1), sample(2)], snapshot(1));
+    await store.updateSession(finished, finalSnapshot);
+
+    await expect(store.loadPassportGpsSessionDetail('account-b', finished.activityId)).resolves.toBeNull();
+    await expect(store.deletePassportGpsSession('account-b', finished.activityId)).resolves.toBe(false);
+    const ownerDetail = await store.loadPassportGpsSessionDetail('account-a', finished.activityId);
+    expect(ownerDetail).toMatchObject({
+      activityId: finished.activityId,
+      sampleCount: 2,
+      samples: [
+        { sequence: 1, activeIntervalStartedAt: '2026-09-16T08:00:00.000Z' },
+        { sequence: 2, activeIntervalStartedAt: '2026-09-16T08:00:00.000Z' },
+      ],
+    });
+    await expect(store.loadTrack(finished.activityId)).resolves.toHaveLength(2);
+
+    await expect(store.deletePassportGpsSession('account-a', finished.activityId)).resolves.toBe(true);
+    await expect(store.loadPassportGpsSessionDetail('account-a', finished.activityId)).resolves.toBeNull();
+    await expect(store.loadTrack(finished.activityId)).resolves.toEqual([]);
+    await expect(store.loadExploration(finished.activityId)).resolves.toMatchObject({
+      state: { lastEvaluatedSequence: 0 },
+      observations: [],
+    });
   });
 });

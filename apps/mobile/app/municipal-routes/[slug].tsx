@@ -49,7 +49,7 @@ export default function MunicipalRouteInformationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}

@@ -83,6 +83,7 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     const tree = MunicipalRouteInformationScreen();
     const hero = findByTestId(tree, 'municipal-route-hero');
     const elements = collectElements(tree);
+    const statusBar = elements.find((element) => element.type === 'StatusBar');
     const title = elements.find((element) =>
       element.type === 'Text' && visibleText(element).join('') === municipalRouteInformation.title,
     );
@@ -97,6 +98,7 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     });
     expect(title?.props?.accessibilityRole).toBe('header');
     expect(title?.props?.style).toMatchObject({ color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: '900' });
+    expect(statusBar?.props?.style).toBe('dark');
     expect(text).toContain('Cuadros · Bedmar y Garcíez, Jaén');
     expect(pendingPhoto?.props?.accessible).toBe(true);
     expect(pendingPhoto?.props?.accessibilityRole).toBe('image');

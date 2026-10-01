@@ -10,6 +10,7 @@ import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-ut
 import { routePresentationViewModel } from '../../../src/features/routes/route-presentation-view-model';
 import { expoRoutePackagePort } from '../../../src/offline/expo-route-package-port';
 import { colors, radius, spacing, typography } from '../../../src/theme/tokens';
+import { useAuth } from '../../../src/context/AuthContext';
 
 type PrepareOfflineState = OfflinePackageState | 'unavailable' | 'error';
 
@@ -24,6 +25,7 @@ const offlineCopy: Record<PrepareOfflineState, string> = {
 export default function PrepareRouteAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
   const presentation = route
@@ -148,15 +150,22 @@ export default function PrepareRouteAdventureScreen() {
       <View style={styles.footer}>
         <Pressable
           style={[styles.startButton, !presentation?.canCaptureTechnicalGps && styles.disabledButton]}
-          disabled={!presentation?.canCaptureTechnicalGps}
-          onPress={() =>
-            router.push({
-              pathname: '/adventure/[slug]',
-              params: { slug: route.slug },
-            })
-          }
+          accessibilityRole="button"
+          accessibilityLabel={user ? 'Iniciar captura GPS técnica' : 'Iniciar sesión para guardar datos GPS'}
+          accessibilityHint={user ? 'Inicia una captura GPS personal.' : 'Te pedirá iniciar sesión o crear una cuenta antes de guardar datos GPS.'}
+          accessibilityState={{ disabled: !presentation?.canCaptureTechnicalGps || authLoading }}
+          disabled={!presentation?.canCaptureTechnicalGps || authLoading}
+          onPress={() => {
+            if (!user) {
+              router.push({ pathname: '/login', params: { returnTo: 'adventure', slug: route.slug } });
+              return;
+            }
+            router.push({ pathname: '/adventure/[slug]', params: { slug: route.slug } });
+          }}
         >
-          <Text style={styles.startButtonText}>Iniciar captura GPS técnica</Text>
+          <Text style={styles.startButtonText}>
+            {user ? 'Iniciar captura GPS técnica' : 'Inicia sesión para guardar GPS'}
+          </Text>
           <Text style={styles.startArrow}>→</Text>
         </Pressable>
       </View>

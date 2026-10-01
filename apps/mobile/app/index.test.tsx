@@ -117,6 +117,18 @@ describe('Home inactive controls', () => {
 });
 
 describe('Home to Bedmar municipal information navigation', () => {
+  it('keeps the passport entry distinct from public route browsing', () => {
+    const tree = renderHome(false);
+    const passportTab = collectElements(tree).find(
+      (element) => element.props?.accessibilityRole === 'tab' && element.props?.accessibilityLabel === 'Pasaporte',
+    );
+
+    expect(passportTab?.props?.accessibilityState).toEqual({ disabled: false, selected: false });
+    expect(typeof passportTab?.props?.onPress).toBe('function');
+    (passportTab?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/profile');
+  });
+
   it('exposes an accessible, non-GPS Bedmar information card that opens its municipal detail', () => {
     const tree = renderHome(false);
     const homeCard = collectElements(tree).find(

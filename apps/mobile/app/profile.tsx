@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../src/theme/tokens';
 import { useAuth } from '../src/context/AuthContext';
@@ -13,12 +13,17 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
   const [passportGpsState, setPassportGpsState] = useState<PassportGpsLoadState>({
     status: 'loading',
   });
 
   useEffect(() => {
+    if (isLoading || !user) {
+      setPassportGpsState({ status: 'loading' });
+      return;
+    }
+
     let mounted = true;
     void sqliteActivityStore.loadPassportGpsData()
       .then((data) => {
@@ -31,28 +36,80 @@ export default function ProfileScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isLoading, user?.id]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.gate}>
+          <ActivityIndicator color={colors.olive700} />
+          <Text accessibilityRole="header" style={styles.gateTitle}>Comprobando tu sesión…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.gate}>
+          <Text accessibilityRole="header" style={styles.gateTitle}>Tu pasaporte personal</Text>
+          <Text style={styles.gateBody}>
+            Inicia sesión o crea una cuenta para guardar y consultar tu pasaporte y tus datos personales. Las rutas públicas siguen disponibles sin cuenta.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Iniciar sesión o registrarse para guardar el pasaporte"
+            style={styles.loginButton}
+            onPress={() => router.push({ pathname: '/login', params: { returnTo: 'passport' } })}
+          >
+            <Text style={styles.loginButtonText}>Iniciar sesión o registrarse</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Explorar sin cuenta"
+            style={styles.guestButton}
+            onPress={() => router.replace('/')}
+          >
+            <Text style={styles.guestButtonText}>Explorar sin cuenta</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.push('/')}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver al inicio"
+            style={styles.backButton}
+            onPress={() => router.push('/')}
+          >
             <Text style={styles.backButtonText}>← Inicio</Text>
           </Pressable>
-          <Text style={styles.title}>Pasaporte</Text>
+          <Text accessibilityRole="header" style={styles.title}>Pasaporte</Text>
         </View>
 
         <View style={styles.passportCard}>
           <View style={styles.passportHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{user?.email?.[0]?.toUpperCase() ?? 'A'}</Text>
+              <Text style={styles.avatarText}>{user.email?.[0]?.toUpperCase() ?? 'A'}</Text>
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.email?.split('@')[0] ?? 'Aventurero'}</Text>
+              <Text style={styles.userName}>{user.email?.split('@')[0] ?? 'Aventurero'}</Text>
             </View>
-            <Pressable onPress={signOut} style={styles.logoutButton}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar sesión"
+              onPress={() => { void signOut(); }}
+              style={styles.logoutButton}
+            >
               <Text style={styles.logoutText}>Salir</Text>
             </Pressable>
           </View>
@@ -71,6 +128,13 @@ const styles = StyleSheet.create({
   backButton: { marginRight: spacing[16], padding: spacing[8], paddingLeft: 0 },
   backButtonText: { color: colors.olive900, fontSize: 16, fontWeight: '700' },
   title: { color: colors.ink, fontSize: 24, fontWeight: '900' },
+  gate: { flex: 1, padding: spacing[24], alignItems: 'center', justifyContent: 'center' },
+  gateTitle: { color: colors.olive900, fontSize: 23, fontWeight: '900', textAlign: 'center' },
+  gateBody: { color: colors.ink, fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: spacing[12] },
+  loginButton: { minHeight: 52, width: '100%', marginTop: spacing[24], borderRadius: radius.md, backgroundColor: colors.olive900, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing[16] },
+  loginButtonText: { color: colors.white, fontSize: 15, fontWeight: '900' },
+  guestButton: { minHeight: 48, width: '100%', marginTop: spacing[8], borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing[16] },
+  guestButtonText: { color: colors.olive900, fontSize: 15, fontWeight: '800', textDecorationLine: 'underline' },
   passportCard: {
     backgroundColor: colors.olive900,
     borderRadius: radius.lg,

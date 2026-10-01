@@ -47,9 +47,10 @@ describe('Bedmar local GPX preview section', () => {
     });
     const text = visibleText(tree).join(' ');
     const choose = collectElements(tree).find((element) => element.props?.accessibilityLabel === 'Elegir un archivo GPX para vista previa local');
-    expect(text).toContain('selector de archivos del sistema');
+    expect(text).toContain('selector del sistema');
     expect(text).toContain('No se solicita acceso general al almacenamiento');
     expect(text).toContain('La vista previa no se mezcla con GPS de actividad ni con navegación');
+    expect(text).toContain('oculta su nombre y metadatos personales');
     expect(text).toContain('Seleccionar el archivo no acredita permiso ni valida el sendero');
     expect(text).toContain('autorización del titular antes de importar geometría');
     expect(choose?.props?.accessibilityRole).toBe('button');
@@ -58,8 +59,8 @@ describe('Bedmar local GPX preview section', () => {
     expect(mocks.pickFileAsync).not.toHaveBeenCalled();
   });
 
-  it('shows only the synthetic fixture filename, present metadata, counts, and unverified provenance in a valid local state', () => {
-    const preview = createGpxLocalPreview('fixture-sintetico.gpx', SYNTHETIC_TEST_ONLY_GPX, SYNTHETIC_TEST_ONLY_GPX.length);
+  it('shows only a generic local filename, technical version, counts, and unverified provenance', () => {
+    const preview = createGpxLocalPreview('/private/fixture-sintetico.gpx', SYNTHETIC_TEST_ONLY_GPX, SYNTHETIC_TEST_ONLY_GPX.length);
     const tree = GpxLocalPreviewSectionView({
       state: { status: 'valid-local', preview },
       isSelecting: false,
@@ -68,11 +69,14 @@ describe('Bedmar local GPX preview section', () => {
     });
     const text = visibleText(tree).join(' ');
     expect(collectElements(tree).some((element) => element.props?.testID === 'gpx-valid-local-state')).toBe(true);
-    expect(text).toContain('fixture-sintetico.gpx');
+    expect(text).toContain('Archivo GPX local');
+    expect(text).toContain('DETALLES TÉCNICOS');
+    expect(text).not.toContain('fixture-sintetico.gpx');
     expect(text).toMatch(/Tracks:\s+1/);
     expect(text).toMatch(/Waypoints:\s+2/);
     expect(text).toContain('Sin verificar / pendiente de autorización');
-    expect(text).toContain('Nombre declarado');
+    expect(text).not.toContain('Nombre declarado');
+    expect(text).not.toContain('Autoría sintética de prueba');
     expect(text).not.toContain('Distancia');
     expect(text).not.toContain('Desnivel');
     expect(text).not.toContain('Perfil');

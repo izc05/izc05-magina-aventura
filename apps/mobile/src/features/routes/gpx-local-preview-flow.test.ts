@@ -41,7 +41,7 @@ describe('local GPX selection flow', () => {
     expect(result.status).toBe('valid-local');
     if (result.status !== 'valid-local') throw new Error('Expected valid local preview');
     expect(result.preview).toMatchObject({
-      fileName: 'fixture-sintetico.gpx',
+      fileName: 'Archivo GPX local',
       trackCount: 1,
       waypointCount: 2,
       provenanceStatus: 'Sin verificar / pendiente de autorización',

@@ -57,9 +57,9 @@ function displayText(value: unknown): string | null {
     : cleaned;
 }
 
-function safeFileName(fileName: string): string {
+function hasGpxExtension(fileName: string): boolean {
   const baseName = fileName.split(/[\\/]/).pop()?.trim() ?? '';
-  return displayText(baseName) ?? 'Archivo GPX';
+  return baseName.toLocaleLowerCase().endsWith('.gpx');
 }
 
 function countElements(value: unknown): number {
@@ -72,23 +72,10 @@ function countElements(value: unknown): number {
 }
 
 function metadataFields(gpx: XmlRecord): GpxLocalPreviewMetadataField[] {
-  const metadata = asSingleRecord(gpx.metadata) ?? {};
-  const author = asSingleRecord(metadata.author);
-  const copyright = asSingleRecord(metadata.copyright);
-  const candidates: Array<[string, unknown]> = [
-    ['Versión GPX', gpx['@_version']],
-    ['Creador declarado', gpx['@_creator']],
-    ['Nombre declarado', metadata.name ?? gpx.name],
-    ['Descripción declarada', metadata.desc ?? gpx.desc],
-    ['Autor declarado', author?.name],
-    ['Titular declarado', copyright?.['@_author']],
-    ['Fecha declarada en metadatos', metadata.time],
-    ['Palabras clave declaradas', metadata.keywords],
-  ];
-  return candidates.flatMap(([label, rawValue]) => {
-    const value = displayText(rawValue);
-    return value ? [{ label, value }] : [];
-  });
+  // User-controlled names, author/contact fields, descriptions, dates and
+  // keywords can identify the owner, so no free-text GPX metadata is displayed.
+  const version = displayText(gpx['@_version']);
+  return version ? [{ label: 'Versión GPX', value: version }] : [];
 }
 
 /**
@@ -101,8 +88,7 @@ export function createGpxLocalPreview(
   xml: string,
   sizeBytes: number,
 ): GpxLocalPreview {
-  const displayFileName = safeFileName(fileName);
-  if (!displayFileName.toLocaleLowerCase().endsWith('.gpx')) {
+  if (!hasGpxExtension(fileName)) {
     throw new GpxLocalPreviewValidationError('wrong-extension');
   }
   if (sizeBytes === 0 || xml.length === 0) {
@@ -145,7 +131,7 @@ export function createGpxLocalPreview(
   }
 
   return {
-    fileName: displayFileName,
+    fileName: 'Archivo GPX local',
     metadata: metadataFields(gpx),
     trackCount: countElements(gpx.trk),
     waypointCount: countElements(gpx.wpt),

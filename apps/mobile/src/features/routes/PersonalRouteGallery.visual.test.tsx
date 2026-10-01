@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ useStateIndex: 0 }));
+const mocks = vi.hoisted(() => ({
+  useStateIndex: 0,
+  user: { id: 'test-account' } as null | { id: string },
+  authLoading: false,
+  push: vi.fn(),
+}));
 
 vi.mock('react', () => ({
   useEffect: vi.fn(),
@@ -12,6 +17,10 @@ vi.mock('react', () => ({
   },
 }));
 vi.mock('expo-image-picker', () => ({ launchImageLibraryAsync: vi.fn() }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: mocks.user, isLoading: mocks.authLoading }),
+}));
 vi.mock('./expo-personal-route-gallery-store', () => ({
   personalRouteGalleryStore: {
     listForRoute: vi.fn().mockResolvedValue([]),
@@ -38,6 +47,7 @@ vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' 
 
 import { PersonalRouteGallery } from './PersonalRouteGallery';
 import { colors, radius, spacing } from '../../theme/tokens';
+import { personalRouteGalleryStore } from './expo-personal-route-gallery-store';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -77,6 +87,10 @@ function visibleText(node: unknown): string[] {
 
 beforeEach(() => {
   mocks.useStateIndex = 0;
+  mocks.user = { id: 'test-account' };
+  mocks.authLoading = false;
+  mocks.push.mockReset();
+  vi.mocked(personalRouteGalleryStore.listForRoute).mockClear();
 });
 
 describe('personal route gallery visual contract', () => {
@@ -128,5 +142,25 @@ describe('personal route gallery visual contract', () => {
     });
     expect(addButtonText?.props?.style).toMatchObject({ color: colors.white, fontSize: 14 });
     expect(contrastRatio(colors.white, colors.olive700)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('does not read or show personal photos to a guest and offers an accessible sign-in action', () => {
+    mocks.user = null;
+    const tree = PersonalRouteGallery({ routeSlug: 'sendero-fluvial-cueva-del-agua' });
+    const elements = collectElements(tree);
+    const gate = elements.find((element) => element.props?.testID === 'personal-gallery-auth-required');
+    const login = elements.find((element) => element.props?.accessibilityLabel === 'Iniciar sesión o registrarse para la galería personal');
+    const text = visibleText(tree).join(' ');
+
+    expect(gate).toBeDefined();
+    expect(text).toContain('Galería personal protegida');
+    expect(text).toContain('Las imágenes Commons y la ficha pública siguen disponibles');
+    expect(text).not.toContain('Tu galería personal está vacía');
+    expect(text).not.toContain('Foto personal ampliada');
+    expect(login?.props?.accessibilityRole).toBe('button');
+    expect(login?.props?.accessibilityHint).toContain('volverás a la ficha pública de Bedmar');
+    (login?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } });
+    expect(personalRouteGalleryStore.listForRoute).not.toHaveBeenCalled();
   });
 });

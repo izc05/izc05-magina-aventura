@@ -7,10 +7,12 @@ import { activityRuntime } from '../../../src/activity/activity-runtime';
 import { routePresentationViewModel } from '../../../src/features/routes/route-presentation-view-model';
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
 import { colors, radius, spacing } from '../../../src/theme/tokens';
+import { useAuth } from '../../../src/context/AuthContext';
 
 export default function ActivitySummaryScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
+  const { user, isLoading } = useAuth();
   const route = getDevelopmentRouteBySlug(slug);
 
   if (!route) {
@@ -22,7 +24,7 @@ export default function ActivitySummaryScreen() {
     route.developmentFixture ? 'development-simulation' : 'unverified',
   );
   const technicalGpsQa = presentation.mode === 'technical-gps-qa';
-  const finished = activityRuntime.current();
+  const finished = user ? activityRuntime.current() : null;
   const snapshot = finished?.snapshot;
   const distanceKm = snapshot ? snapshot.validDistanceMeters / 1000 : null;
   const elapsedSeconds = snapshot?.totalElapsedSeconds ?? null;
@@ -31,6 +33,40 @@ export default function ActivitySummaryScreen() {
   const elapsedDisplay = elapsedHours === null || elapsedMinutes === null
     ? '—'
     : `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}`;
+
+  if (isLoading || !user) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.guestGate}>
+          <Text accessibilityRole="header" style={styles.title}>
+            {isLoading ? 'Comprobando tu sesión…' : 'Resumen GPS personal'}
+          </Text>
+          <Text style={styles.subtitle}>
+            Inicia sesión para consultar los datos GPS guardados. Las fichas públicas siguen disponibles sin cuenta.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Iniciar sesión para consultar el resumen GPS"
+            accessibilityState={{ disabled: isLoading }}
+            disabled={isLoading}
+            style={styles.primaryButton}
+            onPress={() => router.push({ pathname: '/login', params: { returnTo: 'summary', slug: route.slug } })}
+          >
+            <Text style={styles.primaryButtonText}>Iniciar sesión o registrarse</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver a rutas públicas"
+            style={styles.secondaryButton}
+            onPress={() => router.replace('/')}
+          >
+            <Text style={styles.secondaryButtonText}>Volver a rutas públicas</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -91,6 +127,7 @@ export default function ActivitySummaryScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.limestone },
+  guestGate: { flex: 1, justifyContent: 'center', padding: spacing[20] },
   scrollContent: { padding: spacing[20], paddingBottom: 120 },
   header: { alignItems: 'center', marginTop: spacing[32], marginBottom: spacing[32] },
   eyebrow: { color: colors.aoveGold, fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginBottom: spacing[8] },

@@ -1,12 +1,53 @@
 import { describe, expect, it, vi } from 'vitest';
 
+const mocks = vi.hoisted(() => ({
+  user: null as null | { id: string; email: string },
+  isLoading: false,
+  push: vi.fn(),
+  replace: vi.fn(),
+  loadPassportGpsData: vi.fn().mockResolvedValue({
+    sessions: [],
+    metrics: { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+  }),
+}));
+
+vi.mock('react', () => ({
+  useEffect: (effect: () => void | (() => void)) => { effect(); },
+  useState: (initialValue: unknown) => [initialValue, vi.fn()],
+}));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }));
+vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
+vi.mock('../src/context/AuthContext', () => ({
+  useAuth: () => ({ user: mocks.user, isLoading: mocks.isLoading, signOut: vi.fn() }),
+}));
+vi.mock('../src/activity/sqlite-activity-store', () => ({
+  sqliteActivityStore: { loadPassportGpsData: mocks.loadPassportGpsData },
+}));
 vi.mock('react-native', () => ({
+  ActivityIndicator: 'ActivityIndicator',
+  Pressable: 'Pressable',
+  ScrollView: 'ScrollView',
   StyleSheet: { create: (styles: unknown) => styles },
   Text: 'Text',
   View: 'View',
 }));
 
+import ProfileScreen from './profile';
 import { PassportGpsMetricsPanel } from '../src/features/passport/PassportGpsMetricsPanel';
+
+type ElementLike = { type?: unknown; props?: Record<string, unknown> };
+
+function collectElements(node: unknown, elements: ElementLike[] = []): ElementLike[] {
+  if (Array.isArray(node)) {
+    for (const child of node) collectElements(child, elements);
+  } else if (node !== null && typeof node === 'object' && 'props' in node) {
+    const element = node as ElementLike;
+    elements.push(element);
+    collectElements(element.props?.children, elements);
+  }
+  return elements;
+}
 
 function collectRenderedText(node: unknown, text: string[] = []): string[] {
   if (typeof node === 'string' || typeof node === 'number') {
@@ -90,5 +131,28 @@ describe('Passport GPS metrics panel', () => {
       .toContain('Cargando capturas GPS guardadas…');
     expect(collectRenderedText(PassportGpsMetricsPanel({ state: { status: 'error' } })))
       .toContain('No se pudieron leer las sesiones GPS guardadas en este dispositivo.');
+  });
+});
+
+describe('guest access to the personal passport', () => {
+  it('asks for sign-in and does not load saved passport data for a guest', () => {
+    mocks.user = null;
+    mocks.isLoading = false;
+    mocks.push.mockReset();
+    mocks.replace.mockReset();
+    mocks.loadPassportGpsData.mockClear();
+
+    const tree = ProfileScreen();
+    const elements = collectElements(tree);
+    const login = elements.find((element) => element.props?.accessibilityLabel === 'Iniciar sesión o registrarse para guardar el pasaporte');
+    const explore = elements.find((element) => element.props?.accessibilityLabel === 'Explorar sin cuenta');
+
+    expect(login?.props?.accessibilityRole).toBe('button');
+    expect(explore?.props?.accessibilityRole).toBe('button');
+    (login?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith({ pathname: '/login', params: { returnTo: 'passport' } });
+    (explore?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.replace).toHaveBeenCalledWith('/');
+    expect(mocks.loadPassportGpsData).not.toHaveBeenCalled();
   });
 });

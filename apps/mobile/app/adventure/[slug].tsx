@@ -15,10 +15,12 @@ import type { EnhancedRoutePayload } from '../../src/map/map-layers';
 import { colors, radius, spacing } from '../../src/theme/tokens';
 import { checkpointViewModel } from '../../src/adventure/checkpoint-view-model';
 import { technicalGpsMetricsViewModel } from '../../src/adventure/technical-gps-view-model';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function ActiveAdventureScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const route = getDevelopmentRouteBySlug(slug);
   const routeSlug = route?.slug ?? '';
   const routePresentation = route
@@ -85,7 +87,7 @@ export default function ActiveAdventureScreen() {
   }, [route]);
 
   useEffect(() => {
-    if (!route || !definition || (!isTechnicalGpsQa && !mapPayload)) return;
+    if (authLoading || !user || !route || !definition || (!isTechnicalGpsQa && !mapPayload)) return;
     let active = true;
     setStarting(true);
     setActivityError(null);
@@ -113,7 +115,7 @@ export default function ActiveAdventureScreen() {
 
     void startOrRecover();
     return () => { active = false; };
-  }, [route, definition, mapPayload, isTechnicalGpsQa]);
+  }, [route, definition, mapPayload, isTechnicalGpsQa, authLoading, user?.id]);
 
   useEffect(() => {
     if (!activityState) return;
@@ -174,6 +176,40 @@ export default function ActiveAdventureScreen() {
     ? Math.round((snapshot?.routeProgress ?? 0) * 100)
     : null;
   const gpsSamples = gpsMetrics.gpsSamples;
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.notFound}>
+          <Text accessibilityRole="header" style={styles.notFoundTitle}>
+            {authLoading ? 'Comprobando tu sesión…' : 'Inicia sesión para usar el GPS'}
+          </Text>
+          <Text style={styles.notFoundBody}>
+            La captura y el resumen GPS contienen datos personales. Las fichas públicas se pueden consultar sin cuenta.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Iniciar sesión para guardar datos GPS"
+            accessibilityState={{ disabled: authLoading }}
+            disabled={authLoading}
+            style={styles.secondaryButton}
+            onPress={() => router.push({ pathname: '/login', params: { returnTo: 'adventure', slug: route.slug } })}
+          >
+            <Text style={styles.secondaryButtonText}>Iniciar sesión o registrarse</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Volver a rutas públicas"
+            style={styles.secondaryButton}
+            onPress={() => router.replace('/')}
+          >
+            <Text style={styles.secondaryButtonText}>Volver a rutas públicas</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -374,6 +410,11 @@ export default function ActiveAdventureScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.warmBackground },
+  notFound: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing[24] },
+  notFoundTitle: { color: colors.olive900, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+  notFoundBody: { color: colors.ink, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: spacing[12] },
+  secondaryButton: { minHeight: 48, width: '100%', justifyContent: 'center', alignItems: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900, paddingHorizontal: spacing[16], marginTop: spacing[12] },
+  secondaryButtonText: { color: colors.olive900, fontSize: 14, fontWeight: '800', textAlign: 'center' },
   mapContainer: { flex: 1, marginHorizontal: -spacing[20], marginTop: -spacing[12] },
   preparationMap: { flex: 1, marginHorizontal: spacing[20], marginVertical: spacing[12], borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: spacing[24] },
   preparationMapTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', textAlign: 'center' },

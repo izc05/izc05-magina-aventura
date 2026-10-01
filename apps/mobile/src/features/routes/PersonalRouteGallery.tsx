@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
   ActivityIndicator,
@@ -27,12 +28,15 @@ import { personalRoutePhotoPickerOptions } from './personal-route-photo-picker-o
 import { personalRouteGalleryStore } from './expo-personal-route-gallery-store';
 import { colors, radius, spacing } from '../../theme/tokens';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 
 interface PersonalRouteGalleryProps {
   routeSlug: string;
 }
 
 export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [photos, setPhotos] = useState<PersonalRoutePhoto[]>([]);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -46,6 +50,14 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setPhotos([]);
+      setSelectedPhotoId(null);
+      setIsLoading(false);
+      setLoadFailed(false);
+      return;
+    }
+
     let active = true;
     setIsLoading(true);
     setLoadFailed(false);
@@ -66,7 +78,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     return () => {
       active = false;
     };
-  }, [routeSlug, loadAttempt]);
+  }, [routeSlug, loadAttempt, user?.id]);
 
   const closeDraft = () => {
     if (isSaving) return;
@@ -181,6 +193,30 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const canSave = caption.trim().length > 0 && credit.trim().length > 0 && !isSaving;
   const selectedPhoto = selectPersonalRoutePhoto(photos, selectedPhotoId);
   const viewerDetails = selectedPhoto ? getPersonalRoutePhotoViewerDetails(selectedPhoto) : null;
+
+  if (!user) {
+    return (
+      <View testID="personal-gallery-auth-required" style={styles.authRequired}>
+        <Text style={styles.authRequiredTitle}>Galería personal protegida</Text>
+        <Text style={styles.authRequiredBody}>
+          {authLoading
+            ? 'Comprobando tu sesión…'
+            : 'Inicia sesión o crea una cuenta para ver y guardar tus fotos personales. Las imágenes Commons y la ficha pública siguen disponibles.'}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Iniciar sesión o registrarse para la galería personal"
+          accessibilityHint="Al terminar volverás a la ficha pública de Bedmar."
+          accessibilityState={{ disabled: authLoading }}
+          disabled={authLoading}
+          style={styles.authRequiredButton}
+          onPress={() => router.push({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } })}
+        >
+          <Text style={styles.authRequiredButtonText}>Iniciar sesión o registrarse</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -381,6 +417,11 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
 
 const styles = StyleSheet.create({
   container: { marginHorizontal: spacing[20], marginTop: spacing[12] },
+  authRequired: { gap: spacing[8], borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, padding: spacing[16] },
+  authRequiredTitle: { color: colors.olive900, fontSize: 14, fontWeight: '900' },
+  authRequiredBody: { color: colors.ink, fontSize: 13, lineHeight: 19 },
+  authRequiredButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, backgroundColor: colors.olive900, paddingHorizontal: spacing[16] },
+  authRequiredButtonText: { color: colors.white, fontSize: 13, fontWeight: '900' },
   statusPanel: { minHeight: 112, alignItems: 'center', justifyContent: 'center', gap: spacing[8], marginTop: spacing[12], borderRadius: radius.md, backgroundColor: colors.white, padding: spacing[16] },
   statusText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
   retryButton: { marginTop: spacing[4], paddingHorizontal: spacing[16], paddingVertical: spacing[8], borderRadius: radius.md, borderWidth: 1, borderColor: colors.olive900 },

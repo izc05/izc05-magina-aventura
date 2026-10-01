@@ -23,7 +23,7 @@ const navItems = [
   { icon: '◇', label: 'Retos', unavailable: true },
   { icon: '▦', label: 'Colecciones', unavailable: true },
   { icon: '△', label: 'Ranking', unavailable: true },
-  { icon: '○', label: 'Perfil', unavailable: false },
+  { icon: '○', label: 'Pasaporte', unavailable: false },
 ] as const;
 
 export default function RoutesHomeScreen() {
@@ -173,7 +173,7 @@ export default function RoutesHomeScreen() {
               accessibilityLabel={isDisabled ? `${label}, próximamente.` : label}
               accessibilityHint={isDisabled ? 'Esta sección todavía no está disponible.' : undefined}
               accessibilityState={{ disabled: isDisabled, selected: isSelected }}
-              onPress={label === 'Perfil' ? () => router.push('/profile') : undefined}
+              onPress={label === 'Pasaporte' ? () => router.push('/profile') : undefined}
             >
               <Text style={[styles.navIcon, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{icon}</Text>
               <Text style={[styles.navLabel, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{label}</Text>

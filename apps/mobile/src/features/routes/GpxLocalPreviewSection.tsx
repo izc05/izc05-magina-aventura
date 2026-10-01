@@ -67,7 +67,7 @@ export function GpxLocalPreviewSectionView({
         <Text style={styles.badge}>SIN IMPORTAR</Text>
       </View>
       <Text style={styles.body}>
-        Elige un archivo GPX con el selector de archivos del sistema. La app no publica, sincroniza ni conserva el archivo; solo muestra una ficha temporal en pantalla.
+        Elige un archivo GPX con el selector del sistema. La app no publica, sincroniza ni conserva el archivo; oculta su nombre y metadatos personales y solo muestra detalles técnicos temporales.
       </Text>
       <Text style={styles.pickerNote}>
         No se solicita acceso general al almacenamiento. La vista previa no se mezcla con GPS de actividad ni con navegación.
@@ -106,7 +106,7 @@ export function GpxLocalPreviewSectionView({
           <Text accessibilityRole="header" style={styles.previewTitle}>Vista previa local válida</Text>
           <Text style={styles.detailLabel}>ARCHIVO</Text>
           <Text selectable style={styles.detailValue}>{state.preview.fileName}</Text>
-          <Text style={styles.detailLabel}>METADATOS GPX PRESENTES</Text>
+          <Text style={styles.detailLabel}>DETALLES TÉCNICOS</Text>
           {state.preview.metadata.length > 0 ? state.preview.metadata.map((item, index) => (
             <View key={`${item.label}-${index}`} style={styles.metadataRow}>
               <Text style={styles.metadataLabel}>{item.label}</Text>

@@ -19,20 +19,11 @@ function expectInvalid(xml: string, reason: string, fileName = 'prueba.gpx', siz
 }
 
 describe('createGpxLocalPreview', () => {
-  it('returns only the filename, present metadata, track/waypoint counts, and unverified provenance', () => {
-    const preview = createGpxLocalPreview('archivo-sintetico.GPX', SYNTHETIC_TEST_ONLY_GPX, FIXTURE_SIZE);
+  it('returns only a generic local filename, the GPX version, counts, and unverified provenance', () => {
+    const preview = createGpxLocalPreview('/private/usuarios/ana/recorrido-casa.GPX', SYNTHETIC_TEST_ONLY_GPX, FIXTURE_SIZE);
     expect(preview).toEqual({
-      fileName: 'archivo-sintetico.GPX',
-      metadata: [
-        { label: 'Versión GPX', value: '1.1' },
-        { label: 'Creador declarado', value: 'fixture-de-prueba' },
-        { label: 'Nombre declarado', value: 'Fixture sintético · solo pruebas' },
-        {
-          label: 'Descripción declarada',
-          value: 'Contenido fabricado que no representa un sendero ni acredita autorización.',
-        },
-        { label: 'Autor declarado', value: 'Autoría sintética de prueba' },
-      ],
+      fileName: 'Archivo GPX local',
+      metadata: [{ label: 'Versión GPX', value: '1.1' }],
       trackCount: 1,
       waypointCount: 2,
       provenanceStatus: 'Sin verificar / pendiente de autorización',
@@ -44,7 +35,7 @@ describe('createGpxLocalPreview', () => {
       'waypointCount',
       'provenanceStatus',
     ]);
-    expect(JSON.stringify(preview)).not.toMatch(/coordinates|elevations|distance|ascent|checkpoint|geometry|uri/i);
+    expect(JSON.stringify(preview)).not.toMatch(/coordinates|elevations|distance|ascent|checkpoint|geometry|uri|archivo-sintetico|fixture-de-prueba|autoría|descripción/i);
   });
 
   it('rejects a non-GPX filename before parsing content', () => {
@@ -71,14 +62,15 @@ describe('createGpxLocalPreview', () => {
     expectInvalid(xml, 'unsafe-xml-declaration');
   });
 
-  it('bounds displayed metadata text and omits absent fields', () => {
+  it('omits user-controlled filename, names, descriptions, authors, dates, and keywords', () => {
     const longName = 'x'.repeat(300);
-    const xml = `<gpx version="1.1" creator=""><metadata><name>${longName}</name></metadata></gpx>`;
-    const preview = createGpxLocalPreview('short.gpx', xml, xml.length);
+    const xml = `<gpx version="1.1" creator="persona@example.test"><metadata><name>${longName}</name><desc>Mi domicilio privado</desc><author><name>Nombre privado</name></author><time>2026-09-30T08:10:00Z</time><keywords>casa,personal</keywords></metadata></gpx>`;
+    const preview = createGpxLocalPreview('/users/private/ana-casa.gpx', xml, xml.length);
+    expect(preview.fileName).toBe('Archivo GPX local');
     expect(preview.metadata).toEqual([
       { label: 'Versión GPX', value: '1.1' },
-      { label: 'Nombre declarado', value: `${'x'.repeat(159)}…` },
     ]);
+    expect(JSON.stringify(preview)).not.toMatch(/persona@example|Nombre privado|domicilio privado|ana-casa|personal|2026-09-30|x{20}/);
     expect(preview.trackCount).toBe(0);
     expect(preview.waypointCount).toBe(0);
   });

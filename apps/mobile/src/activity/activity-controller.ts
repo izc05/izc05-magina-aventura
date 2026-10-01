@@ -100,7 +100,23 @@ function rehydrateEngineState(
       ...recovered.session,
       lastProcessedSequence: recovered.snapshot.lastProcessedSequence,
     },
-    snapshot: recovered.snapshot,
+    snapshot: {
+      ...recovered.snapshot,
+      activeIntervalStartedAt:
+        recovered.session.state === 'ACTIVE'
+          ? recovered.snapshot.activeIntervalStartedAt ?? recovered.snapshot.createdAt
+          : null,
+      gpsGapSecondsExcluded: recovered.snapshot.gpsGapSecondsExcluded ?? 0,
+      lastValidSample:
+        recovered.session.state === 'ACTIVE' &&
+        recovered.snapshot.lastValidSample &&
+        Date.parse(recovered.snapshot.lastValidSample.timestamp) >=
+          Date.parse(
+            recovered.snapshot.activeIntervalStartedAt ?? recovered.snapshot.createdAt,
+          )
+          ? recovered.snapshot.lastValidSample
+          : null,
+    },
     offRouteEvidence: {
       state: recovered.snapshot.offRouteState,
       outsideSamples: 0,
@@ -276,6 +292,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
         activityId: dependencies.createActivityId(),
         adventureSlug: validatedDefinition.slug,
         adventureVersion: validatedDefinition.version,
+        recordingSource: dependencies.locationProvider.recordingSource,
         routeId: route.id,
         routeSlug: route.slug,
         geometryVersion: route.geometryVersion,
@@ -335,6 +352,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
       if (!recovered || recovered.session.routeId !== route.id) {
         engineState = null;
         lastConsumedInboxId = 0;
+        if (!recovered) {
+          await dependencies.locationProvider.stop();
+        }
         return null;
       }
 

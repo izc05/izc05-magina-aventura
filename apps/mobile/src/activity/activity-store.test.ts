@@ -32,6 +32,8 @@ function snapshot(sequence: number, state: ActivitySnapshot['state'] = 'ACTIVE')
     lastProcessedSequence: sequence,
     validDistanceMeters: sequence * 10,
     totalElapsedSeconds: sequence * 5,
+    activeIntervalStartedAt: state === 'ACTIVE' ? '2026-09-16T08:00:00.000Z' : null,
+    gpsGapSecondsExcluded: 0,
     movingElapsedSeconds: sequence * 5,
     currentSpeedMps: 1,
     paceSecondsPerKm: 1000,

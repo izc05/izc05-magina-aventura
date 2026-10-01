@@ -19,6 +19,12 @@ function fakeAdapter(overrides: Partial<NativeLocationAdapter> = {}): NativeLoca
 }
 
 describe('LocationProvider permissions', () => {
+  it('treats injected adapters as mock unless device GPS is explicitly declared', () => {
+    expect(createLocationProvider(fakeAdapter()).recordingSource).toBe('mock');
+    expect(createLocationProvider(fakeAdapter(), 'device-gps').recordingSource)
+      .toBe('device-gps');
+  });
+
   it('does not request background permission when foreground permission is denied', async () => {
     let backgroundRequests = 0;
     const provider = createLocationProvider(

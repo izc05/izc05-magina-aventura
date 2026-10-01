@@ -78,6 +78,8 @@ function snapshot(state: ActivitySnapshot['state'] = 'ACTIVE'): ActivitySnapshot
     lastProcessedSequence: 2,
     validDistanceMeters: 18,
     totalElapsedSeconds: 10,
+    activeIntervalStartedAt: state === 'ACTIVE' ? '2026-09-28T08:00:00.000Z' : null,
+    gpsGapSecondsExcluded: 0,
     movingElapsedSeconds: 10,
     currentSpeedMps: 1,
     paceSecondsPerKm: 600,
@@ -182,6 +184,8 @@ describe('SQLiteActivityStore durability contract', () => {
 
     expect(recovered?.lastConsumedInboxId).toBe(37);
     expect(recovered?.session.activityId).toBe('activity-sqlite');
+    expect(recovered?.snapshot.activeIntervalStartedAt).toBe('2026-09-28T08:00:00.000Z');
+    expect(recovered?.snapshot.gpsGapSecondsExcluded).toBe(0);
   });
 
   it('persists FINISHED state and sync outbox inside one exclusive transaction', async () => {
@@ -233,5 +237,115 @@ describe('SQLiteActivityStore durability contract', () => {
     );
 
     expect(mocks.database.withExclusiveTransactionAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('lists only verified finished device GPS captures with samples and a final snapshot, newest first', async () => {
+    const row = (
+      activityId: string,
+      finishedAt: string | null,
+      sequence: number,
+      distanceMeters: number,
+      elapsedSeconds: number,
+      sampleCount = 2,
+    ) => ({
+      activity_id: activityId,
+      state: 'FINISHED',
+      finished_at: finishedAt,
+      recording_source: 'device-gps',
+      last_processed_sequence: sequence,
+      snapshot_last_processed_sequence: sequence,
+      snapshot_payload_json: JSON.stringify({
+        ...snapshot('FINISHED'),
+        activityId,
+        lastProcessedSequence: sequence,
+        validDistanceMeters: distanceMeters,
+        totalElapsedSeconds: elapsedSeconds,
+      }),
+      sample_count: sampleCount,
+    });
+    const newer = row('gps-newer', '2026-09-29T08:10:00.000Z', 4, 400, 300, 3);
+    const older = row('gps-older', '2026-09-28T08:10:00.000Z', 2, 18, 10, 2);
+    const mock = { ...row('mock-session', '2026-09-30T08:10:00.000Z', 2, 80_000, 50_000), recording_source: 'mock' };
+    const legacy = { ...row('legacy-session', '2026-09-30T08:10:00.000Z', 2, 8_000, 5_000), recording_source: 'unclassified' };
+    const unknownSource = { ...row('unknown-source', '2026-09-30T08:10:00.000Z', 2, 8_000, 5_000), recording_source: 'development-gps-qa' };
+    const active = { ...row('active-session', null, 2, 8_000, 5_000), state: 'ACTIVE' };
+    const noSamples = row('no-samples', '2026-09-30T08:10:00.000Z', 2, 8_000, 5_000, 0);
+    const invalidDate = row('invalid-date', 'not-a-date', 2, 8_000, 5_000);
+    const staleSnapshot = { ...row('stale-snapshot', '2026-09-30T08:10:00.000Z', 2, 8_000, 5_000), snapshot_last_processed_sequence: 1 };
+    const invalidFinalPayload = {
+      ...row('invalid-final-payload', '2026-09-30T08:10:00.000Z', 2, 8_000, 5_000),
+      snapshot_payload_json: JSON.stringify({
+        ...snapshot('FINISHED'),
+        activityId: 'invalid-final-payload',
+        state: 'ACTIVE',
+      }),
+    };
+    mocks.getAllAsync.mockResolvedValue([
+      older,
+      mock,
+      invalidDate,
+      newer,
+      legacy,
+      active,
+      noSamples,
+      unknownSource,
+      staleSnapshot,
+      invalidFinalPayload,
+    ]);
+
+    const store = new SQLiteActivityStore('passport-gps-captures.db');
+    const data = await store.loadPassportGpsData();
+    const queryCall = mocks.getAllAsync.mock.calls.at(-1) as unknown[];
+    const query = String(queryCall[0]);
+
+    expect(query).toContain('session.state = ?');
+    expect(query).toContain('session.finished_at IS NOT NULL');
+    expect(query).toContain('session.recording_source = ?');
+    expect(query).toContain('latest_snapshot.last_processed_sequence');
+    expect(query).toContain('ORDER BY session.finished_at DESC');
+    expect(query).not.toContain('route_id');
+    expect(query).not.toContain('route_distance_km');
+    expect(query).not.toContain('reward_xp');
+    expect(queryCall.slice(1)).toEqual(['FINISHED', 'device-gps']);
+    expect(data.sessions).toEqual([
+      {
+        activityId: 'gps-newer',
+        finishedAt: '2026-09-29T08:10:00.000Z',
+        distanceMeters: 400,
+        elapsedSeconds: 300,
+        sampleCount: 3,
+      },
+      {
+        activityId: 'gps-older',
+        finishedAt: '2026-09-28T08:10:00.000Z',
+        distanceMeters: 18,
+        elapsedSeconds: 10,
+        sampleCount: 2,
+      },
+    ]);
+    expect(data.metrics).toEqual({
+      sessionCount: 2,
+      distanceMeters: 418,
+      elapsedSeconds: 310,
+    });
+  });
+
+  it('returns an empty list and zero aggregate when no finished GPS captures are saved', async () => {
+    const store = new SQLiteActivityStore('empty-passport-metrics.db');
+
+    await expect(store.loadPassportGpsData()).resolves.toEqual({
+      sessions: [],
+      metrics: { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+    });
+  });
+
+  it('keeps the aggregate API derived from the same safe capture query', async () => {
+    const store = new SQLiteActivityStore('passport-metrics-compat.db');
+
+    await expect(store.loadPassportGpsMetrics()).resolves.toEqual({
+      sessionCount: 0,
+      distanceMeters: 0,
+      elapsedSeconds: 0,
+    });
   });
 });

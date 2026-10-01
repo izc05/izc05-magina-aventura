@@ -28,6 +28,8 @@ const snapshot: ActivitySnapshot = {
   lastProcessedSequence: 3,
   validDistanceMeters: 20,
   totalElapsedSeconds: 30,
+  activeIntervalStartedAt: null,
+  gpsGapSecondsExcluded: 0,
   movingElapsedSeconds: 25,
   currentSpeedMps: 0,
   paceSecondsPerKm: null,

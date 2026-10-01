@@ -14,14 +14,16 @@ import { developmentRoutes } from '../src/features/routes/fixtures';
 import { colors, radius, spacing, typography } from '../src/theme/tokens';
 import { HeroTerritory } from '../src/components/ui/HeroTerritory';
 import { RouteCard } from '../src/components/ui/RouteCard';
+import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
+import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 const navItems = [
-  ['⌂', 'Rutas'],
-  ['◇', 'Retos'],
-  ['▦', 'Colecciones'],
-  ['△', 'Ranking'],
-  ['○', 'Perfil'],
+  { icon: '⌂', label: 'Rutas', unavailable: false },
+  { icon: '◇', label: 'Retos', unavailable: true },
+  { icon: '▦', label: 'Colecciones', unavailable: true },
+  { icon: '△', label: 'Ranking', unavailable: true },
+  { icon: '○', label: 'Perfil', unavailable: false },
 ] as const;
 
 export default function RoutesHomeScreen() {
@@ -59,54 +61,88 @@ export default function RoutesHomeScreen() {
             placeholder="Buscar rutas, pueblos o dificultad"
             placeholderTextColor={colors.muted}
             style={styles.searchInput}
+            accessibilityLabel="Buscar rutas, pueblos o dificultad. Próximamente."
+            accessibilityHint="La búsqueda todavía no está disponible."
+            accessibilityState={{ disabled: true }}
+            editable={false}
           />
         </View>
+        <Text style={styles.availabilityNote}>Búsqueda de rutas: próximamente.</Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {filters.map((filter, index) => (
-            <View
-              key={filter}
-              style={[styles.filterChip, index === 0 && styles.filterChipActive]}
-            >
-              <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>
-                {filter}
+        <View style={styles.filterSection}>
+          <Text style={styles.availabilityNote}>Filtros de dificultad: próximamente.</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            {filters.map((filter) => (
+              <Pressable
+                key={filter}
+                disabled
+                accessibilityRole="button"
+                accessibilityLabel={`Filtro ${filter}. Próximamente.`}
+                accessibilityHint="Los filtros de rutas todavía no están disponibles."
+                accessibilityState={{ disabled: true }}
+                style={[styles.filterChip, styles.filterChipDisabled]}
+              >
+                <Text style={[styles.filterText, styles.filterTextDisabled]}>{filter}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        {__DEV__ ? (
+          <Pressable
+            style={styles.testerBanner}
+            onPress={() => router.push('/theme-tester')}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir Probador Visual y Capas, solo para desarrollo."
+          >
+            <View style={styles.testerIconBox}>
+              <Text style={styles.testerIcon}>🎨</Text>
+            </View>
+            <View style={styles.testerCopy}>
+              <Text style={styles.testerEyebrow}>HERRAMIENTA DE DISEÑO</Text>
+              <Text style={styles.testerTitle}>Probador Visual & Capas</Text>
+              <Text style={styles.testerBody}>
+                Prueba los 4 temas cartográficos, altimetría y capas interactivas.
               </Text>
             </View>
-          ))}
-        </ScrollView>
-
-        <Pressable
-          style={styles.testerBanner}
-          onPress={() => router.push('/theme-tester')}
-        >
-          <View style={styles.testerIconBox}>
-            <Text style={styles.testerIcon}>🎨</Text>
-          </View>
-          <View style={styles.testerCopy}>
-            <Text style={styles.testerEyebrow}>HERRAMIENTA DE DISEÑO</Text>
-            <Text style={styles.testerTitle}>Probador Visual & Capas</Text>
-            <Text style={styles.testerBody}>
-              Prueba los 4 temas cartográficos, altimetría y capas interactivas.
-            </Text>
-          </View>
-          <Text style={styles.testerArrow}>→</Text>
-        </Pressable>
+            <Text style={styles.testerArrow}>→</Text>
+          </Pressable>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Rutas destacadas</Text>
             <Text style={styles.sectionSubtitle}>Empieza por Bedmar y Garcíez</Text>
           </View>
-          <Text style={styles.sectionAction}>Ver todas</Text>
+          <Pressable
+            disabled
+            accessibilityRole="button"
+            accessibilityLabel="Ver todas las rutas. Próximamente."
+            accessibilityHint="El catálogo completo de rutas todavía no está disponible."
+            accessibilityState={{ disabled: true }}
+            style={styles.sectionAction}
+          >
+            <Text style={styles.sectionActionText}>Ver todas</Text>
+            <Text style={styles.sectionActionStatus}>Próximamente</Text>
+          </Pressable>
         </View>
 
         <RouteCard 
           route={route} 
           onPress={() => router.push({ pathname: '/routes/[slug]', params: { slug: route.slug } })} 
+        />
+
+        <MunicipalRouteInformationCard
+          onPress={() =>
+            router.push({
+              pathname: '/municipal-routes/[slug]',
+              params: { slug: municipalRouteInformation.slug },
+            })
+          }
         />
 
         <View style={styles.challengeCard}>
@@ -124,20 +160,27 @@ export default function RoutesHomeScreen() {
       </ScrollView>
 
       <View style={styles.bottomNav}>
-        {navItems.map(([icon, label], index) => (
-          <Pressable 
-            key={label} 
-            style={styles.navItem}
-            onPress={() => {
-              if (label === 'Perfil') {
-                router.push('/profile');
-              }
-            }}
-          >
-            <Text style={[styles.navIcon, index === 0 && styles.navActive]}>{icon}</Text>
-            <Text style={[styles.navLabel, index === 0 && styles.navActive]}>{label}</Text>
-          </Pressable>
-        ))}
+        {navItems.map(({ icon, label, unavailable }) => {
+          const isSelected = label === 'Rutas';
+          const isDisabled = unavailable === true;
+
+          return (
+            <Pressable
+              key={label}
+              style={styles.navItem}
+              disabled={isDisabled}
+              accessibilityRole="tab"
+              accessibilityLabel={isDisabled ? `${label}, próximamente.` : label}
+              accessibilityHint={isDisabled ? 'Esta sección todavía no está disponible.' : undefined}
+              accessibilityState={{ disabled: isDisabled, selected: isSelected }}
+              onPress={label === 'Perfil' ? () => router.push('/profile') : undefined}
+            >
+              <Text style={[styles.navIcon, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{icon}</Text>
+              <Text style={[styles.navLabel, isSelected && styles.navActive, isDisabled && styles.navDisabled]}>{label}</Text>
+              {isDisabled ? <Text style={styles.navStatus}>Próximamente</Text> : null}
+            </Pressable>
+          );
+        })}
       </View>
     </SafeAreaView>
   );
@@ -177,6 +220,8 @@ const styles = StyleSheet.create({
   },
   searchIcon: { color: colors.olive900, fontSize: 24, marginRight: spacing[8] },
   searchInput: { flex: 1, color: colors.ink, fontSize: 15 },
+  availabilityNote: { color: colors.muted, fontSize: 11, lineHeight: 15, marginTop: spacing[4] },
+  filterSection: { marginTop: spacing[8] },
   filters: { gap: spacing[8], paddingVertical: spacing[16] },
   filterChip: {
     borderRadius: radius.pill,
@@ -186,9 +231,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  filterChipActive: { backgroundColor: colors.olive900, borderColor: colors.olive900 },
+  filterChipDisabled: { backgroundColor: colors.limestone, opacity: 0.72 },
   filterText: { color: colors.ink, fontSize: 13, fontWeight: '700' },
-  filterTextActive: { color: colors.white },
+  filterTextDisabled: { color: colors.muted },
   testerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,7 +266,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { color: colors.ink, fontSize: typography.section, fontWeight: '900' },
   sectionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  sectionAction: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
+  sectionAction: { alignItems: 'flex-end', opacity: 0.72 },
+  sectionActionText: { color: colors.olive700, fontSize: 13, fontWeight: '800' },
+  sectionActionStatus: { color: colors.muted, fontSize: 9, fontWeight: '700', marginTop: 2 },
   challengeCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,
@@ -262,5 +309,7 @@ const styles = StyleSheet.create({
   navItem: { flex: 1, alignItems: 'center', gap: 3 },
   navIcon: { color: colors.muted, fontSize: 19, fontWeight: '800' },
   navLabel: { color: colors.muted, fontSize: 10, fontWeight: '700' },
+  navStatus: { color: colors.muted, fontSize: 8, fontWeight: '700' },
+  navDisabled: { opacity: 0.72 },
   navActive: { color: colors.olive900 },
 });

@@ -29,4 +29,7 @@ const expoLocationApi: ExpoLocationApi = {
 };
 
 export const expoLocationAdapter = createExpoLocationAdapter(expoLocationApi);
-export const expoLocationProvider = createLocationProvider(expoLocationAdapter);
+export const expoLocationProvider = createLocationProvider(
+  expoLocationAdapter,
+  'device-gps',
+);

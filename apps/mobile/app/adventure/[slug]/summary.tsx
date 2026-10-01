@@ -3,9 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { activityRuntime } from '../../../src/activity/activity-runtime';
+import { routePresentationViewModel } from '../../../src/features/routes/route-presentation-view-model';
 import { getDevelopmentRouteBySlug } from '../../../src/features/routes/route-utils';
 import { colors, radius, spacing } from '../../../src/theme/tokens';
- import { activityRuntime } from '../../../src/activity/activity-runtime';
 
 export default function ActivitySummaryScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
@@ -16,62 +17,71 @@ export default function ActivitySummaryScreen() {
     return null;
   }
 
+  const presentation = routePresentationViewModel(
+    route,
+    route.developmentFixture ? 'development-simulation' : 'unverified',
+  );
+  const technicalGpsQa = presentation.mode === 'technical-gps-qa';
   const finished = activityRuntime.current();
   const snapshot = finished?.snapshot;
-  const distanceKm = (snapshot?.validDistanceMeters ?? 0) / 1000;
-  const elapsedSeconds = snapshot?.totalElapsedSeconds ?? 0;
-  const elapsedHours = Math.floor(elapsedSeconds / 3600);
-  const elapsedMinutes = Math.floor((elapsedSeconds % 3600) / 60);
-  const elapsedDisplay = `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}`;
+  const distanceKm = snapshot ? snapshot.validDistanceMeters / 1000 : null;
+  const elapsedSeconds = snapshot?.totalElapsedSeconds ?? null;
+  const elapsedHours = elapsedSeconds === null ? null : Math.floor(elapsedSeconds / 3600);
+  const elapsedMinutes = elapsedSeconds === null ? null : Math.floor((elapsedSeconds % 3600) / 60);
+  const elapsedDisplay = elapsedHours === null || elapsedMinutes === null
+    ? '—'
+    : `${String(elapsedHours).padStart(2, '0')}:${String(elapsedMinutes).padStart(2, '0')}`;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>AVENTURA FINALIZADA</Text>
-          <Text style={styles.title}>{route.title}</Text>
-          <Text style={styles.subtitle}>Recorrido guardado · {route.municipalityName}</Text>
+          <Text style={styles.eyebrow}>
+            {technicalGpsQa ? 'SESIÓN TÉCNICA GPS FINALIZADA' : 'AVENTURA FINALIZADA'}
+          </Text>
+          <Text style={styles.title}>{presentation.title}</Text>
+          <Text style={styles.subtitle}>
+            {technicalGpsQa
+              ? 'Métricas reales de GPS · sin ruta ni checkpoints verificados'
+              : `Recorrido guardado · ${presentation.municipalityName ?? 'contenido en preparación'}`}
+          </Text>
         </View>
 
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{distanceKm.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>km</Text>
+            <Text style={styles.statValue}>{distanceKm === null ? '—' : distanceKm.toFixed(2)}</Text>
+            <Text style={styles.statLabel}>km GPS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{elapsedDisplay}</Text>
-            <Text style={styles.statLabel}>horas</Text>
+            <Text style={styles.statLabel}>tiempo GPS</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{finished?.session.lastProcessedSequence ?? 0}</Text>
+            <Text style={styles.statValue}>{finished?.session.lastProcessedSequence ?? '—'}</Text>
             <Text style={styles.statLabel}>muestras GPS</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumen de esta prueba</Text>
+          <Text style={styles.sectionTitle}>
+            {technicalGpsQa ? 'Captura técnica del dispositivo' : 'Resumen de la actividad'}
+          </Text>
           <Text style={styles.subtitle}>
-            Los datos mostrados proceden de la sesión GPS real. Las recompensas y colecciones se activarán cuando el Game Kit vuelva a entrar en el roadmap.
+            {technicalGpsQa
+              ? 'La distancia, el tiempo y las muestras proceden del motor GPS. No representan una ruta verificada ni generan recompensas.'
+              : 'Los datos de actividad se muestran sin atribuir recompensas no verificadas.'}
           </Text>
         </View>
-
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable 
-          style={styles.primaryButton} 
-          onPress={() => router.push('/profile' as any)}
-        >
+        <Pressable style={styles.primaryButton} onPress={() => router.push('/profile' as any)}>
           <Text style={styles.primaryButtonText}>Ver mi Pasaporte</Text>
         </Pressable>
-        <Pressable 
-          style={styles.secondaryButton} 
-          onPress={() => router.push('/')}
-        >
+        <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
           <Text style={styles.secondaryButtonText}>Volver al inicio</Text>
         </Pressable>
       </View>
@@ -93,7 +103,6 @@ const styles = StyleSheet.create({
   statDivider: { width: 1, height: 30, backgroundColor: colors.border },
   section: { marginBottom: spacing[32] },
   sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: '900', marginBottom: spacing[16] },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.limestone, padding: spacing[20], borderTopWidth: 1, borderTopColor: colors.border },
   primaryButton: { backgroundColor: colors.olive900, borderRadius: radius.md, paddingVertical: spacing[16], alignItems: 'center', marginBottom: spacing[12] },
   primaryButtonText: { color: colors.white, fontSize: 15, fontWeight: '800' },

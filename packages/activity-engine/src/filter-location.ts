@@ -81,14 +81,20 @@ export function normalizeLocationSample(
 
   if (previous?.validForMetrics && previousTimestampMs !== null) {
     const elapsedSeconds = (timestampMs - previousTimestampMs) / 1000;
-    const traveledMeters = distanceMeters(
-      { latitude: previous.latitude, longitude: previous.longitude },
-      { latitude: raw.latitude, longitude: raw.longitude },
-    );
-    const derivedSpeedMps = traveledMeters / elapsedSeconds;
 
-    if (derivedSpeedMps > config.maxHikingSpeedMps) {
-      return toLocationSample(raw, false, 'impossible_speed');
+    // After a prolonged gap, use this point as a fresh reference. Deriving
+    // speed from the old fix could imply a false segment; ACTIVE time remains
+    // based on START/RESUME -> PAUSE/FINISH, not on GPS cadence.
+    if (elapsedSeconds <= config.maxMetricSampleGapSeconds) {
+      const traveledMeters = distanceMeters(
+        { latitude: previous.latitude, longitude: previous.longitude },
+        { latitude: raw.latitude, longitude: raw.longitude },
+      );
+      const derivedSpeedMps = traveledMeters / elapsedSeconds;
+
+      if (derivedSpeedMps > config.maxHikingSpeedMps) {
+        return toLocationSample(raw, false, 'impossible_speed');
+      }
     }
   }
 

@@ -102,13 +102,6 @@ export function LayerControlOverlay({
             />
 
             <LayerToggleRow
-              label="Parque Natural Sierra Mágina"
-              icon="🏞️"
-              active={visibility.parkBoundary}
-              onToggle={() => onToggleLayer('parkBoundary')}
-            />
-
-            <LayerToggleRow
               label="Posición Senderista"
               icon="🥾"
               active={visibility.hikerPosition}

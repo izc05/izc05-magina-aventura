@@ -63,6 +63,7 @@ function provider(): LocationProvider & {
   stop: ReturnType<typeof vi.fn>;
 } {
   return {
+    recordingSource: 'mock',
     getPermissionState: vi.fn(async () => ({
       foregroundGranted: true,
       backgroundGranted: true,
@@ -221,6 +222,32 @@ describe('ActivityController durability boundaries', () => {
     const recoveredPaused = await third.recover(definition, route);
     expect(recoveredPaused?.session.state).toBe('PAUSED');
     expect(thirdProvider.start).not.toHaveBeenCalled();
+  });
+
+  it('stops a residual native GPS task when reopening after the session finished', async () => {
+    const database = createMemoryActivityStoreDatabase();
+    const inbox = new MemoryBackgroundLocationInbox();
+    const first = createActivityController({
+      store: new MemoryActivityStore(database),
+      inbox,
+      locationProvider: provider(),
+      createActivityId: () => 'activity-finished-before-reopen',
+      now: () => '2026-09-28T08:18:00.000Z',
+    });
+    await first.start(definition, route);
+    await first.finish();
+
+    const reopenedProvider = provider();
+    const reopened = createActivityController({
+      store: new MemoryActivityStore(database),
+      inbox,
+      locationProvider: reopenedProvider,
+      createActivityId: () => 'unused-after-finish',
+      now: () => '2026-09-28T08:19:00.000Z',
+    });
+
+    await expect(reopened.recover(definition, route)).resolves.toBeNull();
+    expect(reopenedProvider.stop).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the in-memory activity ACTIVE when atomic finish persistence fails', async () => {

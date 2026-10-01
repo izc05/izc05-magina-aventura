@@ -14,6 +14,25 @@ export interface ExplorationPersistence {
   observations: ExplorationObservation[];
 }
 
+export interface PassportGpsMetrics {
+  sessionCount: number;
+  distanceMeters: number;
+  elapsedSeconds: number;
+}
+
+export interface PassportGpsSession {
+  activityId: string;
+  finishedAt: string;
+  distanceMeters: number;
+  elapsedSeconds: number;
+  sampleCount: number;
+}
+
+export interface PassportGpsData {
+  sessions: PassportGpsSession[];
+  metrics: PassportGpsMetrics;
+}
+
 export interface RecoveredActivity {
   session: ActivitySession;
   snapshot: ActivitySnapshot;

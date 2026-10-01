@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ActivitySnapshot, LocationSample } from '@magina-aventura/contracts';
 
-import { updateActivityMetrics } from './metrics';
+import { elapsedSecondsAt, updateActivityMetrics } from './metrics';
 
 function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
   return {
@@ -10,6 +10,8 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
     lastProcessedSequence: 1,
     validDistanceMeters: 0,
     totalElapsedSeconds: 0,
+    activeIntervalStartedAt: '2026-09-16T07:00:00.000Z',
+    gpsGapSecondsExcluded: 0,
     movingElapsedSeconds: 0,
     currentSpeedMps: null,
     paceSecondsPerKm: null,
@@ -49,13 +51,21 @@ const previous: LocationSample = sample({
   altitudeMeters: 900,
 });
 
-describe('updateActivityMetrics', () => {
-  it('adds distance and moving time from accepted ACTIVE samples', () => {
+describe('activity elapsed time and metrics', () => {
+  it('advances its active clock without any GPS samples', () => {
+    const initial = snapshot();
+    expect(elapsedSecondsAt(initial, 'ACTIVE', '2026-09-16T07:00:17.000Z')).toBe(17);
+    expect(elapsedSecondsAt(initial, 'PAUSED', '2026-09-16T07:00:17.000Z')).toBe(0);
+  });
+
+  it('adds distance and moving time for accepted samples within the GPS gap limit', () => {
     const result = updateActivityMetrics(snapshot(), previous, sample(), 'ACTIVE');
 
     expect(result.validDistanceMeters).toBeGreaterThan(10);
     expect(result.movingElapsedSeconds).toBe(10);
     expect(result.currentSpeedMps).not.toBeNull();
+    // Total active time is supplied by lifecycle intervals, not sample deltas.
+    expect(result.totalElapsedSeconds).toBe(0);
   });
 
   it('does not inflate metrics with a rejected sample', () => {
@@ -71,12 +81,37 @@ describe('updateActivityMetrics', () => {
     expect(result.movingElapsedSeconds).toBe(45);
   });
 
-  it('does not add distance or moving time while PAUSED', () => {
+  it('does not add distance, moving time, or elapsed time while PAUSED', () => {
     const initial = snapshot({ validDistanceMeters: 120, movingElapsedSeconds: 45 });
     const result = updateActivityMetrics(initial, previous, sample(), 'PAUSED');
 
     expect(result.validDistanceMeters).toBe(120);
     expect(result.movingElapsedSeconds).toBe(45);
+    expect(result.totalElapsedSeconds).toBe(0);
+    expect(result.lastValidSample).toBeNull();
+  });
+
+  it('drops GPS-derived metrics across a prolonged gap without shortening ACTIVE time', () => {
+    const beforeGap = snapshot({ lastValidSample: previous });
+    const farAfterGap = sample({
+      timestamp: '2026-09-16T07:00:20.000Z',
+      latitude: 37.003,
+      longitude: -4,
+    });
+    const result = updateActivityMetrics(beforeGap, previous, farAfterGap, 'ACTIVE');
+
+    expect(result.validDistanceMeters).toBe(0);
+    expect(result.movingElapsedSeconds).toBe(0);
+    expect(result.elevationGainMeters).toBe(0);
+    expect(result.elevationLossMeters).toBe(0);
+    expect(result.currentSpeedMps).toBeNull();
+    expect(result.gpsGapSecondsExcluded).toBe(5);
+    expect(elapsedSecondsAt(result, 'ACTIVE', farAfterGap.timestamp)).toBe(20);
+  });
+
+  it('keeps counting the full ACTIVE interval after the last GPS fix', () => {
+    const withFix = snapshot({ lastValidSample: previous });
+    expect(elapsedSecondsAt(withFix, 'ACTIVE', '2026-09-16T07:00:20.000Z')).toBe(20);
   });
 
   it('ignores altitude noise below 3 m', () => {
@@ -95,7 +130,7 @@ describe('updateActivityMetrics', () => {
     const gained = updateActivityMetrics(snapshot(), previous, sample({ altitudeMeters: 904 }), 'ACTIVE');
     expect(gained.elevationGainMeters).toBe(4);
 
-    const higherPrevious = previous ? { ...previous, altitudeMeters: 910 } : previous;
+    const higherPrevious = { ...previous, altitudeMeters: 910 };
     const lost = updateActivityMetrics(snapshot(), higherPrevious, sample({ altitudeMeters: 905 }), 'ACTIVE');
     expect(lost.elevationLossMeters).toBe(5);
   });

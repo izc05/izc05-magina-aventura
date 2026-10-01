@@ -9,6 +9,11 @@ export type ActivityState =
 
 export type SyncState = 'local' | 'queued' | 'syncing' | 'synced' | 'failed';
 
+export type ActivityRecordingSource =
+  | 'device-gps'
+  | 'mock'
+  | 'unclassified';
+
 export type LocationRejectionReason =
   | 'invalid_coordinate'
   | 'non_monotonic_time'
@@ -34,6 +39,8 @@ export interface ActivitySession {
   adventureSlug: string;
   /** Exact immutable AdventureDefinition version pinned at start. */
   adventureVersion: number;
+  /** Persisted trust source; omitted legacy/test sessions are never treated as route GPS. */
+  recordingSource?: ActivityRecordingSource;
   routeId: string;
   routeSlug: string;
   geometryVersion: number;
@@ -51,6 +58,10 @@ export interface ActivitySnapshot {
   lastProcessedSequence: number;
   validDistanceMeters: number;
   totalElapsedSeconds: number;
+  /** Start of the currently open START/RESUME interval; null when not ACTIVE. */
+  activeIntervalStartedAt: string | null;
+  /** Seconds beyond GPS sample gaps excluded from GPS-derived metrics; never deducted from ACTIVE elapsed time. */
+  gpsGapSecondsExcluded: number;
   movingElapsedSeconds: number;
   currentSpeedMps: number | null;
   paceSecondsPerKm: number | null;

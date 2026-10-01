@@ -1,5 +1,5 @@
 import type { AdventureDefinition, RouteDetail } from '@magina-aventura/contracts';
-import type { ExplorationTarget } from '@magina-aventura/activity-engine';
+import { elapsedSecondsAt, type ExplorationTarget } from '@magina-aventura/activity-engine';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -58,11 +58,14 @@ const adventureDefinition: AdventureDefinition = {
   progression: { xpRulesetVersion: 1, rewards: [] },
 };
 
-function createProvider(): LocationProvider & {
+function createProvider(
+  recordingSource: LocationProvider['recordingSource'] = 'mock',
+): LocationProvider & {
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
 } {
   return {
+    recordingSource,
     getPermissionState: vi.fn(async () => ({
       foregroundGranted: true,
       backgroundGranted: true,
@@ -105,6 +108,7 @@ describe('ActivityController', () => {
 
     const started = await controller.start(adventureDefinition, route);
     expect(started.session.state).toBe('ACTIVE');
+    expect(started.session.recordingSource).toBe('mock');
     expect(provider.start).toHaveBeenCalledWith('activity-1', expect.any(Function));
 
     await inbox.append('activity-1', [
@@ -131,6 +135,21 @@ describe('ActivityController', () => {
     const pending = await store.loadPendingSyncBatches('activity-1');
     expect(pending).toHaveLength(1);
     expect(pending[0]?.idempotencyKey).toBe('activity:activity-1:track:1-2');
+  });
+
+  it('preserves physical GPS provenance for a fixture route without importing fixture route metrics', async () => {
+    const provider = createProvider('device-gps');
+    const controller = createActivityController({
+      store: new MemoryActivityStore(),
+      inbox: new MemoryBackgroundLocationInbox(),
+      locationProvider: provider,
+      createActivityId: () => 'activity-real-route',
+      now: () => '2026-09-16T10:00:00.000Z',
+    });
+
+    const started = await controller.start(adventureDefinition, route);
+
+    expect(started.session.recordingSource).toBe('device-gps');
   });
 
   it('recovers samples stored after the latest snapshot after process-like restart', async () => {
@@ -169,6 +188,47 @@ describe('ActivityController', () => {
       beforeRestart?.snapshot.validDistanceMeters ?? 0,
       3,
     );
+  });
+
+  it('preserves full ACTIVE duration without GPS and after recovery', async () => {
+    const storeDb = createMemoryActivityStoreDatabase();
+    const inboxDb = createMemoryBackgroundLocationInboxDatabase();
+    const provider = createProvider();
+    let now = '2026-09-16T10:00:00.000Z';
+
+    const first = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'activity-time-recovery',
+      now: () => now,
+    });
+    await first.start(adventureDefinition, route);
+
+    now = '2026-09-16T10:00:10.000Z';
+    const paused = await first.pause();
+    expect(paused.snapshot.totalElapsedSeconds).toBe(10);
+
+    now = '2026-09-16T10:01:00.000Z';
+    const resumed = await first.resume();
+    expect(resumed.snapshot.totalElapsedSeconds).toBe(10);
+
+    now = '2026-09-16T10:01:10.000Z';
+    const restarted = createActivityController({
+      store: new MemoryActivityStore(storeDb),
+      inbox: new MemoryBackgroundLocationInbox(inboxDb),
+      locationProvider: provider,
+      createActivityId: () => 'unused',
+      now: () => now,
+    });
+    const recovered = await restarted.recover(adventureDefinition, route);
+
+    expect(recovered?.snapshot.totalElapsedSeconds).toBe(10);
+    expect(elapsedSecondsAt(
+      recovered!.snapshot,
+      recovered!.session.state,
+      now,
+    )).toBe(20);
   });
 
   it('refuses recovery with a newer AdventureDefinition version', async () => {
@@ -249,5 +309,18 @@ describe('ActivityController', () => {
     expect(recovered?.exploration?.unlockedTargetKeys).toEqual([
       'checkpoint:00000000-0000-4000-8000-000000000011',
     ]);
+    expect(recovered?.explorationObservations).toHaveLength(1);
+
+    await new MemoryBackgroundLocationInbox(inboxDb).append('activity-exploration', [
+      rawPoint(Date.parse('2026-09-16T10:01:05.000Z'), 37.82, -3.41),
+      rawPoint(Date.parse('2026-09-16T10:01:10.000Z'), 37.82, -3.41),
+    ]);
+    const afterReentry = await restarted.refresh();
+
+    expect(afterReentry?.exploration?.unlockedTargetKeys).toEqual([
+      'checkpoint:00000000-0000-4000-8000-000000000011',
+    ]);
+    expect(afterReentry?.explorationObservations).toHaveLength(1);
+    expect(afterReentry?.session.state).toBe('ACTIVE');
   });
 });

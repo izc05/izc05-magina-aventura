@@ -1,6 +1,7 @@
 import type {
   ActivitySession,
   ActivitySnapshot,
+  ActivityRecordingSource,
   ActivityState,
   ActivitySyncBatch,
   LocationRejectionReason,
@@ -14,8 +15,11 @@ import * as SQLite from 'expo-sqlite';
 
 import { runActivityMigrations } from './migrations';
 import type {
+  PassportGpsData,
   ActivityStore,
   ExplorationPersistence,
+  PassportGpsMetrics,
+  PassportGpsSession,
   RecoveredActivity,
 } from './activity-store';
 
@@ -28,6 +32,7 @@ type SessionRow = {
   route_id: string;
   route_slug: string;
   geometry_version: number;
+  recording_source: string | null;
   state: ActivityState;
   started_at: string;
   paused_at: string | null;
@@ -43,6 +48,16 @@ type SyncBatchActivityRow = { activity_id: string };
 type CountRow = { count: number };
 type ExplorationStateRow = { state_json: string; last_evaluated_sequence: number };
 type ExplorationObservationRow = { payload_json: string };
+type PassportGpsSessionRow = {
+  activity_id: string;
+  state: ActivityState;
+  finished_at: string | null;
+  recording_source: string | null;
+  last_processed_sequence: number;
+  snapshot_last_processed_sequence: number;
+  snapshot_payload_json: string;
+  sample_count: number;
+};
 
 type SampleRow = {
   sequence: number;
@@ -57,6 +72,11 @@ type SampleRow = {
   rejection_reason: LocationRejectionReason;
 };
 
+function recordingSourceFromRow(value: string | null): ActivityRecordingSource {
+  if (value === 'device-gps' || value === 'mock') return value;
+  return 'unclassified';
+}
+
 function sessionFromRow(row: SessionRow): ActivitySession {
   if (!row.adventure_slug || !Number.isInteger(row.adventure_version)) {
     throw new Error('Activity is missing its immutable AdventureDefinition binding');
@@ -66,6 +86,7 @@ function sessionFromRow(row: SessionRow): ActivitySession {
     activityId: row.activity_id,
     adventureSlug: row.adventure_slug,
     adventureVersion: row.adventure_version!,
+    recordingSource: recordingSourceFromRow(row.recording_source),
     routeId: row.route_id,
     routeSlug: row.route_slug,
     geometryVersion: row.geometry_version,
@@ -166,15 +187,16 @@ async function writeSession(
   await db.runAsync(
     `INSERT INTO activity_sessions (
       activity_id, adventure_slug, adventure_version, route_id, route_slug,
-      geometry_version, state, started_at, paused_at, finished_at,
+      geometry_version, recording_source, state, started_at, paused_at, finished_at,
       last_processed_sequence, sync_state
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(activity_id) DO UPDATE SET
       adventure_slug = excluded.adventure_slug,
       adventure_version = excluded.adventure_version,
       route_id = excluded.route_id,
       route_slug = excluded.route_slug,
       geometry_version = excluded.geometry_version,
+      recording_source = excluded.recording_source,
       state = excluded.state,
       started_at = excluded.started_at,
       paused_at = excluded.paused_at,
@@ -187,6 +209,7 @@ async function writeSession(
     session.routeId,
     session.routeSlug,
     session.geometryVersion,
+    session.recordingSource ?? 'unclassified',
     session.state,
     session.startedAt,
     session.pausedAt,
@@ -480,6 +503,102 @@ export class SQLiteActivityStore implements ActivityStore {
       activityId,
     );
     return explorationFromRows(stateRow, observationRows);
+  }
+
+  async loadPassportGpsData(): Promise<PassportGpsData> {
+    await this.initialize();
+    const db = await this.database();
+    const rows = await db.getAllAsync<PassportGpsSessionRow>(
+      `SELECT session.activity_id, session.state, session.finished_at,
+              session.recording_source, session.last_processed_sequence,
+              latest_snapshot.last_processed_sequence AS snapshot_last_processed_sequence,
+              latest_snapshot.payload_json AS snapshot_payload_json,
+              (SELECT COUNT(*) FROM activity_samples AS sample
+               WHERE sample.activity_id = session.activity_id) AS sample_count
+       FROM activity_sessions AS session
+       INNER JOIN activity_snapshots AS latest_snapshot
+         ON latest_snapshot.activity_id = session.activity_id
+        AND latest_snapshot.last_processed_sequence = (
+          SELECT MAX(snapshot.last_processed_sequence)
+          FROM activity_snapshots AS snapshot
+          WHERE snapshot.activity_id = session.activity_id
+        )
+       WHERE session.state = ?
+         AND session.finished_at IS NOT NULL
+         AND session.recording_source = ?
+       ORDER BY session.finished_at DESC`,
+      'FINISHED',
+      'device-gps',
+    );
+
+    const sessions: PassportGpsSession[] = [];
+
+    for (const row of rows) {
+      if (
+        row.state !== 'FINISHED' ||
+        row.recording_source !== 'device-gps' ||
+        !row.finished_at ||
+        !Number.isFinite(Date.parse(row.finished_at)) ||
+        !Number.isInteger(row.sample_count) ||
+        row.sample_count < 1
+      ) continue;
+      if (
+        !Number.isInteger(row.last_processed_sequence) ||
+        !Number.isInteger(row.snapshot_last_processed_sequence) ||
+        row.snapshot_last_processed_sequence !== row.last_processed_sequence
+      ) continue;
+
+      let snapshot: unknown;
+      try {
+        snapshot = JSON.parse(row.snapshot_payload_json) as unknown;
+      } catch {
+        continue;
+      }
+      if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) continue;
+
+      const payload = snapshot as Record<string, unknown>;
+      const distanceMeters = payload.validDistanceMeters;
+      const elapsedSeconds = payload.totalElapsedSeconds;
+      if (
+        payload.activityId !== row.activity_id ||
+        payload.state !== 'FINISHED' ||
+        payload.lastProcessedSequence !== row.last_processed_sequence ||
+        typeof distanceMeters !== 'number' ||
+        !Number.isFinite(distanceMeters) ||
+        distanceMeters < 0 ||
+        typeof elapsedSeconds !== 'number' ||
+        !Number.isFinite(elapsedSeconds) ||
+        elapsedSeconds < 0
+      ) continue;
+
+      sessions.push({
+        activityId: row.activity_id,
+        finishedAt: row.finished_at,
+        distanceMeters,
+        elapsedSeconds,
+        sampleCount: row.sample_count,
+      });
+    }
+
+    sessions.sort((left, right) =>
+      Date.parse(right.finishedAt) - Date.parse(left.finishedAt) ||
+      left.activityId.localeCompare(right.activityId),
+    );
+
+    const metrics: PassportGpsMetrics = sessions.reduce(
+      (total, session) => ({
+        sessionCount: total.sessionCount + 1,
+        distanceMeters: total.distanceMeters + session.distanceMeters,
+        elapsedSeconds: total.elapsedSeconds + session.elapsedSeconds,
+      }),
+      { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
+    );
+
+    return { sessions, metrics };
+  }
+
+  async loadPassportGpsMetrics(): Promise<PassportGpsMetrics> {
+    return (await this.loadPassportGpsData()).metrics;
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

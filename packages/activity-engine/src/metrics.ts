@@ -11,16 +11,32 @@ import {
 } from './config';
 
 function elapsedSecondsBetween(
-  previous: LocationSample,
-  current: LocationSample,
+  earlier: string,
+  later: string,
 ): number | null {
-  const previousMs = Date.parse(previous.timestamp);
-  const currentMs = Date.parse(current.timestamp);
+  const earlierMs = Date.parse(earlier);
+  const laterMs = Date.parse(later);
 
-  if (!Number.isFinite(previousMs) || !Number.isFinite(currentMs)) return null;
+  if (!Number.isFinite(earlierMs) || !Number.isFinite(laterMs)) return null;
+  return Math.max(0, (laterMs - earlierMs) / 1000);
+}
 
-  const elapsed = (currentMs - previousMs) / 1000;
-  return elapsed > 0 ? elapsed : null;
+/**
+ * Returns committed lifecycle ACTIVE time plus the current START/RESUME interval.
+ * This is active elapsed time, not GPS-estimated walking time. GPS gaps affect
+ * only GPS-derived metrics/segments; they never stop or shorten this clock.
+ */
+export function elapsedSecondsAt(
+  snapshot: ActivitySnapshot,
+  state: ActivityState,
+  at: string,
+): number {
+  if (state !== 'ACTIVE') return snapshot.totalElapsedSeconds;
+
+  const intervalStartedAt = snapshot.activeIntervalStartedAt ?? snapshot.createdAt;
+  const intervalSeconds = elapsedSecondsBetween(intervalStartedAt, at);
+  if (intervalSeconds === null) return snapshot.totalElapsedSeconds;
+  return snapshot.totalElapsedSeconds + intervalSeconds;
 }
 
 export function updateActivityMetrics(
@@ -36,24 +52,33 @@ export function updateActivityMetrics(
     lastProcessedSequence: Math.max(snapshot.lastProcessedSequence, sample.sequence),
   };
 
-  if (!sample.validForMetrics || !previousAccepted?.validForMetrics) {
-    return sample.validForMetrics
-      ? { ...base, lastValidSample: sample }
-      : base;
-  }
+  // Samples racing with pause/finish cannot change timing, position, or distance.
+  if (state !== 'ACTIVE' || !sample.validForMetrics) return base;
 
-  const elapsedSeconds = elapsedSecondsBetween(previousAccepted, sample);
-  if (elapsedSeconds === null) return base;
-
-  const totalElapsedSeconds = snapshot.totalElapsedSeconds + elapsedSeconds;
-
-  if (state !== 'ACTIVE') {
+  if (!previousAccepted?.validForMetrics) {
     return {
       ...base,
-      totalElapsedSeconds,
       lastValidSample: sample,
       currentSpeedMps: null,
       paceSecondsPerKm: null,
+    };
+  }
+
+  const elapsedSeconds = elapsedSecondsBetween(previousAccepted.timestamp, sample.timestamp);
+  if (elapsedSeconds === null || elapsedSeconds <= 0) return base;
+
+  if (elapsedSeconds > config.maxMetricSampleGapSeconds) {
+    // Use this fix as the next segment reference, but do not derive distance,
+    // elevation, moving time, or speed across the long GPS gap. The lifecycle-
+    // based ACTIVE clock is unaffected.
+    return {
+      ...base,
+      gpsGapSecondsExcluded:
+        (snapshot.gpsGapSecondsExcluded ?? 0) +
+        (elapsedSeconds - config.maxMetricSampleGapSeconds),
+      currentSpeedMps: null,
+      paceSecondsPerKm: null,
+      lastValidSample: sample,
     };
   }
 
@@ -85,7 +110,6 @@ export function updateActivityMetrics(
   return {
     ...base,
     validDistanceMeters: snapshot.validDistanceMeters + segmentDistanceMeters,
-    totalElapsedSeconds,
     movingElapsedSeconds: snapshot.movingElapsedSeconds + elapsedSeconds,
     currentSpeedMps,
     paceSecondsPerKm,

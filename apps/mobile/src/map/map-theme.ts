@@ -12,8 +12,6 @@ export interface MapThemeConfig {
   checkpointColor: string;
   checkpointBorderColor: string;
   poiColors: Record<string, string>;
-  parkBoundaryFill: string;
-  parkBoundaryLine: string;
   hikerColor: string;
   cardBackground: string;
   textColor: string;
@@ -38,8 +36,6 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
       tradition: '#B91C1C',
       landscape: '#2563EB',
     },
-    parkBoundaryFill: 'rgba(120, 154, 100, 0.12)',
-    parkBoundaryLine: colors.olive500,
     hikerColor: '#E11D48',
     cardBackground: colors.white,
     textColor: colors.ink,
@@ -63,8 +59,6 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
       tradition: '#B85042',
       landscape: '#4E6E58',
     },
-    parkBoundaryFill: 'rgba(17, 100, 102, 0.10)',
-    parkBoundaryLine: '#116466',
     hikerColor: '#E76F51',
     cardBackground: '#FFFFFF',
     textColor: '#1A252C',
@@ -88,8 +82,6 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
       tradition: '#FF5500',
       landscape: '#00E5FF',
     },
-    parkBoundaryFill: 'rgba(0, 240, 255, 0.15)',
-    parkBoundaryLine: '#00F0FF',
     hikerColor: '#FF0055',
     cardBackground: '#0F172A',
     textColor: '#F8FAFC',
@@ -113,8 +105,6 @@ export const MAP_THEMES: Record<MapThemeId, MapThemeConfig> = {
       tradition: '#FB923C',
       landscape: '#38BDF8',
     },
-    parkBoundaryFill: 'rgba(16, 185, 129, 0.08)',
-    parkBoundaryLine: '#059669',
     hikerColor: '#EC4899',
     cardBackground: '#111827',
     textColor: '#F3F4F6',

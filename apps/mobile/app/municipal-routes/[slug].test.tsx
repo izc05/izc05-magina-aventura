@@ -27,6 +27,9 @@ vi.mock('../../src/map/RouteMap', () => ({ RouteMap: 'RouteMap' }));
 vi.mock('../../src/features/routes/PersonalRouteGallery', () => ({
   PersonalRouteGallery: 'PersonalRouteGallery',
 }));
+vi.mock('../../src/features/routes/CommonsContextGallery', () => ({
+  CommonsContextGallery: 'CommonsContextGallery',
+}));
 vi.mock('../../src/features/routes/GpxLocalPreviewSection', () => ({
   GpxLocalPreviewSection: 'GpxLocalPreviewSection',
 }));
@@ -233,6 +236,23 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     expect(elements.some((element) => element.type === 'Image')).toBe(false);
     expect(text).not.toContain('Iniciar navegación');
     expect(text).not.toContain('Descargar ruta');
+  });
+
+  it('places the historical Commons context gallery on Bedmar before personal photos and the local GPX preview', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const elements = collectElements(tree);
+    const sourceIndex = elements.findIndex((element) => element.props?.testID === 'municipal-sources-card');
+    const contextIndex = elements.findIndex((element) => element.type === 'CommonsContextGallery');
+    const personalIndex = elements.findIndex((element) => element.props?.testID === 'personal-gallery-section');
+    const gpxIndex = elements.findIndex((element) => element.type === 'GpxLocalPreviewSection');
+
+    expect(contextIndex).toBeGreaterThan(sourceIndex);
+    expect(contextIndex).toBeLessThan(personalIndex);
+    expect(contextIndex).toBeLessThan(gpxIndex);
+
+    mocks.slug = 'unknown-route';
+    const missing = MunicipalRouteInformationScreen();
+    expect(collectElements(missing).some((element) => element.type === 'CommonsContextGallery')).toBe(false);
   });
 
   it('places the local GPX preview only on Bedmar after personal content and before the route status footer', () => {

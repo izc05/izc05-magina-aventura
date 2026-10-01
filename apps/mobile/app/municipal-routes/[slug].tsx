@@ -10,7 +10,7 @@ import {
 import { PersonalRouteGallery } from '../../src/features/routes/PersonalRouteGallery';
 import { RouteMap } from '../../src/map/RouteMap';
 import { createBaseMapReferenceProps } from '../../src/map/map-reference';
-import { colors, radius, spacing, typography } from '../../src/theme/tokens';
+import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
 
 export default function MunicipalRouteInformationScreen() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
@@ -226,7 +226,16 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.white, fontSize: typography.display, fontWeight: '900', marginTop: spacing[12], maxWidth: 360 },
   heroLocation: { color: colors.limestone, fontSize: 13, fontWeight: '700', marginTop: spacing[8] },
   heroCaption: { color: colors.aoveGold, fontSize: 11, fontWeight: '800', marginTop: spacing[12] },
-  statusCard: { marginHorizontal: spacing[20], marginTop: spacing[16], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  statusCard: {
+    marginHorizontal: spacing[20],
+    marginTop: -spacing[12],
+    borderRadius: radius.lg,
+    padding: spacing[20],
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
+  },
   cardEyebrow: { color: colors.olive700, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   body: { color: colors.ink, fontSize: 14, lineHeight: 21, marginTop: spacing[8] },
   statusFootnote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },

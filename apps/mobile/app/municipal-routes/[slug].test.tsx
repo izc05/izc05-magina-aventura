@@ -27,6 +27,9 @@ vi.mock('../../src/map/RouteMap', () => ({ RouteMap: 'RouteMap' }));
 vi.mock('../../src/features/routes/PersonalRouteGallery', () => ({
   PersonalRouteGallery: 'PersonalRouteGallery',
 }));
+vi.mock('../../src/features/routes/GpxLocalPreviewSection', () => ({
+  GpxLocalPreviewSection: 'GpxLocalPreviewSection',
+}));
 
 import MunicipalRouteInformationScreen from './[slug]';
 import { municipalRouteInformation } from '../../src/features/routes/municipal-route-information';
@@ -230,6 +233,20 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     expect(elements.some((element) => element.type === 'Image')).toBe(false);
     expect(text).not.toContain('Iniciar navegación');
     expect(text).not.toContain('Descargar ruta');
+  });
+
+  it('places the local GPX preview only on Bedmar after personal content and before the route status footer', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const elements = collectElements(tree);
+    const galleryIndex = elements.findIndex((element) => element.props?.testID === 'personal-gallery-section');
+    const gpxIndex = elements.findIndex((element) => element.type === 'GpxLocalPreviewSection');
+    const footerIndex = elements.findIndex((element) => element.props?.testID === 'route-status-footer');
+    expect(gpxIndex).toBeGreaterThan(galleryIndex);
+    expect(gpxIndex).toBeLessThan(footerIndex);
+
+    mocks.slug = 'unknown-route';
+    const missing = MunicipalRouteInformationScreen();
+    expect(collectElements(missing).some((element) => element.type === 'GpxLocalPreviewSection')).toBe(false);
   });
 
   it('preserves the existing back-to-home action and unknown-slug recovery', () => {

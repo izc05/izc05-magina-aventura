@@ -7,6 +7,7 @@ import {
   municipalRouteInformationViewModel,
 } from '../../src/features/routes/municipal-route-information';
 import { PersonalRouteGallery } from '../../src/features/routes/PersonalRouteGallery';
+import { GpxLocalPreviewSection } from '../../src/features/routes/GpxLocalPreviewSection';
 import { RouteMap } from '../../src/map/RouteMap';
 import { createBaseMapReferenceProps } from '../../src/map/map-reference';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme/tokens';
@@ -286,6 +287,8 @@ export default function MunicipalRouteInformationScreen() {
             <Text style={styles.galleryBody}>{information.gallery.body}</Text>
           </View>
         </View>
+
+        {route.slug === 'sendero-fluvial-cueva-del-agua' ? <GpxLocalPreviewSection /> : null}
 
         <View testID="route-status-footer" style={styles.footerNotice}>
           <Text style={styles.footerTitle}>{information.traceStatus}</Text>

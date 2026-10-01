@@ -106,6 +106,8 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     expect(title?.props?.style).toMatchObject({ color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: '900' });
     expect(statusBar?.props?.style).toBe('dark');
     expect(text).toContain('Cuadros · Bedmar y Garcíez, Jaén');
+    expect(text).toContain('ARCHIVO DE FUENTES · NO ES PILOTO ACTIVO');
+    expect(text).toContain('no forma parte del piloto activo');
     expect(pendingPhoto?.props?.accessible).toBe(true);
     expect(pendingPhoto?.props?.accessibilityRole).toBe('image');
     expect(pendingPhoto?.props?.accessibilityLabel).toContain('no es fotografía ni mapa');

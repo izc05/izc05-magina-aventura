@@ -1,11 +1,13 @@
+import { generalHikingRecommendations } from './general-hiking-recommendations';
+
 export const municipalRouteInformation = {
   slug: 'sendero-fluvial-cueva-del-agua',
   title: 'Sendero Fluvial de la Cueva del Agua',
   municipality: 'Cuadros · Bedmar y Garcíez, Jaén',
-  qaLabel: 'FICHA PILOTO MUNICIPAL',
+  qaLabel: 'ARCHIVO DE FUENTES · NO ES PILOTO ACTIVO',
   statusLabel: 'Información publicada por el Ayuntamiento',
   statusDetail:
-    'El Ayuntamiento presentó el sendero como inaugurado en primavera e invitó a recorrerlo; la publicación no confirma las condiciones actuales del acceso.',
+    'Antecedente municipal: el Ayuntamiento presentó el sendero como inaugurado en primavera e invitó a recorrerlo; la publicación no confirma las condiciones actuales del acceso. Esta ficha se conserva como historial de fuentes y no forma parte del piloto activo.',
   endpoints: [
     'Puente Blanco de Las Tinajas',
     'Entrada de la Cueva del Agua',
@@ -44,23 +46,7 @@ export const municipalRouteInformation = {
     sourceUrl:
       'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
   },
-  generalHikingRecommendations: {
-    title: 'Recomendaciones generales oficiales',
-    attribution:
-      'Fuente: Junta de Andalucía · Ventana del Visitante · «Senderismo», apartado «Buenas prácticas».',
-    scopeNote:
-      'Son orientaciones generales de senderismo; no constituyen una evaluación de seguridad específica del Sendero Fluvial de la Cueva del Agua ni verifican sus condiciones actuales.',
-    items: [
-      'Consulta la previsión meteorológica antes de iniciar tu actividad.',
-      'Lleva agua, protección solar, ropa y calzado adecuados.',
-      'Lleva un móvil con suficiente batería en caso de emergencia (112), pero recuerda que no siempre hay cobertura.',
-      'Evita salir solo. Si lo haces, comunica recorrido y hora de regreso a otras personas.',
-      'Por tu seguridad y la del entorno, no te salgas del camino señalizado ni tomes atajos.',
-    ],
-    sourceLabel: 'Recomendaciones generales de senderismo · Junta de Andalucía',
-    sourceUrl:
-      'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-actividad/-/asset_publisher/QYwm8uHC3ojh/content/senderismo-1/255035',
-  },
+  generalHikingRecommendations,
   sourceLinks: [
     {
       id: 'municipal',

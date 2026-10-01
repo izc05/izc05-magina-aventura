@@ -16,9 +16,11 @@ vi.mock('react-native', () => ({
 }));
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 vi.mock('../../src/features/routes/adelfal-cuadros-photo', () => ({ adelfalCuadrosPhotoSource: 1 }));
+vi.mock('../../src/features/routes/PersonalRouteGallery', () => ({ PersonalRouteGallery: 'PersonalRouteGallery' }));
 
 import AdelfalDeCuadrosOfficialRouteScreen from './adelfal-de-cuadros';
 import { adelfalDeCuadrosInformation as route } from '../../src/features/routes/adelfal-de-cuadros-information';
+import { generalHikingRecommendations } from '../../src/features/routes/general-hiking-recommendations';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -61,7 +63,7 @@ describe('Adelfal de Cuadros official pilot', () => {
 
     expect(text).toContain('PILOTO OFICIAL · JUNTA DE ANDALUCÍA');
     expect(text).toContain('Adelfal de Cuadros');
-    expect(text).toContain('Bedmar y Garcíez, Jaén');
+    expect(text).toContain('Bedmar y Garcíez');
     expect(normalizedText(facts)).toContain('Lineal');
     expect(normalizedText(facts)).toContain('Distancia de ida 453 m');
     expect(normalizedText(facts)).toContain('Duración 20 min');
@@ -73,10 +75,11 @@ describe('Adelfal de Cuadros official pilot', () => {
     expect(normalizedText(botanicalNotice)).toContain('con precaución');
     expect(normalizedText(botanicalNotice)).toContain('Consultados el 01/10/2026');
     expect(normalizedText(datedStatus)).toContain(route.publishedStatus);
-    expect(normalizedText(datedStatus)).toContain('24/02/2026');
+    expect(normalizedText(datedStatus)).toContain('24-02-2026');
     expect(normalizedText(datedStatus)).toContain('no una verificación actual de campo');
-    expect(normalizedText(datedStatus)).toContain('antes del lanzamiento');
-    expect(normalizedText(datedStatus)).toContain('condiciones operativas antes de salir');
+    expect(normalizedText(datedStatus)).toContain('pendiente de revisión al final del desarrollo');
+    expect(normalizedText(datedStatus)).not.toContain('antes del lanzamiento');
+    expect(normalizedText(datedStatus)).toContain('consultar con la Junta las condiciones operativas actuales');
     expect(normalizedText(sourceCard)).toContain(route.officialSource.label);
     expect(photo?.type).toBe('Image');
     expect(photo?.props?.source).toBe(1);
@@ -110,6 +113,35 @@ describe('Adelfal de Cuadros official pilot', () => {
     (spanishBrochure?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.openURL).toHaveBeenCalledWith(route.botanicalNotice.sources[0].url);
     expect(mocks.openURL).toHaveBeenCalledWith(route.botanicalNotice.sources[1].url);
+  });
+
+  it('shows generic, attributed Junta hiking guidance with an accessible source link', () => {
+    const tree = AdelfalDeCuadrosOfficialRouteScreen();
+    const elements = collectElements(tree);
+    const safety = elements.find((element) => element.props?.testID === 'adelfal-general-hiking-recommendations');
+    const sourceLink = elements.find((element) => element.props?.testID === 'adelfal-general-safety-source-link');
+    const safetyText = normalizedText(safety);
+
+    expect(safetyText).toContain(generalHikingRecommendations.title);
+    expect(safetyText).toContain(generalHikingRecommendations.attribution);
+    expect(safetyText).toContain(generalHikingRecommendations.scopeNote);
+    expect(generalHikingRecommendations.scopeNote).not.toMatch(/Adelfal|Cueva del Agua/);
+    for (const item of generalHikingRecommendations.items) expect(safetyText).toContain(item);
+    expect(sourceLink?.props?.accessibilityRole).toBe('link');
+    expect(sourceLink?.props?.accessibilityLabel).toBe(generalHikingRecommendations.sourceLabel);
+    (sourceLink?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.openURL).toHaveBeenCalledWith(generalHikingRecommendations.sourceUrl);
+  });
+
+  it('attaches the owner-scoped private photo and camera gallery to Adelfal without making it public', () => {
+    const tree = AdelfalDeCuadrosOfficialRouteScreen();
+    const elements = collectElements(tree);
+    const gallery = elements.find((element) => element.type === 'PersonalRouteGallery');
+    const privacy = elements.find((element) => element.props?.testID === 'adelfal-gallery-privacy-notice');
+
+    expect(gallery?.props?.routeSlug).toBe('adelfal-de-cuadros');
+    expect(normalizedText(privacy)).toContain('galería privada de tu cuenta');
+    expect(normalizedText(privacy)).toContain('no se publican ni se sincronizan');
   });
 
   it('keeps source, photo attribution and license links plus catalog return accessible', () => {

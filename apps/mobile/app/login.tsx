@@ -20,6 +20,13 @@ export default function LoginScreen() {
     const slug = Array.isArray(returnSlug) ? returnSlug[0] : returnSlug;
     if (target === 'passport') {
       router.replace('/profile');
+    } else if (target === 'route-gallery' && slug === 'adelfal-de-cuadros') {
+      router.replace('/official-routes/adelfal-de-cuadros');
+    } else if (target === 'route-gallery' && slug === 'sendero-fluvial-cueva-del-agua') {
+      router.replace({
+        pathname: '/municipal-routes/[slug]',
+        params: { slug },
+      });
     } else if (target === 'bedmar-gallery') {
       router.replace({
         pathname: '/municipal-routes/[slug]',

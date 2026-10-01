@@ -286,7 +286,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
           accessibilityState={{ disabled: authLoading }}
           disabled={authLoading}
           style={styles.authRequiredButton}
-          onPress={() => router.push({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } })}
+          onPress={() => router.push({ pathname: '/login', params: { returnTo: 'route-gallery', slug: routeSlug } })}
         >
           <Text style={styles.authRequiredButtonText}>Iniciar sesión o registrarse</Text>
         </Pressable>

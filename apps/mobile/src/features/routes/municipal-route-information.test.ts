@@ -12,7 +12,7 @@ describe('municipal route information-only record', () => {
 
     expect(viewModel).toMatchObject({
       kind: 'municipal-information-only',
-      qaLabel: 'FICHA PILOTO MUNICIPAL',
+      qaLabel: 'ARCHIVO DE FUENTES · NO ES PILOTO ACTIVO',
       title: 'Sendero Fluvial de la Cueva del Agua',
       municipality: 'Cuadros · Bedmar y Garcíez, Jaén',
       statusLabel: 'Información publicada por el Ayuntamiento',
@@ -35,6 +35,7 @@ describe('municipal route information-only record', () => {
       showCheckpoints: false,
     });
     expect(viewModel.statusDetail).toContain('no confirma las condiciones actuales');
+    expect(viewModel.statusDetail).toContain('no forma parte del piloto activo');
     expect(viewModel.officialDataNotice).toContain('no aporta distancia oficial');
     expect(viewModel.nonNavigationNotice).toContain('no representa el sendero');
     expect(viewModel.contextMap.accessibilityLabel).toContain('No muestra la ruta');
@@ -91,9 +92,9 @@ describe('municipal route information-only record', () => {
 
     expect(recommendations.title).toBe('Recomendaciones generales oficiales');
     expect(recommendations.attribution).toContain('Junta de Andalucía');
-    expect(recommendations.scopeNote).toContain(
-      'no constituyen una evaluación de seguridad específica del Sendero Fluvial',
-    );
+    expect(recommendations.scopeNote).toContain('Son orientaciones generales de senderismo');
+    expect(recommendations.scopeNote).toContain('no constituyen una evaluación de seguridad específica de la ruta');
+    expect(recommendations.scopeNote).not.toMatch(/Cueva del Agua|Adelfal/);
     expect(recommendations.items).toEqual([
       'Consulta la previsión meteorológica antes de iniciar tu actividad.',
       'Lleva agua, protección solar, ropa y calzado adecuados.',

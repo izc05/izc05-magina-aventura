@@ -21,7 +21,7 @@ export function MunicipalRouteInformationCard({
       onPress={onPress}
     >
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>PILOTO MUNICIPAL</Text>
+        <Text style={styles.eyebrow}>ARCHIVO DE FUENTES · NO ES PILOTO ACTIVO</Text>
         <Text style={styles.badge}>{information.traceStatus.toUpperCase()}</Text>
       </View>
       <Text style={styles.title}>{information.title}</Text>

@@ -70,7 +70,7 @@ export default function MunicipalRouteInformationScreen() {
             </Pressable>
             <View style={styles.heroTopCopy}>
               <Text style={styles.heroKicker}>{information.qaLabel}</Text>
-              <Text style={styles.heroOverline}>GUÍA MUNICIPAL · BEDMAR</Text>
+              <Text style={styles.heroOverline}>ARCHIVO DE FUENTES · NO ES PILOTO ACTIVO</Text>
             </View>
             <View accessible={false} style={styles.heroSeal}>
               <Text style={styles.heroSealText}>M</Text>

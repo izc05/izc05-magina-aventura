@@ -5,16 +5,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { adelfalCuadrosPhotoSource } from '../../src/features/routes/adelfal-cuadros-photo';
 import { adelfalDeCuadrosInformation as route } from '../../src/features/routes/adelfal-de-cuadros-information';
+import { generalHikingRecommendations } from '../../src/features/routes/general-hiking-recommendations';
+import { PersonalRouteGallery } from '../../src/features/routes/PersonalRouteGallery';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
 
 export default function AdelfalDeCuadrosOfficialRouteScreen() {
   const router = useRouter();
 
-  async function openSource() {
+  async function openSource(url: string = route.officialSource.url) {
     try {
-      await Linking.openURL(route.officialSource.url);
+      await Linking.openURL(url);
     } catch {
-      Alert.alert('Fuente no disponible', 'No se pudo abrir la ficha oficial de la Junta.');
+      Alert.alert('Fuente no disponible', 'No se pudo abrir la fuente de la Junta.');
     }
   }
 
@@ -155,6 +157,40 @@ export default function AdelfalDeCuadrosOfficialRouteScreen() {
           <Text style={styles.operationalNotice}>{route.operationalNotice}</Text>
         </View>
 
+        <View testID="adelfal-general-hiking-recommendations" style={styles.recommendationsCard}>
+          <Text style={styles.sectionKicker}>JUNTA DE ANDALUCÍA · SENDERISMO</Text>
+          <Text accessibilityRole="header" style={styles.safetyTitle}>
+            {generalHikingRecommendations.title}
+          </Text>
+          <Text style={styles.safetyAttribution}>{generalHikingRecommendations.attribution}</Text>
+          <Text style={styles.safetyScope}>{generalHikingRecommendations.scopeNote}</Text>
+          <View style={styles.safetyList}>
+            {generalHikingRecommendations.items.map((recommendation) => (
+              <Text key={recommendation} style={styles.safetyItem}>• {recommendation}</Text>
+            ))}
+          </View>
+          <Pressable
+            testID="adelfal-general-safety-source-link"
+            accessibilityRole="link"
+            accessibilityLabel={generalHikingRecommendations.sourceLabel}
+            accessibilityHint="Abre las recomendaciones generales de senderismo publicadas por la Junta de Andalucía."
+            style={styles.sourceButton}
+            onPress={() => void openSource(generalHikingRecommendations.sourceUrl)}
+          >
+            <Text style={styles.sourceButtonText}>{generalHikingRecommendations.sourceLabel}</Text>
+            <Text accessible={false} style={styles.sourceArrow}>↗</Text>
+          </Pressable>
+        </View>
+
+        <View testID="adelfal-personal-gallery-section" style={styles.recommendationsCard}>
+          <Text style={styles.sectionKicker}>SOLO TU CUENTA · PRIVADO</Text>
+          <Text accessibilityRole="header" style={styles.safetyTitle}>Galería personal de Adelfal</Text>
+          <Text testID="adelfal-gallery-privacy-notice" style={styles.safetyScope}>
+            Tus fotos se guardan en la galería privada de tu cuenta en este dispositivo; no se publican ni se sincronizan.
+          </Text>
+          <PersonalRouteGallery routeSlug={route.slug} />
+        </View>
+
         <View testID="adelfal-source-card" style={styles.sourceCard}>
           <Text style={styles.sectionKicker}>PROCEDENCIA</Text>
           <Text style={styles.sourceLabel}>{route.officialSource.label}</Text>
@@ -261,6 +297,19 @@ const styles = StyleSheet.create({
   statusTitle: { color: colors.olive900, fontSize: 14, lineHeight: 21, fontWeight: '900', marginTop: spacing[8] },
   statusContext: { color: colors.ink, fontSize: 13, lineHeight: 20, marginTop: spacing[8] },
   operationalNotice: { color: colors.ink, fontSize: 13, lineHeight: 20, fontWeight: '800', marginTop: spacing[12] },
+  recommendationsCard: {
+    marginTop: spacing[16],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    padding: spacing[20],
+  },
+  safetyTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900', marginTop: spacing[8] },
+  safetyAttribution: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: spacing[8] },
+  safetyScope: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  safetyList: { gap: spacing[8], marginTop: spacing[12] },
+  safetyItem: { color: colors.ink, fontSize: 12, lineHeight: 18 },
   sourceCard: {
     marginTop: spacing[16],
     borderRadius: radius.lg,

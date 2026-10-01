@@ -26,8 +26,7 @@ vi.mock('../src/theme/tokens', () => ({
 }));
 
 import RoutesHomeScreen from './index';
-import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
-import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
+import { adelfalDeCuadrosInformation } from '../src/features/routes/adelfal-de-cuadros-information';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -82,10 +81,9 @@ describe('Home controls', () => {
       expect(filter.props?.accessibilityLabel).toContain('Próximamente');
     }
     expect(visibleText(tree)).toContain('Filtros de dificultad: próximamente.');
-
   });
 
-  it('opens the public catalog and does not show development fixture route metrics', () => {
+  it('opens the public catalog and does not show development fixtures or Cueva del Agua', () => {
     const tree = renderHome(false);
     const elements = collectElements(tree);
     const catalog = elements.find(
@@ -96,12 +94,45 @@ describe('Home controls', () => {
     expect(catalog?.props?.accessibilityRole).toBe('button');
     expect(catalog?.props?.accessibilityHint).toContain('sin iniciar sesión');
     expect(catalog?.props?.disabled).not.toBe(true);
+    expect(text).toContain(adelfalDeCuadrosInformation.title);
     expect(text).not.toContain('Sendero de Cuadros y Adarves');
     expect(text).not.toContain('Ascensión al Pico Mágina');
     expect(text).not.toContain('Ruta Cueva del Agua y Coleto');
+    expect(text).not.toContain('Cueva del Agua');
 
     (catalog?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.push).toHaveBeenCalledWith('/routes');
+  });
+
+  it('shows exactly one pilot card on Home with Junta facts, dated notice and no map or navigation', () => {
+    const tree = renderHome(false);
+    const elements = collectElements(tree);
+    const card = elements.find((element) => element.props?.testID === 'home-adelfal-route-card');
+    const pilotBadges = elements.filter((element) =>
+      element.type === 'Text' && visibleText(element).join('').includes('PILOTO'),
+    );
+    const text = visibleText(tree).join(' ').replace(/\s+/g, ' ').trim();
+
+    expect(card).toBeDefined();
+    expect(pilotBadges).toHaveLength(1);
+    expect(text).toContain('Adelfal de Cuadros · Bedmar y Garcíez');
+    expect(text).toContain('Ficha de la Junta de Andalucía');
+    expect(text).toContain('Lineal');
+    expect(text).toContain('453 m de ida');
+    expect(text).toContain('20 min');
+    expect(text).toContain('Dificultad baja');
+    expect(text).toContain('Senda');
+    expect(text).toContain('sombra abundante');
+    expect(text).toContain(adelfalDeCuadrosInformation.noticeDate);
+    expect(text).toContain(adelfalDeCuadrosInformation.publishedStatus);
+    expect(text).toContain('pendiente de revisión al final del desarrollo');
+    expect(text).not.toContain('Cueva del Agua');
+    expect(text).not.toMatch(/Iniciar navegación|navegación GPS|checkpoint/i);
+    expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
+
+    expect(card?.props?.accessibilityRole).toBe('button');
+    (card?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/official-routes/adelfal-de-cuadros');
   });
 
   it('marks Retos, Colecciones and Ranking as disabled tabs with visible and accessible status', () => {
@@ -119,16 +150,6 @@ describe('Home controls', () => {
     }
   });
 
-  it('does not expose the Theme Tester banner in release builds, but keeps it in development', () => {
-    const releaseText = visibleText(renderHome(false)).join(' ');
-    expect(releaseText).not.toContain('Probador Visual & Capas');
-
-    const developmentText = visibleText(renderHome(true)).join(' ');
-    expect(developmentText).toContain('Probador Visual & Capas');
-  });
-});
-
-describe('Home to Bedmar municipal information navigation', () => {
   it('keeps the passport entry distinct from public route browsing', () => {
     const tree = renderHome(false);
     const passportTab = collectElements(tree).find(
@@ -141,33 +162,11 @@ describe('Home to Bedmar municipal information navigation', () => {
     expect(mocks.push).toHaveBeenCalledWith('/profile');
   });
 
-  it('exposes an accessible, non-GPS Bedmar information card that opens its municipal detail', () => {
-    const tree = renderHome(false);
-    const homeCard = collectElements(tree).find(
-      (element) => element.type === MunicipalRouteInformationCard,
-    );
+  it('does not expose the Theme Tester banner in release builds, but keeps it in development', () => {
+    const releaseText = visibleText(renderHome(false)).join(' ');
+    expect(releaseText).not.toContain('Probador Visual & Capas');
 
-    expect(visibleText(tree)).toContain('Municipio piloto · Bedmar y Garcíez');
-    expect(typeof homeCard?.props?.onPress).toBe('function');
-
-    const cardTree = MunicipalRouteInformationCard({
-      onPress: homeCard?.props?.onPress as () => void,
-    });
-    const cardButton = collectElements(cardTree).find((element) => element.type === 'Pressable');
-    const cardText = visibleText(cardTree).join(' ');
-
-    expect(cardButton?.props?.accessibilityRole).toBe('button');
-    expect(cardButton?.props?.accessibilityLabel).toBe(
-      `Abrir ficha informativa de ${municipalRouteInformation.title}`,
-    );
-    expect(cardButton?.props?.accessibilityHint).toContain('ficha pública');
-    expect(cardText).toContain('Abrir ficha completa');
-    expect(cardText).toContain('sin navegación GPS');
-
-    (cardButton?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.push).toHaveBeenCalledWith({
-      pathname: '/municipal-routes/[slug]',
-      params: { slug: municipalRouteInformation.slug },
-    });
+    const developmentText = visibleText(renderHome(true)).join(' ');
+    expect(developmentText).toContain('Probador Visual & Capas');
   });
 });

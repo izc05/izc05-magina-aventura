@@ -15,7 +15,6 @@ vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' 
 
 import PublicRouteCatalogScreen from './index';
 import { adelfalDeCuadrosInformation } from '../../src/features/routes/adelfal-de-cuadros-information';
-import { municipalRouteInformation } from '../../src/features/routes/municipal-route-information';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -46,69 +45,48 @@ function normalizedText(node: unknown): string {
 afterEach(() => vi.clearAllMocks());
 
 describe('public route catalog', () => {
-  it('keeps Bedmar and adds Adelfal as separate public pilots with attributed facts', () => {
+  it('shows exactly one public pilot: Adelfal, with only the Junta facts and a dated non-current notice', () => {
     const tree = PublicRouteCatalogScreen();
     const elements = collectElements(tree);
-    const municipalCard = elements.find((element) => element.props?.testID === 'public-route-card');
-    const adelfalCard = elements.find((element) => element.props?.testID === 'public-adelfal-route-card');
-    const municipalCards = elements.filter((element) => element.props?.testID === 'public-route-card');
-    const adelfalCards = elements.filter((element) => element.props?.testID === 'public-adelfal-route-card');
+    const cards = elements.filter((element) => element.props?.testID === 'public-adelfal-route-card');
+    const allPilotBadges = elements.filter((element) =>
+      element.type === 'Text' && visibleText(element).join('').includes('PILOTO'),
+    );
+    const card = cards[0];
     const text = visibleText(tree).join(' ');
-    const municipalText = normalizedText(municipalCard);
-    const adelfalText = normalizedText(adelfalCard);
+    const cardText = normalizedText(card);
 
-    expect(municipalCard).toBeDefined();
-    expect(adelfalCard).toBeDefined();
-    expect(municipalCards).toHaveLength(1);
-    expect(adelfalCards).toHaveLength(1);
+    expect(cards).toHaveLength(1);
+    expect(allPilotBadges).toHaveLength(1);
     expect(text).toContain('Rutas de Sierra Mágina');
     expect(text).not.toMatch(/\bQA\b/);
-    expect(municipalText).toContain(municipalRouteInformation.title);
-    expect(municipalText).toContain(municipalRouteInformation.municipality);
-    expect(municipalText).toContain(municipalRouteInformation.statusLabel);
-    expect(municipalText).toContain(municipalRouteInformation.traceStatus);
-    expect(municipalText).not.toContain(adelfalDeCuadrosInformation.title);
-    expect(municipalText).toContain(municipalRouteInformation.gpsNotice);
-    expect(municipalText).toContain(municipalRouteInformation.officialDataNotice);
-    expect(municipalText).toContain(municipalRouteInformation.statusDetail);
-    expect(municipalText).not.toMatch(/\b\d+(?:[,.]\d+)?\s?(?:km|mi|m|ft|min|h|XP)\b/i);
-    expect(municipalText).not.toMatch(/checkpoint|desnivel|recompensa|iniciar navegación|próximamente/i);
-
-    expect(adelfalText).toContain('PILOTO OFICIAL');
-    expect(adelfalText).toContain(adelfalDeCuadrosInformation.title);
-    expect(adelfalText).toContain(adelfalDeCuadrosInformation.municipality);
-    expect(adelfalText).not.toContain(municipalRouteInformation.title);
-    expect(adelfalText).toContain('453 m de ida');
-    expect(adelfalText).toContain('20 min');
-    expect(adelfalText).toContain('Dificultad baja');
-    expect(adelfalText).toContain('Senda');
-    expect(adelfalText).toContain('sombra abundante');
-    expect(adelfalText).toContain(adelfalDeCuadrosInformation.publishedStatus);
-    expect(adelfalText).toContain(adelfalDeCuadrosInformation.noticeDate);
-    expect(adelfalText).toContain('no una verificación actual de campo');
-    expect(adelfalText).toContain('antes del lanzamiento');
-    expect(adelfalText).not.toMatch(/abierto actualmente|cerrado actualmente|cerrado hoy/i);
+    expect(text).not.toContain('Cueva del Agua');
+    expect(cardText).toContain('PILOTO OFICIAL');
+    expect(cardText).toContain(adelfalDeCuadrosInformation.title);
+    expect(cardText).toContain('Bedmar y Garcíez');
+    expect(cardText).toContain('Lineal');
+    expect(cardText).toContain('453 m de ida');
+    expect(cardText).toContain('20 min');
+    expect(cardText).toContain('Dificultad baja');
+    expect(cardText).toContain('Senda');
+    expect(cardText).toContain('sombra abundante');
+    expect(cardText).toContain(adelfalDeCuadrosInformation.noticeDate);
+    expect(cardText).toContain('pendiente de revisión al final del desarrollo');
+    expect(cardText).toContain('no una verificación actual de campo');
+    expect(cardText).not.toMatch(/abierto actualmente|cerrado actualmente|cerrado hoy/i);
     expect(text).not.toMatch(/iniciar sesión o registrarse|correo electrónico|contraseña/i);
     expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
-    expect(municipalCard?.props?.accessibilityRole).toBe('button');
-    expect(adelfalCard?.props?.accessibilityRole).toBe('button');
-    expect(adelfalCard?.props?.accessibilityHint).toContain('no es una comprobación actual');
+    expect(card?.props?.accessibilityRole).toBe('button');
+    expect(card?.props?.accessibilityHint).toContain('no es una comprobación actual');
   });
 
-  it('opens the independent Bedmar and Adelfal public details without an authentication step', () => {
+  it('opens only the official Adelfal detail without an authentication step', () => {
     const tree = PublicRouteCatalogScreen();
-    const elements = collectElements(tree);
-    const municipalCard = elements.find((element) => element.props?.testID === 'public-route-card');
-    const adelfalCard = elements.find((element) => element.props?.testID === 'public-adelfal-route-card');
+    const card = collectElements(tree).find((element) => element.props?.testID === 'public-adelfal-route-card');
 
-    (municipalCard?.props?.onPress as (() => void) | undefined)?.();
-    (adelfalCard?.props?.onPress as (() => void) | undefined)?.();
-
-    expect(mocks.push).toHaveBeenNthCalledWith(1, {
-      pathname: '/municipal-routes/[slug]',
-      params: { slug: municipalRouteInformation.slug },
-    });
-    expect(mocks.push).toHaveBeenNthCalledWith(2, '/official-routes/adelfal-de-cuadros');
+    (card?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledOnce();
+    expect(mocks.push).toHaveBeenCalledWith('/official-routes/adelfal-de-cuadros');
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 

@@ -183,7 +183,10 @@ describe('personal route gallery visual contract', () => {
     expect(login?.props?.accessibilityRole).toBe('button');
     expect(login?.props?.accessibilityHint).toContain('volverás a la ficha pública de Bedmar');
     (login?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.push).toHaveBeenCalledWith({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } });
+    expect(mocks.push).toHaveBeenCalledWith({
+      pathname: '/login',
+      params: { returnTo: 'route-gallery', slug: 'sendero-fluvial-cueva-del-agua' },
+    });
     expect(personalRouteGalleryStore.listForRoute).not.toHaveBeenCalled();
     expect(elements.some((element) => element.props?.accessibilityLabel === 'Hacer una foto para tu galería personal')).toBe(false);
     expect(mocks.getCameraPermissions).not.toHaveBeenCalled();

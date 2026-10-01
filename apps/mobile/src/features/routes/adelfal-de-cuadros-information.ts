@@ -1,7 +1,7 @@
 export const adelfalDeCuadrosInformation = {
   slug: 'adelfal-de-cuadros',
   title: 'Adelfal de Cuadros',
-  municipality: 'Bedmar y Garcíez, Jaén',
+  municipality: 'Bedmar y Garcíez',
   pilotLabel: 'PILOTO OFICIAL · JUNTA DE ANDALUCÍA',
   facts: {
     routeType: 'Lineal',
@@ -12,11 +12,11 @@ export const adelfalDeCuadrosInformation = {
     shade: 'Abundante',
   },
   publishedStatus: 'CERRADO TEMPORALMENTE (FUERA DE SERVICIO TEMPORALMENTE)',
-  noticeDate: '24/02/2026',
+  noticeDate: '24-02-2026',
   statusContext:
-    'La ficha de la Junta vincula este estado al aviso del 24/02/2026. Es un antecedente documental, no una verificación actual de campo.',
+    'La ficha de la Junta vincula este estado al aviso del 24-02-2026. Es un antecedente documental pendiente de revisión al final del desarrollo, no una verificación actual de campo.',
   operationalNotice:
-    'Revisar este antecedente con la Junta antes del lanzamiento y comprobar con la Junta las condiciones operativas antes de salir.',
+    'Este antecedente no bloquea la ficha piloto. Al final del desarrollo, revisar el aviso con la Junta; antes de salir, consultar con la Junta las condiciones operativas actuales.',
   officialSource: {
     label: 'Ficha oficial · Ventana del Visitante · Junta de Andalucía',
     url: 'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-buscador-mapa/-/asset_publisher/Jlbxh2qB3NwR/content/adelfal-de-cuadros/255035',

@@ -3,16 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  municipalRouteInformation,
-  municipalRouteInformationViewModel,
-} from '../../src/features/routes/municipal-route-information';
 import { adelfalDeCuadrosInformation } from '../../src/features/routes/adelfal-de-cuadros-information';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
 
 export default function PublicRouteCatalogScreen() {
-  const route = municipalRouteInformationViewModel();
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
@@ -42,38 +36,6 @@ export default function PublicRouteCatalogScreen() {
         </Text>
 
         <Pressable
-          testID="public-route-card"
-          accessibilityRole="button"
-          accessibilityLabel={`Abrir ficha informativa de ${route.title}`}
-          accessibilityHint="Abre la ficha pública con fuentes y avisos de navegación. No requiere iniciar sesión."
-          style={styles.routeCard}
-          onPress={() =>
-            router.push({
-              pathname: '/municipal-routes/[slug]',
-              params: { slug: municipalRouteInformation.slug },
-            })
-          }
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.pilotBadge}>PILOTO MUNICIPAL</Text>
-            <Text style={styles.traceStatus}>{route.traceStatus}</Text>
-          </View>
-          <Text accessibilityRole="header" style={styles.routeTitle}>{route.title}</Text>
-          <Text style={styles.location}>{route.municipality}</Text>
-          <Text style={styles.status}>{route.statusLabel}</Text>
-          <Text style={styles.statusDetail}>{route.statusDetail}</Text>
-          <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>Sin navegación GPS</Text>
-            <Text style={styles.noticeBody}>{route.gpsNotice}</Text>
-            <Text style={styles.noticeBody}>{route.officialDataNotice}</Text>
-          </View>
-          <View style={styles.actionRow}>
-            <Text style={styles.actionText}>Leer ficha y fuentes</Text>
-            <Text accessible={false} style={styles.actionArrow}>→</Text>
-          </View>
-        </Pressable>
-
-        <Pressable
           testID="public-adelfal-route-card"
           accessibilityRole="button"
           accessibilityLabel={`Abrir ficha oficial de ${adelfalDeCuadrosInformation.title}`}
@@ -94,7 +56,7 @@ export default function PublicRouteCatalogScreen() {
             Dificultad {adelfalDeCuadrosInformation.facts.difficulty.toLowerCase()} · {adelfalDeCuadrosInformation.facts.pathType} · sombra {adelfalDeCuadrosInformation.facts.shade.toLowerCase()}.
           </Text>
           <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>Aviso oficial fechado · {adelfalDeCuadrosInformation.noticeDate}</Text>
+            <Text style={styles.noticeTitle}>Aviso publicado por la Junta · {adelfalDeCuadrosInformation.noticeDate}</Text>
             <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.publishedStatus}</Text>
             <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.statusContext}</Text>
             <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.operationalNotice}</Text>

@@ -12,8 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, typography } from '../src/theme/tokens';
 import { HeroTerritory } from '../src/components/ui/HeroTerritory';
-import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
-import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
+import { adelfalDeCuadrosInformation } from '../src/features/routes/adelfal-de-cuadros-information';
 
 const filters = ['Todos', 'Fácil', 'Moderada', 'Difícil'] as const;
 const navItems = [
@@ -110,7 +109,7 @@ export default function RoutesHomeScreen() {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Ruta piloto</Text>
-            <Text style={styles.sectionSubtitle}>Municipio piloto · Bedmar y Garcíez</Text>
+            <Text style={styles.sectionSubtitle}>Adelfal de Cuadros · Bedmar y Garcíez</Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -123,14 +122,32 @@ export default function RoutesHomeScreen() {
           </Pressable>
         </View>
 
-        <MunicipalRouteInformationCard
-          onPress={() =>
-            router.push({
-              pathname: '/municipal-routes/[slug]',
-              params: { slug: municipalRouteInformation.slug },
-            })
-          }
-        />
+        <Pressable
+          testID="home-adelfal-route-card"
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir ficha oficial de ${adelfalDeCuadrosInformation.title}`}
+          accessibilityHint="Abre la ficha oficial de la Junta. La app no muestra mapa ni navegación de esta ruta."
+          style={styles.pilotCard}
+          onPress={() => router.push('/official-routes/adelfal-de-cuadros')}
+        >
+          <View style={styles.pilotCardHeader}>
+            <Text style={styles.pilotBadge}>PILOTO OFICIAL</Text>
+            <Text style={styles.pilotSource}>Ficha de la Junta de Andalucía</Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.pilotTitle}>{adelfalDeCuadrosInformation.title}</Text>
+          <Text style={styles.pilotLocation}>{adelfalDeCuadrosInformation.municipality}</Text>
+          <Text style={styles.pilotFacts}>
+            {adelfalDeCuadrosInformation.facts.routeType} · {adelfalDeCuadrosInformation.facts.outwardDistanceMeters} m de ida · {adelfalDeCuadrosInformation.facts.durationMinutes} min
+          </Text>
+          <Text style={styles.pilotDetail}>
+            Dificultad {adelfalDeCuadrosInformation.facts.difficulty.toLowerCase()} · {adelfalDeCuadrosInformation.facts.pathType} · sombra {adelfalDeCuadrosInformation.facts.shade.toLowerCase()}.
+          </Text>
+          <View style={styles.pilotNotice}>
+            <Text style={styles.pilotNoticeTitle}>Aviso publicado por la Junta · {adelfalDeCuadrosInformation.noticeDate}</Text>
+            <Text style={styles.pilotNoticeStatus}>{adelfalDeCuadrosInformation.publishedStatus}</Text>
+            <Text style={styles.pilotNoticeBody}>{adelfalDeCuadrosInformation.statusContext}</Text>
+          </View>
+        </Pressable>
 
         <View style={styles.challengeCard}>
           <View style={styles.challengeIcon}>
@@ -282,6 +299,25 @@ const styles = StyleSheet.create({
   challengeEyebrow: { color: colors.earth, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
   challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: '900', marginTop: 2 },
   challengeBody: { color: colors.muted, fontSize: 12, lineHeight: 17, marginTop: spacing[4] },
+  pilotCard: {
+    marginTop: spacing[16],
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing[20],
+  },
+  pilotCardHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing[8] },
+  pilotBadge: { color: colors.white, backgroundColor: colors.olive900, borderRadius: radius.pill, paddingHorizontal: spacing[12], paddingVertical: spacing[8], fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  pilotSource: { color: colors.olive700, fontSize: 11, lineHeight: 16, fontWeight: '800' },
+  pilotTitle: { color: colors.ink, fontSize: 19, lineHeight: 25, fontWeight: '900', marginTop: spacing[12] },
+  pilotLocation: { color: colors.muted, fontSize: 12, marginTop: spacing[4] },
+  pilotFacts: { color: colors.olive700, fontSize: 12, lineHeight: 18, fontWeight: '900', marginTop: spacing[12] },
+  pilotDetail: { color: colors.ink, fontSize: 13, lineHeight: 19, marginTop: spacing[8] },
+  pilotNotice: { marginTop: spacing[12], borderRadius: radius.md, borderLeftWidth: 4, borderLeftColor: colors.earth, backgroundColor: colors.limestone, padding: spacing[12] },
+  pilotNoticeTitle: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '900' },
+  pilotNoticeStatus: { color: colors.olive900, fontSize: 12, lineHeight: 18, fontWeight: '800', marginTop: spacing[4] },
+  pilotNoticeBody: { color: colors.ink, fontSize: 12, lineHeight: 18, marginTop: spacing[4] },
   bottomNav: {
     position: 'absolute',
     left: 0,

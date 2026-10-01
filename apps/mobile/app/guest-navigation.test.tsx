@@ -4,8 +4,9 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   back: vi.fn(),
-  slug: 'sendero-fluvial-cueva-del-agua',
-  returnTo: undefined as string | undefined,
+  openURL: vi.fn().mockResolvedValue(true),
+  localSearchParams: vi.fn().mockReturnValue({}),
+  signInWithPassword: vi.fn(),
 }));
 
 vi.mock('react', () => ({
@@ -16,13 +17,14 @@ vi.mock('react', () => ({
 vi.mock('expo-router', () => ({
   router: { push: mocks.push, replace: mocks.replace },
   useRouter: () => ({ push: mocks.push, replace: mocks.replace, back: mocks.back }),
-  useLocalSearchParams: () => ({ slug: mocks.slug, returnTo: mocks.returnTo }),
+  useLocalSearchParams: mocks.localSearchParams,
 }));
 vi.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 vi.mock('react-native', () => ({
   Alert: { alert: vi.fn() },
-  Linking: { openURL: vi.fn().mockResolvedValue(true) },
+  Image: 'Image',
+  Linking: { openURL: mocks.openURL },
   Pressable: 'Pressable',
   ScrollView: 'ScrollView',
   StyleSheet: { create: (styles: unknown) => styles },
@@ -31,21 +33,17 @@ vi.mock('react-native', () => ({
   View: 'View',
 }));
 vi.mock('../src/lib/supabase', () => ({
-  supabase: { auth: { signInWithPassword: vi.fn(), signUp: vi.fn() } },
+  supabase: { auth: { signInWithPassword: mocks.signInWithPassword, signUp: vi.fn() } },
 }));
 vi.mock('../src/components/ui/HeroTerritory', () => ({ HeroTerritory: 'HeroTerritory' }));
 vi.mock('../src/components/ui/RouteCard', () => ({ RouteCard: 'RouteCard' }));
-vi.mock('../src/map/RouteMap', () => ({ RouteMap: 'RouteMap' }));
+vi.mock('../src/features/routes/adelfal-cuadros-photo', () => ({ adelfalCuadrosPhotoSource: 1 }));
 vi.mock('../src/features/routes/PersonalRouteGallery', () => ({ PersonalRouteGallery: 'PersonalRouteGallery' }));
-vi.mock('../src/features/routes/CommonsContextGallery', () => ({ CommonsContextGallery: 'CommonsContextGallery' }));
-vi.mock('../src/features/routes/GpxLocalPreviewSection', () => ({ GpxLocalPreviewSection: 'GpxLocalPreviewSection' }));
 
 import LoginScreen from './login';
 import RoutesHomeScreen from './index';
 import PublicRouteCatalogScreen from './routes/index';
-import MunicipalRouteInformationScreen from './municipal-routes/[slug]';
-import { MunicipalRouteInformationCard } from '../src/components/ui/MunicipalRouteInformationCard';
-import { municipalRouteInformation } from '../src/features/routes/municipal-route-information';
+import AdelfalDeCuadrosOfficialRouteScreen from './official-routes/adelfal-de-cuadros';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
 
@@ -70,13 +68,26 @@ function visibleText(node: unknown): string[] {
 }
 
 afterEach(() => {
-  mocks.returnTo = undefined;
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+  mocks.localSearchParams.mockReturnValue({});
 });
 
 describe('guest read-only navigation', () => {
-  it('opens Home from the accessible guest CTA, opens Bedmar, and returns to Home without a session', () => {
+  it('returns to the Adelfal pilot after sign-in from its private gallery', async () => {
+    mocks.localSearchParams.mockReturnValue({ returnTo: 'route-gallery', slug: 'adelfal-de-cuadros' });
+    mocks.signInWithPassword.mockResolvedValue({ error: null });
+    const tree = LoginScreen();
+    const signIn = collectElements(tree).find(
+      (element) => element.type === 'Pressable' && visibleText(element).join('').includes('Iniciar Sesión'),
+    );
+
+    expect(signIn).toBeDefined();
+    (signIn?.props?.onPress as (() => void) | undefined)?.();
+    await vi.waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/official-routes/adelfal-de-cuadros'));
+  });
+
+  it('opens Home from the guest CTA and routes Home and catalog to the sole Adelfal pilot', () => {
     const loginTree = LoginScreen();
     const loginText = visibleText(loginTree).join(' ');
     const guestCta = collectElements(loginTree).find(
@@ -92,13 +103,12 @@ describe('guest read-only navigation', () => {
 
     vi.stubGlobal('__DEV__', false);
     const homeTree = RoutesHomeScreen();
-    expect(visibleText(homeTree).join(' ')).toContain('Municipio piloto · Bedmar y Garcíez');
-    const bedmarCard = collectElements(homeTree).find((element) => element.type === MunicipalRouteInformationCard);
-    (bedmarCard?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.push).toHaveBeenCalledWith({
-      pathname: '/municipal-routes/[slug]',
-      params: { slug: municipalRouteInformation.slug },
-    });
+    const homeText = visibleText(homeTree).join(' ');
+    expect(homeText).toContain('Adelfal de Cuadros');
+    expect(homeText).not.toContain('Cueva del Agua');
+    const homeCard = collectElements(homeTree).find((element) => element.props?.testID === 'home-adelfal-route-card');
+    (homeCard?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/official-routes/adelfal-de-cuadros');
 
     const catalogLink = collectElements(homeTree).find(
       (element) => element.props?.accessibilityLabel === 'Abrir catálogo público de rutas',
@@ -107,26 +117,30 @@ describe('guest read-only navigation', () => {
     expect(mocks.push).toHaveBeenCalledWith('/routes');
 
     const catalogTree = PublicRouteCatalogScreen();
-    const publicRouteCard = collectElements(catalogTree).find(
-      (element) => element.props?.testID === 'public-route-card',
+    const catalogText = visibleText(catalogTree).join(' ');
+    expect(catalogText).toContain('Adelfal de Cuadros');
+    expect(catalogText).not.toContain('Cueva del Agua');
+    const card = collectElements(catalogTree).find(
+      (element) => element.props?.testID === 'public-adelfal-route-card',
     );
-    (publicRouteCard?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.push).toHaveBeenCalledWith({
-      pathname: '/municipal-routes/[slug]',
-      params: { slug: municipalRouteInformation.slug },
-    });
+    expect(card).toBeDefined();
+    (card?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.push).toHaveBeenCalledWith('/official-routes/adelfal-de-cuadros');
 
-    const bedmarTree = MunicipalRouteInformationScreen();
-    const bedmarElements = collectElements(bedmarTree);
-    expect(visibleText(bedmarTree).join(' ')).toContain(municipalRouteInformation.title);
-    expect(bedmarElements.some((element) => element.type === 'CommonsContextGallery')).toBe(true);
-    expect(bedmarElements.some((element) => element.type === 'GpxLocalPreviewSection')).toBe(true);
-    expect(bedmarElements.some((element) => element.type === 'PersonalRouteGallery')).toBe(true);
-    const back = collectElements(bedmarTree).find(
-      (element) => element.props?.accessibilityLabel === 'Volver',
+    const officialTree = AdelfalDeCuadrosOfficialRouteScreen();
+    const officialText = visibleText(officialTree).join(' ').replace(/\s+/g, ' ').trim();
+    const elements = collectElements(officialTree);
+    const privateGallery = elements.find((element) => element.type === 'PersonalRouteGallery');
+    expect(officialText).toContain('453 m');
+    expect(officialText).toContain('20 min');
+    expect(officialText).not.toContain('Iniciar navegación');
+    expect(officialText).not.toContain('Cueva del Agua');
+    expect(privateGallery?.props?.routeSlug).toBe('adelfal-de-cuadros');
+    expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
+    const back = elements.find(
+      (element) => element.props?.accessibilityLabel === 'Volver al catálogo público de rutas',
     );
-    expect(back?.props?.accessibilityRole).toBe('button');
     (back?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.back).toHaveBeenCalledOnce();
+    expect(mocks.replace).toHaveBeenCalledWith('/routes');
   });
 });

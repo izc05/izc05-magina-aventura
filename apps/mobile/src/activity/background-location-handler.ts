@@ -17,7 +17,7 @@ export interface ExpoBackgroundLocation {
 }
 
 export interface BackgroundLocationHandlerDependencies {
-  store: Pick<ActivityStore, 'initialize' | 'loadActiveSession'>;
+  store: Pick<ActivityStore, 'initialize' | 'loadActiveSessionForBackground'>;
   inbox: Pick<BackgroundLocationInbox, 'initialize' | 'append'>;
 }
 
@@ -58,8 +58,8 @@ export async function handleBackgroundLocations(
   await dependencies.store.initialize();
   await dependencies.inbox.initialize();
 
-  const recovered = await dependencies.store.loadActiveSession();
-  if (!recovered || recovered.session.state !== 'ACTIVE') return;
+  const recovered = await dependencies.store.loadActiveSessionForBackground();
+  if (!recovered?.ownerId || recovered.session.state !== 'ACTIVE') return;
 
   const points = locations
     .map(toBackgroundPoint)

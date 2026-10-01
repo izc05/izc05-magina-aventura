@@ -155,6 +155,7 @@ describe('SQLiteActivityStore durability contract', () => {
   it('recovers the durable inbox cursor together with the active session', async () => {
     const activeSessionRow = {
       activity_id: 'activity-sqlite',
+      owner_id: 'account-a',
       adventure_slug: 'durable-adventure',
       adventure_version: 1,
       route_id: 'route-sqlite',
@@ -180,8 +181,14 @@ describe('SQLiteActivityStore durability contract', () => {
     });
 
     const store = new SQLiteActivityStore('recovery.db');
-    const recovered = await store.loadActiveSession();
+    const recovered = await store.loadActiveSession('account-a');
+    const ownerQueryCall = mocks.getFirstAsync.mock.calls.find(([query]) =>
+      String(query ?? '').includes('WHERE owner_id = ? AND state IN'),
+    ) as unknown[] | undefined;
 
+    expect(recovered?.ownerId).toBe('account-a');
+    expect(String(ownerQueryCall?.[0] ?? '')).toContain("state IN ('ACTIVE', 'PAUSED')");
+    expect(ownerQueryCall?.slice(1)).toEqual(['account-a']);
     expect(recovered?.lastConsumedInboxId).toBe(37);
     expect(recovered?.session.activityId).toBe('activity-sqlite');
     expect(recovered?.snapshot.activeIntervalStartedAt).toBe('2026-09-28T08:00:00.000Z');
@@ -294,19 +301,20 @@ describe('SQLiteActivityStore durability contract', () => {
     ]);
 
     const store = new SQLiteActivityStore('passport-gps-captures.db');
-    const data = await store.loadPassportGpsData();
+    const data = await store.loadPassportGpsData('account-a');
     const queryCall = mocks.getAllAsync.mock.calls.at(-1) as unknown[];
     const query = String(queryCall[0]);
 
     expect(query).toContain('session.state = ?');
     expect(query).toContain('session.finished_at IS NOT NULL');
     expect(query).toContain('session.recording_source = ?');
+    expect(query).toContain('session.owner_id = ?');
     expect(query).toContain('latest_snapshot.last_processed_sequence');
     expect(query).toContain('ORDER BY session.finished_at DESC');
     expect(query).not.toContain('route_id');
     expect(query).not.toContain('route_distance_km');
     expect(query).not.toContain('reward_xp');
-    expect(queryCall.slice(1)).toEqual(['FINISHED', 'device-gps']);
+    expect(queryCall.slice(1)).toEqual(['FINISHED', 'device-gps', 'account-a']);
     expect(data.sessions).toEqual([
       {
         activityId: 'gps-newer',
@@ -333,7 +341,7 @@ describe('SQLiteActivityStore durability contract', () => {
   it('returns an empty list and zero aggregate when no finished GPS captures are saved', async () => {
     const store = new SQLiteActivityStore('empty-passport-metrics.db');
 
-    await expect(store.loadPassportGpsData()).resolves.toEqual({
+    await expect(store.loadPassportGpsData('account-a')).resolves.toEqual({
       sessions: [],
       metrics: { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 },
     });
@@ -342,7 +350,7 @@ describe('SQLiteActivityStore durability contract', () => {
   it('keeps the aggregate API derived from the same safe capture query', async () => {
     const store = new SQLiteActivityStore('passport-metrics-compat.db');
 
-    await expect(store.loadPassportGpsMetrics()).resolves.toEqual({
+    await expect(store.loadPassportGpsMetrics('account-a')).resolves.toEqual({
       sessionCount: 0,
       distanceMeters: 0,
       elapsedSeconds: 0,

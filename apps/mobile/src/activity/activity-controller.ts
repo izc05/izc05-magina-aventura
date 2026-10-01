@@ -141,11 +141,31 @@ function rehydrateEngineState(
 
 export function createActivityController(dependencies: ActivityControllerDependencies) {
   let engineState: ActivityEngineState | null = null;
+  let engineOwnerId: string | null = null;
   let routeLine: readonly GeoJsonPosition[] = [];
   let explorationConfig: ReturnType<typeof explorationConfigFromAdventureDefinition> | null = null;
   let initialized = false;
   let lastConsumedInboxId = 0;
-  let refreshInFlight: Promise<ActivityEngineState | null> | null = null;
+  let refreshInFlight: {
+    ownerId: string;
+    promise: Promise<ActivityEngineState | null>;
+  } | null = null;
+
+  function requireOwnerId(ownerId: string): string {
+    if (!ownerId.trim()) throw new Error('Inicia sesión para acceder a tu actividad personal.');
+    return ownerId;
+  }
+
+  function ownsCurrentActivity(ownerId: string): boolean {
+    return Boolean(engineState) && engineOwnerId === ownerId && Boolean(ownerId.trim());
+  }
+
+  function ensureCurrentOwner(ownerId: string): void {
+    requireOwnerId(ownerId);
+    if (!ownsCurrentActivity(ownerId)) {
+      throw new Error('Esta actividad no está disponible para la cuenta actual.');
+    }
+  }
 
   function applyExploration(
     state: ActivityEngineState,
@@ -183,16 +203,16 @@ export function createActivityController(dependencies: ActivityControllerDepende
     initialized = true;
   }
 
-  async function startLocation(activityId: string): Promise<void> {
+  async function startLocation(activityId: string, ownerId: string): Promise<void> {
     await dependencies.locationProvider.start(activityId, async (point) => {
       await dependencies.inbox.append(activityId, [point]);
-      await refresh();
+      await refresh(ownerId);
     });
   }
 
-  async function refreshInternal(): Promise<ActivityEngineState | null> {
+  async function refreshInternal(ownerId: string): Promise<ActivityEngineState | null> {
     await initializeStores();
-    if (!engineState) return null;
+    if (!ownsCurrentActivity(ownerId) || !engineState) return null;
 
     const activityId = engineState.session.activityId;
     const pending = await dependencies.inbox.loadPending(
@@ -256,13 +276,15 @@ export function createActivityController(dependencies: ActivityControllerDepende
     return engineState;
   }
 
-  function refresh(): Promise<ActivityEngineState | null> {
-    if (refreshInFlight) return refreshInFlight;
+  function refresh(ownerId: string): Promise<ActivityEngineState | null> {
+    if (!ownsCurrentActivity(ownerId)) return Promise.resolve(null);
+    if (refreshInFlight?.ownerId === ownerId) return refreshInFlight.promise;
 
-    refreshInFlight = refreshInternal().finally(() => {
-      refreshInFlight = null;
+    const promise = refreshInternal(ownerId).finally(() => {
+      if (refreshInFlight?.promise === promise) refreshInFlight = null;
     });
-    return refreshInFlight;
+    refreshInFlight = { ownerId, promise };
+    return promise;
   }
 
   return {
@@ -277,9 +299,15 @@ export function createActivityController(dependencies: ActivityControllerDepende
     async start(
       definition: AdventureDefinition,
       route: RouteDetail,
+      ownerId: string,
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState> {
       await initializeStores();
+      const scopedOwnerId = requireOwnerId(ownerId);
+      const existingActivity = await dependencies.store.loadActiveSessionForBackground();
+      if (existingActivity) {
+        throw new Error('Ya hay una captura GPS activa en este dispositivo. Reanúdala con la cuenta que la inició antes de comenzar otra.');
+      }
       const validatedDefinition = validateDefinitionForRoute(definition, route);
       explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
       const permissions = await dependencies.locationProvider.requestAdventurePermissions();
@@ -317,12 +345,14 @@ export function createActivityController(dependencies: ActivityControllerDepende
       await dependencies.store.createSession(
         startedState.session,
         startedState.snapshot,
+        scopedOwnerId,
         explorationFromEngine(startedState),
       );
       engineState = startedState;
+      engineOwnerId = scopedOwnerId;
 
       try {
-        await startLocation(startedState.session.activityId);
+        await startLocation(startedState.session.activityId, scopedOwnerId);
       } catch (error) {
         const pausedState = reduceActivity(
           startedState,
@@ -344,18 +374,25 @@ export function createActivityController(dependencies: ActivityControllerDepende
     async recover(
       definition: AdventureDefinition,
       route: RouteDetail,
+      ownerId: string,
       line: readonly GeoJsonPosition[] = [],
     ): Promise<ActivityEngineState | null> {
       await initializeStores();
+      const scopedOwnerId = requireOwnerId(ownerId);
       routeLine = line;
-      const recovered = await dependencies.store.loadActiveSession();
+      const recovered = await dependencies.store.loadActiveSession(scopedOwnerId);
       if (!recovered || recovered.session.routeId !== route.id) {
         engineState = null;
+        engineOwnerId = null;
         lastConsumedInboxId = 0;
-        if (!recovered) {
+        const anyOwnedActive = await dependencies.store.loadActiveSessionForBackground();
+        if (!anyOwnedActive) {
           await dependencies.locationProvider.stop();
         }
         return null;
+      }
+      if (recovered.ownerId !== scopedOwnerId) {
+        throw new Error('La actividad recuperada no pertenece a la cuenta actual.');
       }
 
       const validatedDefinition = validateDefinitionForRecovery(
@@ -365,11 +402,12 @@ export function createActivityController(dependencies: ActivityControllerDepende
       );
       explorationConfig = explorationConfigFromAdventureDefinition(validatedDefinition);
       lastConsumedInboxId = recovered.lastConsumedInboxId;
+      engineOwnerId = scopedOwnerId;
       engineState = rehydrateEngineState(recovered, routeLine, applyExploration);
 
       if (engineState.session.state === 'ACTIVE') {
         try {
-          await startLocation(engineState.session.activityId);
+          await startLocation(engineState.session.activityId, scopedOwnerId);
         } catch (error) {
           const pausedState = reduceActivity(
             engineState,
@@ -386,13 +424,14 @@ export function createActivityController(dependencies: ActivityControllerDepende
         }
       }
 
-      return refresh();
+      return refresh(scopedOwnerId);
     },
 
     refresh,
 
-    async pause(): Promise<ActivityEngineState> {
-      const current = await refresh();
+    async pause(ownerId: string): Promise<ActivityEngineState> {
+      ensureCurrentOwner(ownerId);
+      const current = await refresh(ownerId);
       if (!current) throw new Error('No active adventure');
 
       const pausedState = reduceActivity(
@@ -410,7 +449,8 @@ export function createActivityController(dependencies: ActivityControllerDepende
       return pausedState;
     },
 
-    async resume(): Promise<ActivityEngineState> {
+    async resume(ownerId: string): Promise<ActivityEngineState> {
+      ensureCurrentOwner(ownerId);
       if (!engineState) throw new Error('No paused adventure');
 
       const resumedState = reduceActivity(
@@ -426,7 +466,7 @@ export function createActivityController(dependencies: ActivityControllerDepende
       engineState = resumedState;
 
       try {
-        await startLocation(resumedState.session.activityId);
+        await startLocation(resumedState.session.activityId, ownerId);
       } catch (error) {
         const pausedState = reduceActivity(
           resumedState,
@@ -445,8 +485,9 @@ export function createActivityController(dependencies: ActivityControllerDepende
       return resumedState;
     },
 
-    async finish(): Promise<ActivityEngineState> {
-      const current = await refresh();
+    async finish(ownerId: string): Promise<ActivityEngineState> {
+      ensureCurrentOwner(ownerId);
+      const current = await refresh(ownerId);
       if (!current) throw new Error('No active adventure');
 
       const finishedState = reduceActivity(
@@ -490,13 +531,13 @@ export function createActivityController(dependencies: ActivityControllerDepende
       return finishedState;
     },
 
-    async loadTrack() {
-      if (!engineState) return [];
+    async loadTrack(ownerId: string) {
+      if (!ownsCurrentActivity(ownerId) || !engineState) return [];
       return dependencies.store.loadTrack(engineState.session.activityId);
     },
 
-    current(): ActivityEngineState | null {
-      return engineState;
+    current(ownerId: string): ActivityEngineState | null {
+      return ownsCurrentActivity(ownerId) ? engineState : null;
     },
   };
 }

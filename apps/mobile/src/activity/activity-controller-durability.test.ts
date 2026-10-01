@@ -6,7 +6,10 @@ import {
   createMemoryBackgroundLocationInboxDatabase,
   MemoryBackgroundLocationInbox,
 } from './background-location-inbox';
-import { createActivityController } from './activity-controller';
+import {
+  createActivityController as createScopedActivityController,
+  type ActivityControllerDependencies,
+} from './activity-controller';
 import {
   createMemoryActivityStoreDatabase,
   MemoryActivityStore,
@@ -91,6 +94,27 @@ function point(timestampMs: number, latitude: number) {
   };
 }
 
+const TEST_OWNER_ID = 'activity-controller-durability-test-owner';
+
+function createActivityController(dependencies: ActivityControllerDependencies) {
+  const controller = createScopedActivityController(dependencies);
+  return {
+    ...controller,
+    start(definition: AdventureDefinition, selectedRoute: RouteDetail, line: Parameters<typeof controller.start>[3] = []) {
+      return controller.start(definition, selectedRoute, TEST_OWNER_ID, line);
+    },
+    recover(definition: AdventureDefinition, selectedRoute: RouteDetail, line: Parameters<typeof controller.recover>[3] = []) {
+      return controller.recover(definition, selectedRoute, TEST_OWNER_ID, line);
+    },
+    current: () => controller.current(TEST_OWNER_ID),
+    refresh: () => controller.refresh(TEST_OWNER_ID),
+    pause: () => controller.pause(TEST_OWNER_ID),
+    resume: () => controller.resume(TEST_OWNER_ID),
+    finish: () => controller.finish(TEST_OWNER_ID),
+    loadTrack: () => controller.loadTrack(TEST_OWNER_ID),
+  };
+}
+
 describe('ActivityController durability boundaries', () => {
   it('does not replay committed inbox rows when cleanup ACK fails', async () => {
     const storeDb = createMemoryActivityStoreDatabase();
@@ -122,7 +146,7 @@ describe('ActivityController durability boundaries', () => {
 
     await first.refresh();
 
-    const persisted = await new MemoryActivityStore(storeDb).loadActiveSession();
+    const persisted = await new MemoryActivityStore(storeDb).loadActiveSession(TEST_OWNER_ID);
     expect(persisted?.lastConsumedInboxId).toBe(2);
     expect((await durableInbox.loadPending('activity-cursor'))).toHaveLength(2);
 
@@ -208,7 +232,7 @@ describe('ActivityController durability boundaries', () => {
     );
 
     expect(second.current()?.session.state).toBe('PAUSED');
-    expect((await secondStore.loadActiveSession())?.session.state).toBe('PAUSED');
+    expect((await secondStore.loadActiveSession(TEST_OWNER_ID))?.session.state).toBe('PAUSED');
 
     const thirdProvider = provider();
     const third = createActivityController({

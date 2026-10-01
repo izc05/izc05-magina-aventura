@@ -6,7 +6,10 @@ import {
   MemoryBackgroundLocationInbox,
   createMemoryBackgroundLocationInboxDatabase,
 } from './background-location-inbox';
-import { createActivityController } from './activity-controller';
+import {
+  createActivityController as createScopedActivityController,
+  type ActivityControllerDependencies,
+} from './activity-controller';
 import {
   MemoryActivityStore,
   createMemoryActivityStoreDatabase,
@@ -93,6 +96,27 @@ function rawPoint(timestampMs: number, latitude: number, longitude: number) {
   };
 }
 
+const TEST_OWNER_ID = 'activity-controller-test-owner';
+
+function createActivityController(dependencies: ActivityControllerDependencies) {
+  const controller = createScopedActivityController(dependencies);
+  return {
+    ...controller,
+    start(definition: AdventureDefinition, selectedRoute: RouteDetail, line: Parameters<typeof controller.start>[3] = []) {
+      return controller.start(definition, selectedRoute, TEST_OWNER_ID, line);
+    },
+    recover(definition: AdventureDefinition, selectedRoute: RouteDetail, line: Parameters<typeof controller.recover>[3] = []) {
+      return controller.recover(definition, selectedRoute, TEST_OWNER_ID, line);
+    },
+    current: () => controller.current(TEST_OWNER_ID),
+    refresh: () => controller.refresh(TEST_OWNER_ID),
+    pause: () => controller.pause(TEST_OWNER_ID),
+    resume: () => controller.resume(TEST_OWNER_ID),
+    finish: () => controller.finish(TEST_OWNER_ID),
+    loadTrack: () => controller.loadTrack(TEST_OWNER_ID),
+  };
+}
+
 describe('ActivityController', () => {
   it('starts, drains durable GPS points, pauses, resumes, finishes and queues the track', async () => {
     const store = new MemoryActivityStore();
@@ -135,6 +159,29 @@ describe('ActivityController', () => {
     const pending = await store.loadPendingSyncBatches('activity-1');
     expect(pending).toHaveLength(1);
     expect(pending[0]?.idempotencyKey).toBe('activity:activity-1:track:1-2');
+  });
+
+  it('does not expose or duplicate an active capture after switching accounts', async () => {
+    const store = new MemoryActivityStore();
+    const controller = createScopedActivityController({
+      store,
+      inbox: new MemoryBackgroundLocationInbox(),
+      locationProvider: createProvider(),
+      createActivityId: () => 'activity-account-a',
+      now: () => '2026-09-16T10:00:00.000Z',
+    });
+
+    await controller.start(adventureDefinition, route, 'account-a');
+    expect(controller.current('account-b')).toBeNull();
+    await expect(controller.recover(adventureDefinition, route, 'account-b')).resolves.toBeNull();
+    expect(controller.current('account-b')).toBeNull();
+    await expect(controller.start(adventureDefinition, route, 'account-b'))
+      .rejects.toThrow('captura GPS activa');
+    await expect(store.loadActiveSession('account-a')).resolves.toMatchObject({
+      ownerId: 'account-a',
+      session: { activityId: 'activity-account-a' },
+    });
+    await expect(store.loadActiveSession('account-b')).resolves.toBeNull();
   });
 
   it('preserves physical GPS provenance for a fixture route without importing fixture route metrics', async () => {

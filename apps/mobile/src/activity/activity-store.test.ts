@@ -66,7 +66,7 @@ function sample(sequence: number): LocationSample {
 
 async function writeRecoverableActivity(store: ActivityStore) {
   await store.initialize();
-  await store.createSession(session(), snapshot(0));
+  await store.createSession(session(), snapshot(0), 'activity-store-test-owner');
   await store.appendBatch('activity-store-test', [sample(1), sample(2)], snapshot(1));
 }
 
@@ -75,7 +75,7 @@ describe('ActivityStore recovery contract', () => {
     const store = new MemoryActivityStore();
     await writeRecoverableActivity(store);
 
-    const recovered = await store.loadActiveSession();
+    const recovered = await store.loadActiveSession('activity-store-test-owner');
 
     expect(recovered?.session.state).toBe('ACTIVE');
     expect(recovered?.session.lastProcessedSequence).toBe(1);
@@ -90,7 +90,7 @@ describe('ActivityStore recovery contract', () => {
 
     const secondProcess = new MemoryActivityStore(database);
     await secondProcess.initialize();
-    const recovered = await secondProcess.loadActiveSession();
+    const recovered = await secondProcess.loadActiveSession('activity-store-test-owner');
     const track = await secondProcess.loadTrack('activity-store-test');
 
     expect(recovered?.session.activityId).toBe('activity-store-test');
@@ -111,13 +111,13 @@ describe('ActivityStore recovery contract', () => {
     await writeRecoverableActivity(store);
     await store.updateSession(session('FINISHED'), snapshot(2, 'FINISHED'));
 
-    expect(await store.loadActiveSession()).toBeNull();
+    expect(await store.loadActiveSession('activity-store-test-owner')).toBeNull();
     expect((await store.loadTrack('activity-store-test')).length).toBe(2);
   });
 
   it('persists exploration state and deduplicates the same activity target', async () => {
     const store = new MemoryActivityStore();
-    await store.createSession(session(), snapshot(0));
+    await store.createSession(session(), snapshot(0), 'activity-store-test-owner');
     const observation: ExplorationObservation = {
       targetId: '00000000-0000-4000-8000-000000000021',
       targetKey: 'checkpoint:00000000-0000-4000-8000-000000000021',
@@ -137,10 +137,18 @@ describe('ActivityStore recovery contract', () => {
     };
 
     await store.appendBatch('activity-store-test', [], null, exploration);
-    const recovered = await store.loadActiveSession();
+    const recovered = await store.loadActiveSession('activity-store-test-owner');
 
     expect(recovered?.exploration.state.lastEvaluatedSequence).toBe(2);
     expect(recovered?.exploration.state.unlockedTargetKeys).toEqual([observation.targetKey]);
     expect(recovered?.exploration.observations).toHaveLength(1);
+  });
+
+  it('does not recover a personal activity for a different account', async () => {
+    const store = new MemoryActivityStore();
+    await store.createSession(session(), snapshot(0), 'account-a');
+
+    await expect(store.loadActiveSession('account-b')).resolves.toBeNull();
+    await expect(store.loadActiveSession('account-a')).resolves.toMatchObject({ ownerId: 'account-a' });
   });
 });

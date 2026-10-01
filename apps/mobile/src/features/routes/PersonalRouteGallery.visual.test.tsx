@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   useStateIndex: 0,
+  photoState: null as unknown,
   user: { id: 'test-account' } as null | { id: string },
   authLoading: false,
   push: vi.fn(),
@@ -9,11 +10,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react', () => ({
   useEffect: vi.fn(),
+  useCallback: (callback: unknown) => callback,
   useState: (initialValue: unknown) => {
     const index = mocks.useStateIndex;
     mocks.useStateIndex += 1;
     // Start beyond the initial loading state so this is the genuine empty state.
-    return [index === 5 ? false : initialValue, vi.fn()];
+    const value = index === 0 && mocks.photoState ? mocks.photoState : initialValue;
+    return [index === 5 ? false : value, vi.fn()];
   },
 }));
 vi.mock('expo-image-picker', () => ({ launchImageLibraryAsync: vi.fn() }));
@@ -87,6 +90,7 @@ function visibleText(node: unknown): string[] {
 
 beforeEach(() => {
   mocks.useStateIndex = 0;
+  mocks.photoState = null;
   mocks.user = { id: 'test-account' };
   mocks.authLoading = false;
   mocks.push.mockReset();
@@ -162,5 +166,28 @@ describe('personal route gallery visual contract', () => {
     (login?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.push).toHaveBeenCalledWith({ pathname: '/login', params: { returnTo: 'bedmar-gallery' } });
     expect(personalRouteGalleryStore.listForRoute).not.toHaveBeenCalled();
+  });
+
+  it('does not render photos retained in memory for another authenticated account', () => {
+    mocks.user = { id: 'account-b' };
+    mocks.photoState = {
+      ownerId: 'account-a',
+      photos: [{
+        id: 'account-a-private-photo',
+        routeSlug: 'sendero-fluvial-cueva-del-agua',
+        uri: 'file:///private/account-a.jpg',
+        caption: 'Foto privada de account-a',
+        credit: 'Autor privado',
+        createdAt: '2026-09-30T12:00:00.000Z',
+      }],
+    };
+
+    const tree = PersonalRouteGallery({ routeSlug: 'sendero-fluvial-cueva-del-agua' });
+    const text = visibleText(tree).join(' ');
+
+    expect(text).toContain('Tu galería personal está vacía');
+    expect(text).not.toContain('Foto privada de account-a');
+    expect(text).not.toContain('Autor privado');
+    expect(collectElements(tree).some((element) => element.type === 'Image')).toBe(false);
   });
 });

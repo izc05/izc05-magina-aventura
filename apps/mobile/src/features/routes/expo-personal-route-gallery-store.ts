@@ -17,6 +17,7 @@ interface PhotoRow {
   caption: string;
   credit: string;
   created_at: string;
+  owner_id: string | null;
   deletion_status: 'active' | 'pending_delete';
 }
 
@@ -39,16 +40,19 @@ function database(): Promise<SQLite.SQLiteDatabase> {
         caption TEXT NOT NULL,
         credit TEXT NOT NULL,
         created_at TEXT NOT NULL,
+        owner_id TEXT,
         deletion_status TEXT NOT NULL DEFAULT 'active'
           CHECK (deletion_status IN ('active', 'pending_delete'))
       );
-      CREATE INDEX IF NOT EXISTS personal_route_gallery_route_created
-      ON personal_route_gallery_photos (route_slug, created_at DESC);
     `);
 
     const columns = await db.getAllAsync<TableInfoRow>(
       'PRAGMA table_info(personal_route_gallery_photos)',
     );
+    if (!columns.some((column) => column.name === 'owner_id')) {
+      // Existing rows remain NULL and are not assigned to whichever account opens the app.
+      await db.execAsync('ALTER TABLE personal_route_gallery_photos ADD COLUMN owner_id TEXT;');
+    }
     if (!columns.some((column) => column.name === 'deletion_status')) {
       await db.execAsync(`
         ALTER TABLE personal_route_gallery_photos
@@ -56,6 +60,13 @@ function database(): Promise<SQLite.SQLiteDatabase> {
             CHECK (deletion_status IN ('active', 'pending_delete'));
       `);
     }
+
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS personal_route_gallery_route_created
+      ON personal_route_gallery_photos (route_slug, created_at DESC);
+      CREATE INDEX IF NOT EXISTS personal_route_gallery_owner_route_created
+      ON personal_route_gallery_photos (owner_id, route_slug, created_at DESC);
+    `);
     return db;
   });
 
@@ -92,13 +103,14 @@ function isManagedPhotoUri(uri: string): boolean {
 }
 
 const localPort: PersonalRouteGalleryLocalPort = {
-  async list(routeSlug) {
+  async list(ownerId, routeSlug) {
     const db = await database();
     const rows = await db.getAllAsync<PhotoRow>(
-      `SELECT id, route_slug, uri, caption, credit, created_at
+      `SELECT id, route_slug, uri, caption, credit, created_at, owner_id, deletion_status
        FROM personal_route_gallery_photos
-       WHERE route_slug = ? AND deletion_status = 'active'
+       WHERE owner_id = ? AND route_slug = ? AND deletion_status = 'active'
        ORDER BY created_at DESC, id DESC`,
+      ownerId,
       routeSlug,
     );
 
@@ -117,55 +129,60 @@ const localPort: PersonalRouteGalleryLocalPort = {
     return destination.uri;
   },
 
-  async insert(photo) {
+  async insert(photo, ownerId) {
     const db = await database();
     await db.runAsync(
       `INSERT INTO personal_route_gallery_photos (
-        id, route_slug, uri, caption, credit, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        id, route_slug, uri, caption, credit, created_at, owner_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       photo.id,
       photo.routeSlug,
       photo.uri,
       photo.caption,
       photo.credit,
       photo.createdAt,
+      ownerId,
     );
   },
 
-  async markDeletePending(photoId) {
+  async markDeletePending(photoId, ownerId) {
     const db = await database();
     await db.runAsync(
       `UPDATE personal_route_gallery_photos
        SET deletion_status = 'pending_delete'
-       WHERE id = ? AND deletion_status IN ('active', 'pending_delete')`,
+       WHERE id = ? AND owner_id = ? AND deletion_status IN ('active', 'pending_delete')`,
       photoId,
+      ownerId,
     );
     const row = await db.getFirstAsync<PhotoRow>(
-      `SELECT id, route_slug, uri, caption, credit, created_at, deletion_status
+      `SELECT id, route_slug, uri, caption, credit, created_at, owner_id, deletion_status
        FROM personal_route_gallery_photos
-       WHERE id = ? AND deletion_status = 'pending_delete'`,
+       WHERE id = ? AND owner_id = ? AND deletion_status = 'pending_delete'`,
       photoId,
+      ownerId,
     );
     return row ? mapPhotoRow(row) : null;
   },
 
-  async listPendingDeletes() {
+  async listPendingDeletes(ownerId) {
     const db = await database();
     const rows = await db.getAllAsync<PhotoRow>(
-      `SELECT id, route_slug, uri, caption, credit, created_at, deletion_status
+      `SELECT id, route_slug, uri, caption, credit, created_at, owner_id, deletion_status
        FROM personal_route_gallery_photos
-       WHERE deletion_status = 'pending_delete'
+       WHERE owner_id = ? AND deletion_status = 'pending_delete'
        ORDER BY created_at DESC, id DESC`,
+      ownerId,
     );
     return rows.map(mapPhotoRow);
   },
 
-  async finalizePendingDelete(photoId) {
+  async finalizePendingDelete(photoId, ownerId) {
     const db = await database();
     await db.runAsync(
       `DELETE FROM personal_route_gallery_photos
-       WHERE id = ? AND deletion_status = 'pending_delete'`,
+       WHERE id = ? AND owner_id = ? AND deletion_status = 'pending_delete'`,
       photoId,
+      ownerId,
     );
   },
 

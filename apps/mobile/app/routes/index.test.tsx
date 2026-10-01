@@ -14,6 +14,7 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 
 import PublicRouteCatalogScreen from './index';
+import { adelfalDeCuadrosInformation } from '../../src/features/routes/adelfal-de-cuadros-information';
 import { municipalRouteInformation } from '../../src/features/routes/municipal-route-information';
 
 type ElementLike = { type?: unknown; props?: Record<string, unknown> };
@@ -38,48 +39,75 @@ function visibleText(node: unknown): string[] {
   return [];
 }
 
+function normalizedText(node: unknown): string {
+  return visibleText(node).join(' ').replace(/\s+/g, ' ').trim();
+}
+
 afterEach(() => vi.clearAllMocks());
 
 describe('public route catalog', () => {
-  it('shows only the documented Bedmar pilot and its verification and non-navigation notices', () => {
+  it('keeps Bedmar and adds Adelfal as separate public pilots with attributed facts', () => {
     const tree = PublicRouteCatalogScreen();
     const elements = collectElements(tree);
-    const cards = elements.filter((element) => element.props?.testID === 'public-route-card');
+    const municipalCard = elements.find((element) => element.props?.testID === 'public-route-card');
+    const adelfalCard = elements.find((element) => element.props?.testID === 'public-adelfal-route-card');
     const text = visibleText(tree).join(' ');
-    const card = cards[0];
+    const municipalText = normalizedText(municipalCard);
+    const adelfalText = normalizedText(adelfalCard);
 
-    expect(cards).toHaveLength(1);
+    expect(municipalCard).toBeDefined();
+    expect(adelfalCard).toBeDefined();
     expect(text).toContain('Rutas de Sierra Mágina');
-    expect(text).toContain(municipalRouteInformation.title);
-    expect(text).toContain(municipalRouteInformation.municipality);
-    expect(text).toContain(municipalRouteInformation.statusLabel);
-    expect(text).toContain(municipalRouteInformation.traceStatus);
-    expect(text).toContain(municipalRouteInformation.gpsNotice);
-    expect(text).toContain(municipalRouteInformation.officialDataNotice);
-    expect(text).toContain(municipalRouteInformation.statusDetail);
-    expect(text).not.toMatch(/\b\d+(?:[,.]\d+)?\s?(?:km|mi|m|ft|min|h|XP)\b/i);
-    expect(text).not.toMatch(/checkpoint|desnivel|recompensa|iniciar navegación|próximamente/i);
-    expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
+    expect(municipalText).toContain(municipalRouteInformation.title);
+    expect(municipalText).toContain(municipalRouteInformation.municipality);
+    expect(municipalText).toContain(municipalRouteInformation.statusLabel);
+    expect(municipalText).toContain(municipalRouteInformation.traceStatus);
+    expect(municipalText).toContain(municipalRouteInformation.gpsNotice);
+    expect(municipalText).toContain(municipalRouteInformation.officialDataNotice);
+    expect(municipalText).toContain(municipalRouteInformation.statusDetail);
+    expect(municipalText).not.toMatch(/\b\d+(?:[,.]\d+)?\s?(?:km|mi|m|ft|min|h|XP)\b/i);
+    expect(municipalText).not.toMatch(/checkpoint|desnivel|recompensa|iniciar navegación|próximamente/i);
+
+    expect(adelfalText).toContain('PILOTO OFICIAL');
+    expect(adelfalText).toContain(adelfalDeCuadrosInformation.title);
+    expect(adelfalText).toContain(adelfalDeCuadrosInformation.municipality);
+    expect(adelfalText).toContain('453 m de ida');
+    expect(adelfalText).toContain('20 min');
+    expect(adelfalText).toContain('Dificultad baja');
+    expect(adelfalText).toContain('Senda');
+    expect(adelfalText).toContain('sombra abundante');
+    expect(adelfalText).toContain(adelfalDeCuadrosInformation.publishedStatus);
+    expect(adelfalText).toContain(adelfalDeCuadrosInformation.noticeDate);
+    expect(adelfalText).toContain('no una verificación actual de campo');
+    expect(adelfalText).toContain('antes del lanzamiento');
+    expect(adelfalText).not.toMatch(/abierto actualmente|cerrado actualmente|cerrado hoy/i);
     expect(text).not.toMatch(/iniciar sesión o registrarse|correo electrónico|contraseña/i);
-    expect(card?.props?.accessibilityRole).toBe('button');
-    expect(card?.props?.accessibilityLabel).toBe(
-      `Abrir ficha informativa de ${municipalRouteInformation.title}`,
-    );
-    expect(card?.props?.accessibilityHint).toContain('No requiere iniciar sesión');
+    expect(elements.some((element) => element.type === 'RouteMap')).toBe(false);
+    expect(municipalCard?.props?.accessibilityRole).toBe('button');
+    expect(adelfalCard?.props?.accessibilityRole).toBe('button');
+    expect(adelfalCard?.props?.accessibilityHint).toContain('no es una comprobación actual');
   });
 
-  it('opens the public municipal detail and returns Home without an authentication step', () => {
+  it('opens the independent Bedmar and Adelfal public details without an authentication step', () => {
     const tree = PublicRouteCatalogScreen();
     const elements = collectElements(tree);
-    const routeCard = elements.find((element) => element.props?.testID === 'public-route-card');
-    const backButton = elements.find((element) => element.props?.accessibilityLabel === 'Volver al inicio');
+    const municipalCard = elements.find((element) => element.props?.testID === 'public-route-card');
+    const adelfalCard = elements.find((element) => element.props?.testID === 'public-adelfal-route-card');
 
-    (routeCard?.props?.onPress as (() => void) | undefined)?.();
-    expect(mocks.push).toHaveBeenCalledWith({
+    (municipalCard?.props?.onPress as (() => void) | undefined)?.();
+    (adelfalCard?.props?.onPress as (() => void) | undefined)?.();
+
+    expect(mocks.push).toHaveBeenNthCalledWith(1, {
       pathname: '/municipal-routes/[slug]',
       params: { slug: municipalRouteInformation.slug },
     });
+    expect(mocks.push).toHaveBeenNthCalledWith(2, '/official-routes/adelfal-de-cuadros');
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('returns to Home from the public catalog', () => {
+    const tree = PublicRouteCatalogScreen();
+    const backButton = collectElements(tree).find((element) => element.props?.accessibilityLabel === 'Volver al inicio');
 
     (backButton?.props?.onPress as (() => void) | undefined)?.();
     expect(mocks.replace).toHaveBeenCalledWith('/');

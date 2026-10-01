@@ -15,6 +15,7 @@ const savedAt = new Date('2026-10-01T10:00:00.000Z');
 
 function makePort() {
   const rows: PersonalRoutePhoto[] = [];
+  const owners = new Map<string, string>();
   const pending = new Map<string, PersonalRoutePhoto>();
   const files = new Set<string>();
   const copies: Array<{ sourceUri: string; fileName: string }> = [];
@@ -25,8 +26,8 @@ function makePort() {
   let failFinalizeCount = 0;
 
   const port: PersonalRouteGalleryLocalPort = {
-    async list(slug) {
-      return rows.filter((photo) => photo.routeSlug === slug && !pending.has(photo.id));
+    async list(ownerId, slug) {
+      return rows.filter((photo) => owners.get(photo.id) === ownerId && photo.routeSlug === slug && !pending.has(photo.id));
     },
     async copyImageToPrivateStorage(sourceUri, fileName) {
       copies.push({ sourceUri, fileName });
@@ -34,33 +35,35 @@ function makePort() {
       files.add(uri);
       return uri;
     },
-    async insert(photo) {
+    async insert(photo, ownerId) {
       rows.push(photo);
+      owners.set(photo.id, ownerId);
     },
-    async markDeletePending(photoId) {
+    async markDeletePending(photoId, ownerId) {
       events.push('mark-pending');
       if (failMarkCount > 0) {
         failMarkCount -= 1;
         throw new Error('SQLite mark unavailable');
       }
-      const photo = rows.find((item) => item.id === photoId);
+      const photo = rows.find((item) => item.id === photoId && owners.get(item.id) === ownerId);
       if (!photo) return null;
       pending.set(photoId, photo);
       return photo;
     },
-    async listPendingDeletes() {
-      return [...pending.values()];
+    async listPendingDeletes(ownerId) {
+      return [...pending.values()].filter((photo) => owners.get(photo.id) === ownerId);
     },
-    async finalizePendingDelete(photoId) {
+    async finalizePendingDelete(photoId, ownerId) {
       events.push('finalize-metadata');
       if (failFinalizeCount > 0) {
         failFinalizeCount -= 1;
         throw new Error('SQLite finalize unavailable');
       }
-      if (!pending.has(photoId)) return;
+      if (!pending.has(photoId) || owners.get(photoId) !== ownerId) return;
       const index = rows.findIndex((photo) => photo.id === photoId);
       if (index >= 0) rows.splice(index, 1);
       pending.delete(photoId);
+      owners.delete(photoId);
     },
     async removePrivateImage(uri) {
       events.push('remove-file');
@@ -75,6 +78,7 @@ function makePort() {
   return {
     port,
     rows,
+    owners,
     pending,
     files,
     copies,
@@ -87,6 +91,7 @@ function makePort() {
 }
 
 const validInput = {
+  ownerId: 'account-a',
   routeSlug,
   sourceUri: 'file:///picker-cache/selected-photo.webp',
   mimeType: 'image/webp',
@@ -94,11 +99,11 @@ const validInput = {
   credit: '  IsiVoltPro  ',
 };
 
-async function saveOne(local: ReturnType<typeof makePort>, id = 'photo-1') {
+async function saveOne(local: ReturnType<typeof makePort>, id = 'photo-1', ownerId = 'account-a') {
   return createPersonalRouteGalleryStore(local.port, {
     createId: () => id,
     now: () => savedAt,
-  }).save(validInput);
+  }).save({ ...validInput, ownerId });
 }
 
 describe('personal route gallery persistence', () => {
@@ -125,8 +130,20 @@ describe('personal route gallery persistence', () => {
     });
 
     const reopenedStore = createPersonalRouteGalleryStore(local.port);
-    await expect(reopenedStore.listForRoute(routeSlug)).resolves.toEqual([saved]);
-    await expect(reopenedStore.listForRoute('other-route')).resolves.toEqual([]);
+    await expect(reopenedStore.listForRoute(routeSlug, 'account-a')).resolves.toEqual([saved]);
+    await expect(reopenedStore.listForRoute('other-route', 'account-a')).resolves.toEqual([]);
+  });
+
+  it('does not expose, tombstone, or delete one account’s photo from another account', async () => {
+    const local = makePort();
+    const saved = await saveOne(local, 'photo-private-a', 'account-a');
+    const store = createPersonalRouteGalleryStore(local.port);
+
+    await expect(store.listForRoute(routeSlug, 'account-b')).resolves.toEqual([]);
+    await expect(store.markDeletePending(saved.id, 'account-b')).resolves.toBeNull();
+    expect(local.files.has(saved.uri)).toBe(true);
+    expect(local.pending.has(saved.id)).toBe(false);
+    await expect(store.listForRoute(routeSlug, 'account-a')).resolves.toEqual([saved]);
   });
 
   it('rejects missing caption, missing credit and non-local URLs before copying anything', async () => {
@@ -157,15 +174,15 @@ describe('personal route gallery persistence', () => {
     const saved = await saveOne(local);
     const store = createPersonalRouteGalleryStore(local.port);
 
-    await expect(store.markDeletePending(saved.id)).resolves.toEqual(saved);
-    expect(await local.port.list(routeSlug)).toEqual([]);
+    await expect(store.markDeletePending(saved.id, 'account-a')).resolves.toEqual(saved);
+    expect(await local.port.list('account-a', routeSlug)).toEqual([]);
     expect(local.files.has(saved.uri)).toBe(true);
 
-    await expect(store.finishDelete(saved.id)).resolves.toBe('deleted');
+    await expect(store.finishDelete(saved.id, 'account-a')).resolves.toBe('deleted');
     expect(local.events).toEqual(['mark-pending', 'remove-file', 'finalize-metadata']);
     expect(local.files.has(saved.uri)).toBe(false);
     expect(local.rows).toEqual([]);
-    await expect(store.finishDelete(saved.id)).resolves.toBe('deleted');
+    await expect(store.finishDelete(saved.id, 'account-a')).resolves.toBe('deleted');
     expect(local.removed).toEqual([saved.uri]);
   });
 
@@ -173,18 +190,18 @@ describe('personal route gallery persistence', () => {
     const local = makePort();
     const saved = await saveOne(local);
     const store = createPersonalRouteGalleryStore(local.port);
-    await store.markDeletePending(saved.id);
+    await store.markDeletePending(saved.id, 'account-a');
     local.failNextRemove();
 
-    await expect(store.finishDelete(saved.id)).resolves.toBe('pending');
+    await expect(store.finishDelete(saved.id, 'account-a')).resolves.toBe('pending');
     expect(local.pending.has(saved.id)).toBe(true);
     expect(local.files.has(saved.uri)).toBe(true);
-    expect(await local.port.list(routeSlug)).toEqual([]);
+    expect(await local.port.list('account-a', routeSlug)).toEqual([]);
 
-    await expect(store.listForRoute(routeSlug)).resolves.toEqual([]);
+    await expect(store.listForRoute(routeSlug, 'account-a')).resolves.toEqual([]);
     expect(local.rows).toEqual([]);
     expect(local.files.has(saved.uri)).toBe(false);
-    await expect(store.listForRoute(routeSlug)).resolves.toEqual([]);
+    await expect(store.listForRoute(routeSlug, 'account-a')).resolves.toEqual([]);
     expect(local.removed).toEqual([saved.uri]);
   });
 
@@ -192,16 +209,16 @@ describe('personal route gallery persistence', () => {
     const local = makePort();
     const saved = await saveOne(local);
     const store = createPersonalRouteGalleryStore(local.port);
-    await store.markDeletePending(saved.id);
+    await store.markDeletePending(saved.id, 'account-a');
     local.failNextFinalize();
 
-    await expect(store.finishDelete(saved.id)).resolves.toBe('pending');
+    await expect(store.finishDelete(saved.id, 'account-a')).resolves.toBe('pending');
     expect(local.files.has(saved.uri)).toBe(false);
     expect(local.pending.has(saved.id)).toBe(true);
-    expect(await local.port.list(routeSlug)).toEqual([]);
+    expect(await local.port.list('account-a', routeSlug)).toEqual([]);
 
     const reopenedStore = createPersonalRouteGalleryStore(local.port);
-    await expect(reopenedStore.listForRoute(routeSlug)).resolves.toEqual([]);
+    await expect(reopenedStore.listForRoute(routeSlug, 'account-a')).resolves.toEqual([]);
     expect(local.rows).toEqual([]);
     expect(local.pending.size).toBe(0);
     expect(local.removed).toEqual([saved.uri]);
@@ -213,8 +230,8 @@ describe('personal route gallery persistence', () => {
     const store = createPersonalRouteGalleryStore(local.port);
     local.failNextMark();
 
-    await expect(store.markDeletePending(saved.id)).rejects.toThrow('SQLite mark unavailable');
-    await expect(store.listForRoute(routeSlug)).resolves.toEqual([saved]);
+    await expect(store.markDeletePending(saved.id, 'account-a')).rejects.toThrow('SQLite mark unavailable');
+    await expect(store.listForRoute(routeSlug, 'account-a')).resolves.toEqual([saved]);
     expect(local.files.has(saved.uri)).toBe(true);
     expect(local.pending.size).toBe(0);
     expect(local.removed).toEqual([]);

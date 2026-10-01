@@ -3,6 +3,7 @@ import { EXPLORATION_MIGRATION } from './002-exploration';
 import { ADVENTURE_BINDING_MIGRATION } from './003-adventure-binding';
 import { DURABILITY_CURSOR_MIGRATION } from './004-durability-cursor';
 import { RECORDING_SOURCE_MIGRATION } from './005-recording-source';
+import { SESSION_OWNER_MIGRATION } from './006-session-owner';
 
 export interface SQLiteMigrationDatabase {
   execAsync(source: string): Promise<void>;
@@ -29,6 +30,7 @@ export const ACTIVITY_MIGRATIONS: readonly SQLiteMigration[] = [
   { version: 3, name: 'adventure-binding', sql: ADVENTURE_BINDING_MIGRATION },
   { version: 4, name: 'durability-cursor', sql: DURABILITY_CURSOR_MIGRATION },
   { version: 5, name: 'recording-source', sql: RECORDING_SOURCE_MIGRATION },
+  { version: 6, name: 'session-owner', sql: SESSION_OWNER_MIGRATION },
 ];
 
 export const ACTIVITY_SCHEMA_VERSION = ACTIVITY_MIGRATIONS.at(-1)?.version ?? 0;

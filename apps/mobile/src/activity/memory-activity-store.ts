@@ -12,11 +12,15 @@ import type {
 import type {
   ActivityStore,
   ExplorationPersistence,
+  PassportGpsData,
+  PassportGpsMetrics,
+  PassportGpsSession,
   RecoveredActivity,
 } from './activity-store';
 
 export interface MemoryActivityStoreDatabase {
   sessions: Map<string, ActivitySession>;
+  sessionOwners: Map<string, string | null>;
   samples: Map<string, Map<number, LocationSample>>;
   snapshots: Map<string, Map<number, ActivitySnapshot>>;
   explorations: Map<string, ExplorationPersistence>;
@@ -28,6 +32,7 @@ export interface MemoryActivityStoreDatabase {
 export function createMemoryActivityStoreDatabase(): MemoryActivityStoreDatabase {
   return {
     sessions: new Map(),
+    sessionOwners: new Map(),
     samples: new Map(),
     snapshots: new Map(),
     explorations: new Map(),
@@ -136,9 +141,12 @@ export class MemoryActivityStore implements ActivityStore {
   async createSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    ownerId: string,
     exploration: ExplorationPersistence = emptyExploration,
   ): Promise<void> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required for a personal activity');
     this.database.sessions.set(session.activityId, cloneSession(session));
+    this.database.sessionOwners.set(session.activityId, ownerId);
     ensureSampleMap(this.database, session.activityId);
     ensureSnapshotMap(this.database, session.activityId).set(
       snapshot.lastProcessedSequence,
@@ -190,9 +198,14 @@ export class MemoryActivityStore implements ActivityStore {
     }
   }
 
-  async loadActiveSession(): Promise<RecoveredActivity | null> {
+  private async loadActiveSessionInternal(ownerId?: string): Promise<RecoveredActivity | null> {
     const activeSession = [...this.database.sessions.values()]
-      .filter((session) => session.state === 'ACTIVE' || session.state === 'PAUSED')
+      .filter((session) => {
+        const storedOwner = this.database.sessionOwners.get(session.activityId);
+        return storedOwner !== null && storedOwner !== undefined
+          && (ownerId === undefined || storedOwner === ownerId)
+          && (session.state === 'ACTIVE' || session.state === 'PAUSED');
+      })
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
 
     if (!activeSession) return null;
@@ -208,6 +221,7 @@ export class MemoryActivityStore implements ActivityStore {
       .map(cloneSample);
 
     return {
+      ownerId: this.database.sessionOwners.get(activeSession.activityId) ?? null,
       session: cloneSession(activeSession),
       snapshot,
       samplesAfterSnapshot,
@@ -215,6 +229,15 @@ export class MemoryActivityStore implements ActivityStore {
       lastConsumedInboxId:
         this.database.lastConsumedInboxIds.get(activeSession.activityId) ?? 0,
     };
+  }
+
+  async loadActiveSession(ownerId: string): Promise<RecoveredActivity | null> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load an activity');
+    return this.loadActiveSessionInternal(ownerId);
+  }
+
+  async loadActiveSessionForBackground(): Promise<RecoveredActivity | null> {
+    return this.loadActiveSessionInternal();
   }
 
   async updateSession(
@@ -325,5 +348,40 @@ export class MemoryActivityStore implements ActivityStore {
         syncState: 'synced',
       });
     }
+  }
+
+  async loadPassportGpsData(ownerId: string): Promise<PassportGpsData> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load personal GPS data');
+    const sessions: PassportGpsSession[] = [...this.database.sessions.values()]
+      .filter((session) =>
+        this.database.sessionOwners.get(session.activityId) === ownerId
+        && session.state === 'FINISHED'
+        && session.recordingSource === 'device-gps'
+        && session.finishedAt !== null,
+      )
+      .sort((left, right) => (right.finishedAt ?? '').localeCompare(left.finishedAt ?? ''))
+      .map((session) => {
+        const snapshot = latestSnapshot(this.database, session.activityId);
+        return {
+          activityId: session.activityId,
+          finishedAt: session.finishedAt!,
+          distanceMeters: snapshot?.validDistanceMeters ?? 0,
+          elapsedSeconds: snapshot?.totalElapsedSeconds ?? 0,
+          sampleCount: this.database.samples.get(session.activityId)?.size ?? 0,
+        };
+      });
+
+    return {
+      sessions,
+      metrics: sessions.reduce<PassportGpsMetrics>((metrics, session) => ({
+        sessionCount: metrics.sessionCount + 1,
+        distanceMeters: metrics.distanceMeters + session.distanceMeters,
+        elapsedSeconds: metrics.elapsedSeconds + session.elapsedSeconds,
+      }), { sessionCount: 0, distanceMeters: 0, elapsedSeconds: 0 }),
+    };
+  }
+
+  async loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics> {
+    return (await this.loadPassportGpsData(ownerId)).metrics;
   }
 }

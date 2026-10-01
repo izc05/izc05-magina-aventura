@@ -6,6 +6,7 @@ import type { BackgroundLocationInbox } from './background-location-inbox';
 
 function recoveredActivity(): RecoveredActivity {
   return {
+    ownerId: 'account-a',
     session: {
       activityId: 'activity-background',
       adventureSlug: 'synthetic-adventure',
@@ -58,7 +59,7 @@ function dependencies(active: RecoveredActivity | null) {
   const append = vi.fn(async () => undefined);
   const store = {
     initialize: vi.fn(async () => undefined),
-    loadActiveSession: vi.fn(async () => active),
+    loadActiveSessionForBackground: vi.fn(async () => active),
   } as unknown as ActivityStore;
   const inbox = {
     initialize: vi.fn(async () => undefined),

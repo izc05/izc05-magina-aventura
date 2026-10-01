@@ -7,6 +7,7 @@ import {
   municipalRouteInformation,
   municipalRouteInformationViewModel,
 } from '../../src/features/routes/municipal-route-information';
+import { adelfalDeCuadrosInformation } from '../../src/features/routes/adelfal-de-cuadros-information';
 import { colors, radius, spacing, typography } from '../../src/theme/tokens';
 
 export default function PublicRouteCatalogScreen() {
@@ -68,6 +69,38 @@ export default function PublicRouteCatalogScreen() {
           </View>
           <View style={styles.actionRow}>
             <Text style={styles.actionText}>Leer ficha y fuentes</Text>
+            <Text accessible={false} style={styles.actionArrow}>→</Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          testID="public-adelfal-route-card"
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir ficha oficial de ${adelfalDeCuadrosInformation.title}`}
+          accessibilityHint="Abre la ficha pública de la Junta de Andalucía. El aviso de cierre está fechado y no es una comprobación actual."
+          style={styles.routeCard}
+          onPress={() => router.push('/official-routes/adelfal-de-cuadros')}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={styles.pilotBadge}>PILOTO OFICIAL</Text>
+            <Text style={styles.traceStatus}>Ficha de la Junta de Andalucía</Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.routeTitle}>{adelfalDeCuadrosInformation.title}</Text>
+          <Text style={styles.location}>{adelfalDeCuadrosInformation.municipality}</Text>
+          <Text style={styles.status}>
+            {adelfalDeCuadrosInformation.facts.routeType} · {adelfalDeCuadrosInformation.facts.outwardDistanceMeters} m de ida · {adelfalDeCuadrosInformation.facts.durationMinutes} min
+          </Text>
+          <Text style={styles.statusDetail}>
+            Dificultad {adelfalDeCuadrosInformation.facts.difficulty.toLowerCase()} · {adelfalDeCuadrosInformation.facts.pathType} · sombra {adelfalDeCuadrosInformation.facts.shade.toLowerCase()}.
+          </Text>
+          <View style={styles.notice}>
+            <Text style={styles.noticeTitle}>Aviso oficial fechado · {adelfalDeCuadrosInformation.noticeDate}</Text>
+            <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.publishedStatus}</Text>
+            <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.statusContext}</Text>
+            <Text style={styles.noticeBody}>{adelfalDeCuadrosInformation.operationalNotice}</Text>
+          </View>
+          <View style={styles.actionRow}>
+            <Text style={styles.actionText}>Leer ficha oficial y fuentes</Text>
             <Text accessible={false} style={styles.actionArrow}>→</Text>
           </View>
         </Pressable>

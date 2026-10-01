@@ -27,6 +27,7 @@ const DEFAULT_DATABASE_NAME = 'magina-aventura-activity.db';
 
 type SessionRow = {
   activity_id: string;
+  owner_id: string | null;
   adventure_slug: string | null;
   adventure_version: number | null;
   route_id: string;
@@ -183,13 +184,14 @@ async function writeExploration(
 async function writeSession(
   db: SQLite.SQLiteDatabase,
   session: ActivitySession,
+  ownerId: string | null = null,
 ): Promise<void> {
   await db.runAsync(
     `INSERT INTO activity_sessions (
-      activity_id, adventure_slug, adventure_version, route_id, route_slug,
+      activity_id, owner_id, adventure_slug, adventure_version, route_id, route_slug,
       geometry_version, recording_source, state, started_at, paused_at, finished_at,
       last_processed_sequence, sync_state
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(activity_id) DO UPDATE SET
       adventure_slug = excluded.adventure_slug,
       adventure_version = excluded.adventure_version,
@@ -204,6 +206,7 @@ async function writeSession(
       last_processed_sequence = excluded.last_processed_sequence,
       sync_state = excluded.sync_state`,
     session.activityId,
+    ownerId,
     session.adventureSlug,
     session.adventureVersion,
     session.routeId,
@@ -281,6 +284,7 @@ export class SQLiteActivityStore implements ActivityStore {
   async createSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    ownerId: string,
     exploration: ExplorationPersistence = {
       state: {
         progressByTargetKey: {},
@@ -290,12 +294,13 @@ export class SQLiteActivityStore implements ActivityStore {
       observations: [],
     },
   ): Promise<void> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required for a personal activity');
     const db = await this.database();
     await db.withExclusiveTransactionAsync(async (txn) => {
       await writeSession(txn, {
         ...session,
         lastProcessedSequence: snapshot.lastProcessedSequence,
-      });
+      }, ownerId);
       await writeSnapshot(txn, snapshot);
       await writeExploration(txn, session.activityId, exploration, snapshot.createdAt);
     });
@@ -357,14 +362,22 @@ export class SQLiteActivityStore implements ActivityStore {
     });
   }
 
-  async loadActiveSession(): Promise<RecoveredActivity | null> {
+  private async loadActiveSessionInternal(ownerId?: string): Promise<RecoveredActivity | null> {
     const db = await this.database();
-    const sessionRow = await db.getFirstAsync<SessionRow>(
-      `SELECT * FROM activity_sessions
-       WHERE state IN ('ACTIVE', 'PAUSED')
-       ORDER BY started_at DESC
-       LIMIT 1`,
-    );
+    const sessionRow = ownerId === undefined
+      ? await db.getFirstAsync<SessionRow>(
+          `SELECT * FROM activity_sessions
+           WHERE owner_id IS NOT NULL AND state IN ('ACTIVE', 'PAUSED')
+           ORDER BY started_at DESC
+           LIMIT 1`,
+        )
+      : await db.getFirstAsync<SessionRow>(
+          `SELECT * FROM activity_sessions
+           WHERE owner_id = ? AND state IN ('ACTIVE', 'PAUSED')
+           ORDER BY started_at DESC
+           LIMIT 1`,
+          ownerId,
+        );
 
     if (!sessionRow) return null;
 
@@ -400,6 +413,7 @@ export class SQLiteActivityStore implements ActivityStore {
     );
 
     return {
+      ownerId: sessionRow.owner_id,
       session: {
         ...sessionFromRow(sessionRow),
         lastProcessedSequence: snapshot.lastProcessedSequence,
@@ -412,6 +426,15 @@ export class SQLiteActivityStore implements ActivityStore {
       ),
       lastConsumedInboxId: sessionRow.last_consumed_inbox_id ?? 0,
     };
+  }
+
+  async loadActiveSession(ownerId: string): Promise<RecoveredActivity | null> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load an activity');
+    return this.loadActiveSessionInternal(ownerId);
+  }
+
+  async loadActiveSessionForBackground(): Promise<RecoveredActivity | null> {
+    return this.loadActiveSessionInternal();
   }
 
   async updateSession(
@@ -505,7 +528,8 @@ export class SQLiteActivityStore implements ActivityStore {
     return explorationFromRows(stateRow, observationRows);
   }
 
-  async loadPassportGpsData(): Promise<PassportGpsData> {
+  async loadPassportGpsData(ownerId: string): Promise<PassportGpsData> {
+    if (!ownerId.trim()) throw new Error('An authenticated owner is required to load personal GPS data');
     await this.initialize();
     const db = await this.database();
     const rows = await db.getAllAsync<PassportGpsSessionRow>(
@@ -526,9 +550,11 @@ export class SQLiteActivityStore implements ActivityStore {
        WHERE session.state = ?
          AND session.finished_at IS NOT NULL
          AND session.recording_source = ?
+         AND session.owner_id = ?
        ORDER BY session.finished_at DESC`,
       'FINISHED',
       'device-gps',
+      ownerId,
     );
 
     const sessions: PassportGpsSession[] = [];
@@ -597,8 +623,8 @@ export class SQLiteActivityStore implements ActivityStore {
     return { sessions, metrics };
   }
 
-  async loadPassportGpsMetrics(): Promise<PassportGpsMetrics> {
-    return (await this.loadPassportGpsData()).metrics;
+  async loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics> {
+    return (await this.loadPassportGpsData(ownerId)).metrics;
   }
 
   async queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch> {

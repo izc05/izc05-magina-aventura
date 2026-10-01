@@ -46,6 +46,7 @@ export function getPersonalRoutePhotoViewerDetails(
 }
 
 export interface SavePersonalRoutePhotoInput {
+  ownerId: string;
   routeSlug: string;
   sourceUri: string;
   mimeType: string | null;
@@ -55,17 +56,19 @@ export interface SavePersonalRoutePhotoInput {
 
 /**
  * All persistence stays behind a local-only port: selected images are copied
- * into app-private storage and metadata is stored in the on-device SQLite DB.
- * Deletion first tombstones the SQLite row, then removes the file, then purges
- * metadata. Tombstones are never listed and can be retried safely after a crash.
+ * into app-private storage and metadata is stored on-device. Every metadata
+ * operation is scoped to the authenticated owner; rows from older unowned
+ * installs remain stored but are not exposed or assigned to an account.
+ * Deletion first tombstones the scoped row, then removes the file, then purges
+ * metadata. Tombstones can be retried safely after a crash.
  */
 export interface PersonalRouteGalleryLocalPort {
-  list(routeSlug: string): Promise<PersonalRoutePhoto[]>;
+  list(ownerId: string, routeSlug: string): Promise<PersonalRoutePhoto[]>;
   copyImageToPrivateStorage(sourceUri: string, fileName: string): Promise<string>;
-  insert(photo: PersonalRoutePhoto): Promise<void>;
-  markDeletePending(photoId: string): Promise<PersonalRoutePhoto | null>;
-  listPendingDeletes(): Promise<PersonalRoutePhoto[]>;
-  finalizePendingDelete(photoId: string): Promise<void>;
+  insert(photo: PersonalRoutePhoto, ownerId: string): Promise<void>;
+  markDeletePending(photoId: string, ownerId: string): Promise<PersonalRoutePhoto | null>;
+  listPendingDeletes(ownerId: string): Promise<PersonalRoutePhoto[]>;
+  finalizePendingDelete(photoId: string, ownerId: string): Promise<void>;
   removePrivateImage(uri: string): Promise<void>;
 }
 
@@ -75,11 +78,11 @@ export interface PersonalRouteGalleryStoreOptions {
 }
 
 export interface PersonalRouteGalleryStore {
-  listForRoute(routeSlug: string): Promise<PersonalRoutePhoto[]>;
+  listForRoute(routeSlug: string, ownerId: string): Promise<PersonalRoutePhoto[]>;
   save(input: SavePersonalRoutePhotoInput): Promise<PersonalRoutePhoto>;
-  markDeletePending(photoId: string): Promise<PersonalRoutePhoto | null>;
-  finishDelete(photoId: string): Promise<DeletePersonalRoutePhotoResult>;
-  recoverPendingDeletes(): Promise<void>;
+  markDeletePending(photoId: string, ownerId: string): Promise<PersonalRoutePhoto | null>;
+  finishDelete(photoId: string, ownerId: string): Promise<DeletePersonalRoutePhotoResult>;
+  recoverPendingDeletes(ownerId: string): Promise<void>;
 }
 
 function createPhotoId(): string {
@@ -104,11 +107,18 @@ function extensionForMimeType(mimeType: string | null): string {
   }
 }
 
+function validateOwnerId(ownerId: string): string {
+  if (!ownerId.trim()) throw new Error('Inicia sesión para acceder a la galería personal.');
+  return ownerId;
+}
+
 function validatePhotoInput(input: SavePersonalRoutePhotoInput): {
+  ownerId: string;
   routeSlug: string;
   caption: string;
   credit: string;
 } {
+  const ownerId = validateOwnerId(input.ownerId);
   const routeSlug = input.routeSlug.trim();
   const caption = input.caption.trim();
   const credit = input.credit.trim();
@@ -126,7 +136,7 @@ function validatePhotoInput(input: SavePersonalRoutePhotoInput): {
     throw new Error(`El crédito no puede superar ${PERSONAL_PHOTO_CREDIT_MAX_LENGTH} caracteres.`);
   }
 
-  return { routeSlug, caption, credit };
+  return { ownerId, routeSlug, caption, credit };
 }
 
 function validatePhotoId(photoId: string): void {
@@ -143,17 +153,18 @@ export function createPersonalRouteGalleryStore(
   const now = options.now ?? (() => new Date());
 
   return {
-    async listForRoute(routeSlug) {
+    async listForRoute(routeSlug, ownerId) {
+      const scopedOwnerId = validateOwnerId(ownerId);
       if (!routeSlug.trim()) return [];
-      await this.recoverPendingDeletes();
-      const photos = await port.list(routeSlug.trim());
+      await this.recoverPendingDeletes(scopedOwnerId);
+      const photos = await port.list(scopedOwnerId, routeSlug.trim());
       return [...photos].sort((left, right) =>
         right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id),
       );
     },
 
     async save(input) {
-      const { routeSlug, caption, credit } = validatePhotoInput(input);
+      const { ownerId, routeSlug, caption, credit } = validatePhotoInput(input);
       const id = createId();
       if (!/^[A-Za-z0-9_-]+$/.test(id)) {
         throw new Error('No se pudo crear un identificador local seguro para la foto.');
@@ -171,7 +182,7 @@ export function createPersonalRouteGalleryStore(
       };
 
       try {
-        await port.insert(photo);
+        await port.insert(photo, ownerId);
       } catch (error) {
         try {
           await port.removePrivateImage(uri);
@@ -184,30 +195,33 @@ export function createPersonalRouteGalleryStore(
       return photo;
     },
 
-    async markDeletePending(photoId) {
+    async markDeletePending(photoId, ownerId) {
       validatePhotoId(photoId);
-      return port.markDeletePending(photoId);
+      return port.markDeletePending(photoId, validateOwnerId(ownerId));
     },
 
-    async finishDelete(photoId) {
+    async finishDelete(photoId, ownerId) {
       validatePhotoId(photoId);
+      const scopedOwnerId = validateOwnerId(ownerId);
       try {
-        const pendingPhoto = (await port.listPendingDeletes()).find((photo) => photo.id === photoId);
+        const pendingPhoto = (await port.listPendingDeletes(scopedOwnerId))
+          .find((photo) => photo.id === photoId);
         if (!pendingPhoto) return 'deleted';
         await port.removePrivateImage(pendingPhoto.uri);
-        await port.finalizePendingDelete(photoId);
+        await port.finalizePendingDelete(photoId, scopedOwnerId);
         return 'deleted';
       } catch {
-        // The SQLite tombstone remains hidden; startup/list recovery retries safely.
+        // The scoped SQLite tombstone remains hidden; list recovery retries safely.
         return 'pending';
       }
     },
 
-    async recoverPendingDeletes() {
-      const pendingPhotos = await port.listPendingDeletes();
+    async recoverPendingDeletes(ownerId) {
+      const scopedOwnerId = validateOwnerId(ownerId);
+      const pendingPhotos = await port.listPendingDeletes(scopedOwnerId);
       for (const photo of pendingPhotos) {
         await port.removePrivateImage(photo.uri);
-        await port.finalizePendingDelete(photo.id);
+        await port.finalizePendingDelete(photo.id, scopedOwnerId);
       }
     },
   };

@@ -32,7 +32,17 @@ export default function ActiveAdventureScreen() {
   const isTechnicalGpsQa = routePresentation?.mode === 'technical-gps-qa';
 
   const [mapPayload, setMapPayload] = useState<EnhancedRoutePayload | null>(null);
-  const [activityState, setActivityState] = useState<ActivityEngineState | null>(null);
+  const [activityRecord, setActivityRecord] = useState<{
+    ownerId: string;
+    state: ActivityEngineState;
+  } | null>(null);
+  const activityState = activityRecord && activityRecord.ownerId === user?.id
+    ? activityRecord.state
+    : null;
+  const setActivityState = (state: ActivityEngineState | null) => {
+    if (state && user?.id) setActivityRecord({ ownerId: user.id, state });
+    else if (!state) setActivityRecord(null);
+  };
   const [clockNowMs, setClockNowMs] = useState(() => Date.now());
   const [activityError, setActivityError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -87,7 +97,9 @@ export default function ActiveAdventureScreen() {
   }, [route]);
 
   useEffect(() => {
-    if (authLoading || !user || !route || !definition || (!isTechnicalGpsQa && !mapPayload)) return;
+    const ownerId = user?.id;
+    if (authLoading || !ownerId || !route || !definition || (!isTechnicalGpsQa && !mapPayload)) return;
+    const authenticatedOwnerId = ownerId;
     let active = true;
     setStarting(true);
     setActivityError(null);
@@ -97,12 +109,12 @@ export default function ActiveAdventureScreen() {
         const line = isTechnicalGpsQa
           ? []
           : mapPayload?.line.geometry.coordinates ?? [];
-        const recovered = await activityRuntime.recover(definition!, route!, line);
-        const next = recovered ?? await activityRuntime.start(definition!, route!, line);
+        const recovered = await activityRuntime.recover(definition!, route!, authenticatedOwnerId, line);
+        const next = recovered ?? await activityRuntime.start(definition!, route!, authenticatedOwnerId, line);
         if (active) setActivityState(next);
       } catch (error) {
         if (active) {
-          const current = activityRuntime.current();
+          const current = activityRuntime.current(authenticatedOwnerId);
           if (current?.session.state === 'PAUSED' && current.session.routeId === route?.id) {
             setActivityState(current);
           }
@@ -118,17 +130,18 @@ export default function ActiveAdventureScreen() {
   }, [route, definition, mapPayload, isTechnicalGpsQa, authLoading, user?.id]);
 
   useEffect(() => {
-    if (!activityState) return;
+    const ownerId = user?.id;
+    if (!ownerId || !activityState) return;
     const timer = setInterval(() => {
       setClockNowMs(Date.now());
-      void activityRuntime.refresh().then((next) => {
+      void activityRuntime.refresh(ownerId).then((next) => {
         if (next) setActivityState(next);
       }).catch((error) => {
         setActivityError(error instanceof Error ? error.message : 'Error actualizando GPS');
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [activityState?.session.activityId]);
+  }, [activityState?.session.activityId, user?.id]);
 
   if (!route) {
     return null;
@@ -280,7 +293,7 @@ export default function ActiveAdventureScreen() {
         style={styles.exitButton}
         onPress={() => {
           if (finishing) return;
-          if (!activityRuntime.current()) {
+          if (!activityRuntime.current(user.id)) {
             router.back();
             return;
           }
@@ -350,11 +363,11 @@ export default function ActiveAdventureScreen() {
           <Pressable
             style={styles.pauseButton}
             onPress={() => {
-              const current = activityRuntime.current();
+              const current = activityRuntime.current(user.id);
               if (!current) return;
               const action = current.session.state === 'PAUSED'
-                ? activityRuntime.resume()
-                : activityRuntime.pause();
+                ? activityRuntime.resume(user.id)
+                : activityRuntime.pause(user.id);
               void action.then(setActivityState).catch((error) => {
                 setActivityError(error instanceof Error ? error.message : 'No se pudo cambiar el estado');
               });
@@ -383,7 +396,7 @@ export default function ActiveAdventureScreen() {
                     onPress: () => {
                       setFinishing(true);
                       setActivityError(null);
-                      void activityRuntime.finish()
+                      void activityRuntime.finish(user.id)
                         .then((finished) => {
                           setActivityState(finished);
                           router.replace(`/adventure/${route.slug}/summary` as any);

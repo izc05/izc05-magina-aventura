@@ -24,7 +24,7 @@ export default function ActivitySummaryScreen() {
     route.developmentFixture ? 'development-simulation' : 'unverified',
   );
   const technicalGpsQa = presentation.mode === 'technical-gps-qa';
-  const finished = user ? activityRuntime.current() : null;
+  const finished = user ? activityRuntime.current(user.id) : null;
   const snapshot = finished?.snapshot;
   const distanceKm = snapshot ? snapshot.validDistanceMeters / 1000 : null;
   const elapsedSeconds = snapshot?.totalElapsedSeconds ?? null;

@@ -25,7 +25,7 @@ export default function ProfileScreen() {
     }
 
     let mounted = true;
-    void sqliteActivityStore.loadPassportGpsData()
+    void sqliteActivityStore.loadPassportGpsData(user.id)
       .then((data) => {
         if (mounted) setPassportGpsState({ status: 'ready', data });
       })

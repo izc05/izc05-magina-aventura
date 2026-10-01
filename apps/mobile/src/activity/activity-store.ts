@@ -34,6 +34,7 @@ export interface PassportGpsData {
 }
 
 export interface RecoveredActivity {
+  ownerId: string | null;
   session: ActivitySession;
   snapshot: ActivitySnapshot;
   samplesAfterSnapshot: LocationSample[];
@@ -46,6 +47,7 @@ export interface ActivityStore {
   createSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
+    ownerId: string,
     exploration?: ExplorationPersistence,
   ): Promise<void>;
   appendBatch(
@@ -55,7 +57,10 @@ export interface ActivityStore {
     exploration?: ExplorationPersistence,
     consumedInboxThrough?: number,
   ): Promise<void>;
-  loadActiveSession(): Promise<RecoveredActivity | null>;
+  /** Loads only active personal data owned by this authenticated account. */
+  loadActiveSession(ownerId: string): Promise<RecoveredActivity | null>;
+  /** Internal background-only lookup; never render its result to an account UI. */
+  loadActiveSessionForBackground(): Promise<RecoveredActivity | null>;
   updateSession(
     session: ActivitySession,
     snapshot: ActivitySnapshot,
@@ -72,4 +77,6 @@ export interface ActivityStore {
   queueSyncBatch(batch: ActivitySyncBatch): Promise<ActivitySyncBatch>;
   loadPendingSyncBatches(activityId: string): Promise<ActivitySyncBatch[]>;
   markSyncBatchSynced(batchId: string): Promise<void>;
+  loadPassportGpsData(ownerId: string): Promise<PassportGpsData>;
+  loadPassportGpsMetrics(ownerId: string): Promise<PassportGpsMetrics>;
 }

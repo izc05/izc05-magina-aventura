@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -37,7 +37,27 @@ interface PersonalRouteGalleryProps {
 export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const [photos, setPhotos] = useState<PersonalRoutePhoto[]>([]);
+  const [photoState, setPhotoState] = useState<{
+    ownerId: string;
+    photos: PersonalRoutePhoto[];
+  } | null>(null);
+  const photos = photoState && photoState.ownerId === user?.id ? photoState.photos : [];
+  const setPhotos = useCallback((
+    next: PersonalRoutePhoto[] | ((current: PersonalRoutePhoto[]) => PersonalRoutePhoto[]),
+  ) => {
+    const ownerId = user?.id;
+    if (!ownerId) {
+      setPhotoState(null);
+      return;
+    }
+    setPhotoState((current) => {
+      const currentPhotos = current?.ownerId === ownerId ? current.photos : [];
+      return {
+        ownerId,
+        photos: typeof next === 'function' ? next(currentPhotos) : next,
+      };
+    });
+  }, [user?.id]);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [caption, setCaption] = useState('');
@@ -48,6 +68,13 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   const [isChoosing, setIsChoosing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setSelectedPhotoId(null);
+    setSelectedAsset(null);
+    setCaption('');
+    setCredit('');
+  }, [routeSlug, user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -64,7 +91,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     setPhotos([]);
     setSelectedPhotoId(null);
 
-    void personalRouteGalleryStore.listForRoute(routeSlug)
+    void personalRouteGalleryStore.listForRoute(routeSlug, user.id)
       .then((storedPhotos) => {
         if (active) setPhotos(storedPhotos);
       })
@@ -78,7 +105,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     return () => {
       active = false;
     };
-  }, [routeSlug, loadAttempt, user?.id]);
+  }, [routeSlug, loadAttempt, setPhotos, user?.id]);
 
   const closeDraft = () => {
     if (isSaving) return;
@@ -106,7 +133,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   };
 
   const savePhoto = async () => {
-    if (!selectedAsset || isSaving) return;
+    if (!selectedAsset || !user?.id || isSaving) return;
     if (!caption.trim() || !credit.trim()) {
       Alert.alert('Completa los datos', 'Añade un pie de foto y el crédito o autor antes de guardar.');
       return;
@@ -115,6 +142,7 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
     setIsSaving(true);
     try {
       const saved = await personalRouteGalleryStore.save({
+        ownerId: user.id,
         routeSlug,
         sourceUri: selectedAsset.uri,
         mimeType: selectedAsset.mimeType ?? null,
@@ -138,15 +166,15 @@ export function PersonalRouteGallery({ routeSlug }: PersonalRouteGalleryProps) {
   };
 
   const deletePhoto = async (photoId: string) => {
-    if (isDeleting || isSaving || isChoosing) return;
+    if (!user?.id || isDeleting || isSaving || isChoosing) return;
     setIsDeleting(true);
     try {
-      const pendingPhoto = await personalRouteGalleryStore.markDeletePending(photoId);
+      const pendingPhoto = await personalRouteGalleryStore.markDeletePending(photoId, user.id);
       setPhotos((current) => current.filter((photo) => photo.id !== photoId));
       setSelectedPhotoId(null);
 
       if (pendingPhoto) {
-        const result = await personalRouteGalleryStore.finishDelete(photoId);
+        const result = await personalRouteGalleryStore.finishDelete(photoId, user.id);
         if (result === 'pending') {
           Alert.alert(
             'Foto retirada de la galería',

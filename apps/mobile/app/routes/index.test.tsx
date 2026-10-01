@@ -51,17 +51,22 @@ describe('public route catalog', () => {
     const elements = collectElements(tree);
     const municipalCard = elements.find((element) => element.props?.testID === 'public-route-card');
     const adelfalCard = elements.find((element) => element.props?.testID === 'public-adelfal-route-card');
+    const municipalCards = elements.filter((element) => element.props?.testID === 'public-route-card');
+    const adelfalCards = elements.filter((element) => element.props?.testID === 'public-adelfal-route-card');
     const text = visibleText(tree).join(' ');
     const municipalText = normalizedText(municipalCard);
     const adelfalText = normalizedText(adelfalCard);
 
     expect(municipalCard).toBeDefined();
     expect(adelfalCard).toBeDefined();
+    expect(municipalCards).toHaveLength(1);
+    expect(adelfalCards).toHaveLength(1);
     expect(text).toContain('Rutas de Sierra Mágina');
     expect(municipalText).toContain(municipalRouteInformation.title);
     expect(municipalText).toContain(municipalRouteInformation.municipality);
     expect(municipalText).toContain(municipalRouteInformation.statusLabel);
     expect(municipalText).toContain(municipalRouteInformation.traceStatus);
+    expect(municipalText).not.toContain(adelfalDeCuadrosInformation.title);
     expect(municipalText).toContain(municipalRouteInformation.gpsNotice);
     expect(municipalText).toContain(municipalRouteInformation.officialDataNotice);
     expect(municipalText).toContain(municipalRouteInformation.statusDetail);
@@ -71,6 +76,7 @@ describe('public route catalog', () => {
     expect(adelfalText).toContain('PILOTO OFICIAL');
     expect(adelfalText).toContain(adelfalDeCuadrosInformation.title);
     expect(adelfalText).toContain(adelfalDeCuadrosInformation.municipality);
+    expect(adelfalText).not.toContain(municipalRouteInformation.title);
     expect(adelfalText).toContain('453 m de ida');
     expect(adelfalText).toContain('20 min');
     expect(adelfalText).toContain('Dificultad baja');

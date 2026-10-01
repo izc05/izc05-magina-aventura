@@ -166,6 +166,44 @@ describe('Bedmar municipal route detail visual, accessibility and provenance', (
     expect(sourcesIndex).toBeGreaterThan(mapIndex);
   });
 
+  it('presents linked Junta guidance as general senderismo recommendations, not a route-specific safety assessment', () => {
+    const tree = MunicipalRouteInformationScreen();
+    const elements = collectElements(tree);
+    const text = visibleText(tree).join(' ');
+    const recommendations = municipalRouteInformation.generalHikingRecommendations;
+    const section = findByTestId(tree, 'official-general-hiking-recommendations');
+    const heading = elements.find((element) =>
+      element.type === 'Text' && visibleText(element).join('') === recommendations.title,
+    );
+    const sourceLink = findByTestId(tree, 'official-general-hiking-recommendations-source-link');
+    const statusIndex = elements.findIndex((element) => element.props?.testID === 'municipal-status-card');
+    const recommendationsIndex = elements.findIndex(
+      (element) => element.props?.testID === 'official-general-hiking-recommendations',
+    );
+    const contextMapIndex = elements.findIndex((element) => element.props?.testID === 'context-map-section');
+
+    expect(section).toBeDefined();
+    expect(heading?.props?.accessibilityRole).toBe('header');
+    expect(text).toContain(recommendations.attribution);
+    expect(text).toContain(recommendations.scopeNote);
+    for (const recommendation of recommendations.items) {
+      expect(text).toContain(recommendation);
+    }
+    expect(recommendations.scopeNote).toContain('no constituyen una evaluación de seguridad específica');
+    expect(sourceLink?.props?.accessibilityRole).toBe('link');
+    expect(sourceLink?.props?.accessibilityLabel).toBe(recommendations.sourceLabel);
+    expect(sourceLink?.props?.accessibilityHint).toContain('recomendaciones generales');
+    expect(elements.filter((element) =>
+      element.props?.testID === 'official-general-hiking-recommendations-source-link',
+    )).toHaveLength(1);
+    expect(statusIndex).toBeGreaterThan(-1);
+    expect(recommendationsIndex).toBeGreaterThan(statusIndex);
+    expect(contextMapIndex).toBeGreaterThan(recommendationsIndex);
+
+    (sourceLink?.props?.onPress as (() => void) | undefined)?.();
+    expect(mocks.openURL).toHaveBeenCalledWith(recommendations.sourceUrl);
+  });
+
   it('visually separates official municipal provenance from community reference and keeps original links accessible', () => {
     const tree = MunicipalRouteInformationScreen();
     const text = visibleText(tree).join(' ');

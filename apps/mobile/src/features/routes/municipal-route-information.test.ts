@@ -86,6 +86,27 @@ describe('municipal route information-only record', () => {
     expect(viewModel.showRewards).toBe(false);
   });
 
+  it('keeps the Junta hiking recommendations literal, generic, linked and non-duplicated', () => {
+    const recommendations = municipalRouteInformationViewModel().generalHikingRecommendations;
+
+    expect(recommendations.title).toBe('Recomendaciones generales oficiales');
+    expect(recommendations.attribution).toContain('Junta de Andalucía');
+    expect(recommendations.scopeNote).toContain(
+      'no constituyen una evaluación de seguridad específica del Sendero Fluvial',
+    );
+    expect(recommendations.items).toEqual([
+      'Consulta la previsión meteorológica antes de iniciar tu actividad.',
+      'Lleva agua, protección solar, ropa y calzado adecuados.',
+      'Lleva un móvil con suficiente batería en caso de emergencia (112), pero recuerda que no siempre hay cobertura.',
+      'Evita salir solo. Si lo haces, comunica recorrido y hora de regreso a otras personas.',
+      'Por tu seguridad y la del entorno, no te salgas del camino señalizado ni tomes atajos.',
+    ]);
+    expect(new Set(recommendations.items).size).toBe(recommendations.items.length);
+    expect(recommendations.sourceUrl).toBe(
+      'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-actividad/-/asset_publisher/QYwm8uHC3ojh/content/senderismo-1/255035',
+    );
+  });
+
   it('keeps the registered official notice, confirmed community link, map context and photo-rights source', () => {
     const sources = municipalRouteInformationViewModel().sourceLinks;
 

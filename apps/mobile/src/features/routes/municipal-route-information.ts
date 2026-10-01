@@ -44,6 +44,23 @@ export const municipalRouteInformation = {
     sourceUrl:
       'https://www.wikiloc.com/walking-trails/sendero-fluvial-cueva-del-agua-278776231',
   },
+  generalHikingRecommendations: {
+    title: 'Recomendaciones generales oficiales',
+    attribution:
+      'Fuente: Junta de Andalucía · Ventana del Visitante · «Senderismo», apartado «Buenas prácticas».',
+    scopeNote:
+      'Son orientaciones generales de senderismo; no constituyen una evaluación de seguridad específica del Sendero Fluvial de la Cueva del Agua ni verifican sus condiciones actuales.',
+    items: [
+      'Consulta la previsión meteorológica antes de iniciar tu actividad.',
+      'Lleva agua, protección solar, ropa y calzado adecuados.',
+      'Lleva un móvil con suficiente batería en caso de emergencia (112), pero recuerda que no siempre hay cobertura.',
+      'Evita salir solo. Si lo haces, comunica recorrido y hora de regreso a otras personas.',
+      'Por tu seguridad y la del entorno, no te salgas del camino señalizado ni tomes atajos.',
+    ],
+    sourceLabel: 'Recomendaciones generales de senderismo · Junta de Andalucía',
+    sourceUrl:
+      'https://www.juntadeandalucia.es/medioambiente/portal/web/ventanadelvisitante/detalle-actividad/-/asset_publisher/QYwm8uHC3ojh/content/senderismo-1/255035',
+  },
   sourceLinks: [
     {
       id: 'municipal',
@@ -87,6 +104,7 @@ export interface MunicipalRouteInformationViewModel {
   gallery: MunicipalRouteInformation['gallery'];
   officialSource: MunicipalRouteInformation['sourceLinks'][0];
   communityReference: MunicipalRouteInformation['communityReference'];
+  generalHikingRecommendations: MunicipalRouteInformation['generalHikingRecommendations'];
   sourceLinks: MunicipalRouteInformation['sourceLinks'];
   canStartPhysicalRoute: false;
   canCaptureTechnicalGps: false;
@@ -132,6 +150,7 @@ export function municipalRouteInformationViewModel(): MunicipalRouteInformationV
     gallery: municipalRouteInformation.gallery,
     officialSource: municipalRouteInformation.sourceLinks[0],
     communityReference: municipalRouteInformation.communityReference,
+    generalHikingRecommendations: municipalRouteInformation.generalHikingRecommendations,
     sourceLinks: municipalRouteInformation.sourceLinks,
     canStartPhysicalRoute: false,
     canCaptureTechnicalGps: false,

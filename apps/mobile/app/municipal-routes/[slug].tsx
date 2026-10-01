@@ -160,6 +160,41 @@ export default function MunicipalRouteInformationScreen() {
           <Text style={styles.statusFootnote}>{information.officialDataNotice}</Text>
         </View>
 
+        <View testID="official-general-hiking-recommendations" style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <View style={styles.sectionHeadingCopy}>
+              <Text style={styles.sectionKicker}>JUNTA DE ANDALUCÍA · SENDERISMO</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>
+                {information.generalHikingRecommendations.title}
+              </Text>
+            </View>
+          </View>
+          <View testID="official-general-hiking-recommendations-card" style={styles.hikingRecommendationsCard}>
+            <Text style={styles.recommendationsAttribution}>
+              {information.generalHikingRecommendations.attribution}
+            </Text>
+            <Text style={styles.recommendationsScopeNote}>
+              {information.generalHikingRecommendations.scopeNote}
+            </Text>
+            <View style={styles.recommendationsList}>
+              {information.generalHikingRecommendations.items.map((recommendation) => (
+                <Text key={recommendation} style={styles.recommendationItem}>• {recommendation}</Text>
+              ))}
+            </View>
+            <Pressable
+              testID="official-general-hiking-recommendations-source-link"
+              accessibilityRole="link"
+              accessibilityLabel={information.generalHikingRecommendations.sourceLabel}
+              accessibilityHint="Abre las recomendaciones generales de senderismo publicadas por la Junta de Andalucía."
+              style={styles.sourceLink}
+              onPress={() => void openSource(information.generalHikingRecommendations.sourceUrl)}
+            >
+              <Text style={styles.sourceLinkText}>{information.generalHikingRecommendations.sourceLabel}</Text>
+              <Text accessible={false} style={styles.sourceArrow}>↗</Text>
+            </Pressable>
+          </View>
+        </View>
+
         {information.showContextMap ? (
           <View testID="context-map-section" style={styles.section}>
             <View style={styles.sectionHeading}>
@@ -420,6 +455,11 @@ const styles = StyleSheet.create({
   statusTitle: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '900', marginTop: spacing[8] },
   statusBody: { color: colors.ink, fontSize: 14, lineHeight: 21, marginTop: spacing[8] },
   statusFootnote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[12], borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing[12] },
+  hikingRecommendationsCard: { marginHorizontal: spacing[16], marginTop: spacing[12], borderRadius: radius.lg, padding: spacing[20], backgroundColor: colors.limestone, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4, borderLeftColor: colors.olive700 },
+  recommendationsAttribution: { color: colors.olive700, fontSize: 11, lineHeight: 17, fontWeight: '800' },
+  recommendationsScopeNote: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: spacing[8] },
+  recommendationsList: { gap: spacing[8], marginTop: spacing[12] },
+  recommendationItem: { color: colors.ink, fontSize: 13, lineHeight: 19 },
   mapAreaLabel: { color: colors.olive700, fontSize: 11, fontWeight: '800', marginTop: spacing[4] },
   contextBadge: { color: colors.olive900, fontSize: 9, fontWeight: '900', letterSpacing: 0.5, borderRadius: radius.pill, backgroundColor: colors.limestone, paddingHorizontal: spacing[8], paddingVertical: spacing[8] },
   mapNote: { color: colors.ink, fontSize: 13, lineHeight: 19, marginHorizontal: spacing[20], marginTop: spacing[8] },
